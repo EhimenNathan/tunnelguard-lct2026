@@ -1,0 +1,6 @@
+# the image is Linux: keep LF line endings in every text file (a CRLF entrypoint.sh would not start in Docker)
+* text=auto eol=lf
+*.png binary
+*.pdf binary
+*.pptx binary
+*.json text eol=lf

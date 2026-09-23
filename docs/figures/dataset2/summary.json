@@ -1,0 +1,1468 @@
+{
+ "frames": 9503,
+ "pieces": 221,
+ "levels": {
+  "CLEAR": 5724,
+  "CAUTION": 3625,
+  "STOP": 154
+ },
+ "stop_rate_pct": 1.621,
+ "stop_events": 90,
+ "latency_ms": {
+  "median": 137.8,
+  "p95": 288.0,
+  "max": 1804.5
+ },
+ "clear_m": {
+  "median": 154.0,
+  "p10": 88.0,
+  "p90": 210.0
+ },
+ "events": [
+  {
+   "piece": "new_data_10",
+   "id": 19,
+   "first_k": 13,
+   "frames": 1,
+   "dist": [
+    90.9,
+    90.9
+   ],
+   "lateral": -0.64,
+   "height": 0.73,
+   "points": 10,
+   "confidence": 0.37,
+   "t_s": 51.3,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_132",
+   "id": 10,
+   "first_k": 9,
+   "frames": 4,
+   "dist": [
+    35.0,
+    42.4
+   ],
+   "lateral": -0.84,
+   "height": 0.45,
+   "points": 14,
+   "confidence": 0.78,
+   "t_s": 660.9,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_132",
+   "id": 13,
+   "first_k": 9,
+   "frames": 1,
+   "dist": [
+    31.2,
+    31.2
+   ],
+   "lateral": -1.03,
+   "height": 0.47,
+   "points": 32,
+   "confidence": 0.85,
+   "t_s": 660.9,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_132",
+   "id": 4,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    40.6,
+    40.6
+   ],
+   "lateral": -0.42,
+   "height": 0.42,
+   "points": 3,
+   "confidence": 0.69,
+   "t_s": 661.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_132",
+   "id": 2,
+   "first_k": 12,
+   "frames": 2,
+   "dist": [
+    42.4,
+    43.3
+   ],
+   "lateral": -0.32,
+   "height": 0.52,
+   "points": 12,
+   "confidence": 0.49,
+   "t_s": 661.2,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_136",
+   "id": 16,
+   "first_k": 16,
+   "frames": 1,
+   "dist": [
+    131.1,
+    131.1
+   ],
+   "lateral": 0.14,
+   "height": 1.08,
+   "points": 4,
+   "confidence": 0.5,
+   "t_s": 681.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 4,
+   "first_k": 11,
+   "frames": 1,
+   "dist": [
+    35.8,
+    35.8
+   ],
+   "lateral": -1.04,
+   "height": 1.09,
+   "points": 9,
+   "confidence": 0.45,
+   "t_s": 721.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 11,
+   "first_k": 11,
+   "frames": 4,
+   "dist": [
+    101.8,
+    116.6
+   ],
+   "lateral": 0.53,
+   "height": 2.41,
+   "points": 22,
+   "confidence": 0.38,
+   "t_s": 721.1,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 6,
+   "first_k": 14,
+   "frames": 4,
+   "dist": [
+    54.3,
+    59.6
+   ],
+   "lateral": -0.01,
+   "height": 0.86,
+   "points": 7,
+   "confidence": 0.42,
+   "t_s": 721.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 70,
+   "first_k": 42,
+   "frames": 1,
+   "dist": [
+    88.1,
+    88.1
+   ],
+   "lateral": -0.55,
+   "height": 0.71,
+   "points": 8,
+   "confidence": 0.4,
+   "t_s": 724.2,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 25,
+   "first_k": 43,
+   "frames": 1,
+   "dist": [
+    103.8,
+    103.8
+   ],
+   "lateral": 0.22,
+   "height": 0.56,
+   "points": 6,
+   "confidence": 0.4,
+   "t_s": 724.3,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_144",
+   "id": 14,
+   "first_k": 46,
+   "frames": 1,
+   "dist": [
+    100.3,
+    100.3
+   ],
+   "lateral": -0.34,
+   "height": 0.7,
+   "points": 7,
+   "confidence": 0.44,
+   "t_s": 724.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_148",
+   "id": 3,
+   "first_k": 8,
+   "frames": 1,
+   "dist": [
+    100.2,
+    100.2
+   ],
+   "lateral": 0.54,
+   "height": 0.34,
+   "points": 3,
+   "confidence": 0.41,
+   "t_s": 740.8,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_148",
+   "id": 2,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    99.6,
+    99.6
+   ],
+   "lateral": 0.44,
+   "height": 0.35,
+   "points": 4,
+   "confidence": 0.43,
+   "t_s": 741.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_149",
+   "id": 7,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    87.9,
+    87.9
+   ],
+   "lateral": 1.06,
+   "height": 1.55,
+   "points": 31,
+   "confidence": 0.4,
+   "t_s": 746.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_149",
+   "id": 1,
+   "first_k": 12,
+   "frames": 1,
+   "dist": [
+    98.2,
+    98.2
+   ],
+   "lateral": -0.07,
+   "height": 0.32,
+   "points": 4,
+   "confidence": 0.55,
+   "t_s": 746.2,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_152",
+   "id": 4,
+   "first_k": 9,
+   "frames": 6,
+   "dist": [
+    81.6,
+    87.8
+   ],
+   "lateral": 1.11,
+   "height": 1.62,
+   "points": 30,
+   "confidence": 0.46,
+   "t_s": 760.9,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_154",
+   "id": 6,
+   "first_k": 12,
+   "frames": 2,
+   "dist": [
+    64.8,
+    65.5
+   ],
+   "lateral": -0.06,
+   "height": 0.35,
+   "points": 9,
+   "confidence": 0.39,
+   "t_s": 771.2,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_154",
+   "id": 16,
+   "first_k": 29,
+   "frames": 1,
+   "dist": [
+    66.1,
+    66.1
+   ],
+   "lateral": 0.23,
+   "height": 0.29,
+   "points": 6,
+   "confidence": 0.57,
+   "t_s": 772.9,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_154",
+   "id": 40,
+   "first_k": 48,
+   "frames": 1,
+   "dist": [
+    57.8,
+    57.8
+   ],
+   "lateral": 0.42,
+   "height": 0.29,
+   "points": 6,
+   "confidence": 0.64,
+   "t_s": 774.8,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_192",
+   "id": 5,
+   "first_k": 27,
+   "frames": 3,
+   "dist": [
+    65.7,
+    67.4
+   ],
+   "lateral": -0.6,
+   "height": 0.52,
+   "points": 4,
+   "confidence": 0.45,
+   "t_s": 962.7,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_192",
+   "id": 11,
+   "first_k": 30,
+   "frames": 1,
+   "dist": [
+    61.2,
+    61.2
+   ],
+   "lateral": -0.2,
+   "height": 1.61,
+   "points": 61,
+   "confidence": 0.52,
+   "t_s": 963.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_192",
+   "id": 13,
+   "first_k": 42,
+   "frames": 3,
+   "dist": [
+    50.6,
+    52.3
+   ],
+   "lateral": 0.22,
+   "height": 1.7,
+   "points": 90,
+   "confidence": 0.44,
+   "t_s": 964.2,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_192",
+   "id": 32,
+   "first_k": 48,
+   "frames": 3,
+   "dist": [
+    46.4,
+    48.1
+   ],
+   "lateral": -0.25,
+   "height": 1.45,
+   "points": 98,
+   "confidence": 0.96,
+   "t_s": 964.8,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_192",
+   "id": 59,
+   "first_k": 50,
+   "frames": 1,
+   "dist": [
+    102.2,
+    102.2
+   ],
+   "lateral": 0.09,
+   "height": 0.99,
+   "points": 6,
+   "confidence": 0.55,
+   "t_s": 965.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 8,
+   "first_k": 22,
+   "frames": 2,
+   "dist": [
+    24.1,
+    25.1
+   ],
+   "lateral": -1.19,
+   "height": 1.35,
+   "points": 105,
+   "confidence": 0.07,
+   "t_s": 967.2,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 12,
+   "first_k": 29,
+   "frames": 4,
+   "dist": [
+    29.1,
+    29.9
+   ],
+   "lateral": 0.48,
+   "height": 0.34,
+   "points": 6,
+   "confidence": 0.02,
+   "t_s": 967.9,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 26,
+   "first_k": 30,
+   "frames": 6,
+   "dist": [
+    26.8,
+    29.8
+   ],
+   "lateral": 0.77,
+   "height": 0.36,
+   "points": 13,
+   "confidence": 0.05,
+   "t_s": 968.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 27,
+   "first_k": 30,
+   "frames": 1,
+   "dist": [
+    29.0,
+    29.0
+   ],
+   "lateral": 0.38,
+   "height": 0.28,
+   "points": 3,
+   "confidence": 0.01,
+   "t_s": 968.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 30,
+   "first_k": 31,
+   "frames": 3,
+   "dist": [
+    23.8,
+    24.5
+   ],
+   "lateral": 0.88,
+   "height": 0.39,
+   "points": 33,
+   "confidence": 0.14,
+   "t_s": 968.1,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 37,
+   "first_k": 35,
+   "frames": 2,
+   "dist": [
+    40.0,
+    40.3
+   ],
+   "lateral": 0.21,
+   "height": 0.45,
+   "points": 11,
+   "confidence": 0.73,
+   "t_s": 968.5,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_193",
+   "id": 45,
+   "first_k": 43,
+   "frames": 1,
+   "dist": [
+    52.4,
+    52.4
+   ],
+   "lateral": -0.59,
+   "height": 0.32,
+   "points": 8,
+   "confidence": 0.41,
+   "t_s": 969.3,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_195",
+   "id": 1,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    34.4,
+    34.4
+   ],
+   "lateral": -0.95,
+   "height": 0.87,
+   "points": 149,
+   "confidence": 0.97,
+   "t_s": 976.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_200",
+   "id": 11,
+   "first_k": 13,
+   "frames": 1,
+   "dist": [
+    48.6,
+    48.6
+   ],
+   "lateral": 0.47,
+   "height": 0.3,
+   "points": 8,
+   "confidence": 0.74,
+   "t_s": 1001.3,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_200",
+   "id": 12,
+   "first_k": 13,
+   "frames": 1,
+   "dist": [
+    51.1,
+    51.1
+   ],
+   "lateral": 0.28,
+   "height": 0.41,
+   "points": 9,
+   "confidence": 0.51,
+   "t_s": 1001.3,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_201",
+   "id": 12,
+   "first_k": 8,
+   "frames": 1,
+   "dist": [
+    40.7,
+    40.7
+   ],
+   "lateral": -0.62,
+   "height": 1.4,
+   "points": 132,
+   "confidence": 0.41,
+   "t_s": 1005.8,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_201",
+   "id": 13,
+   "first_k": 12,
+   "frames": 3,
+   "dist": [
+    37.4,
+    39.3
+   ],
+   "lateral": 0.4,
+   "height": 0.66,
+   "points": 43,
+   "confidence": 0.39,
+   "t_s": 1006.2,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 8,
+   "first_k": 25,
+   "frames": 5,
+   "dist": [
+    57.7,
+    59.1
+   ],
+   "lateral": 0.34,
+   "height": 0.33,
+   "points": 7,
+   "confidence": 0.4,
+   "t_s": 1027.5,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 22,
+   "first_k": 26,
+   "frames": 3,
+   "dist": [
+    56.4,
+    57.9
+   ],
+   "lateral": 0.46,
+   "height": 0.34,
+   "points": 8,
+   "confidence": 0.45,
+   "t_s": 1027.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 20,
+   "first_k": 27,
+   "frames": 7,
+   "dist": [
+    47.7,
+    52.9
+   ],
+   "lateral": 0.62,
+   "height": 0.43,
+   "points": 11,
+   "confidence": 0.47,
+   "t_s": 1027.7,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 31,
+   "first_k": 27,
+   "frames": 1,
+   "dist": [
+    69.3,
+    69.3
+   ],
+   "lateral": -0.03,
+   "height": 0.31,
+   "points": 4,
+   "confidence": 0.48,
+   "t_s": 1027.7,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 21,
+   "first_k": 29,
+   "frames": 2,
+   "dist": [
+    56.4,
+    57.7
+   ],
+   "lateral": 0.38,
+   "height": 0.36,
+   "points": 7,
+   "confidence": 0.43,
+   "t_s": 1027.9,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 27,
+   "first_k": 30,
+   "frames": 2,
+   "dist": [
+    54.3,
+    56.2
+   ],
+   "lateral": 0.36,
+   "height": 0.39,
+   "points": 8,
+   "confidence": 0.42,
+   "t_s": 1028.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 41,
+   "first_k": 32,
+   "frames": 2,
+   "dist": [
+    52.9,
+    56.3
+   ],
+   "lateral": 0.24,
+   "height": 0.38,
+   "points": 7,
+   "confidence": 0.39,
+   "t_s": 1028.2,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_205",
+   "id": 71,
+   "first_k": 48,
+   "frames": 2,
+   "dist": [
+    48.2,
+    50.4
+   ],
+   "lateral": 0.06,
+   "height": 0.38,
+   "points": 5,
+   "confidence": 0.44,
+   "t_s": 1029.8,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_206",
+   "id": 20,
+   "first_k": 11,
+   "frames": 3,
+   "dist": [
+    51.3,
+    52.9
+   ],
+   "lateral": 0.49,
+   "height": 0.35,
+   "points": 8,
+   "confidence": 0.71,
+   "t_s": 1031.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_206",
+   "id": 15,
+   "first_k": 15,
+   "frames": 1,
+   "dist": [
+    44.1,
+    44.1
+   ],
+   "lateral": 0.76,
+   "height": 0.38,
+   "points": 14,
+   "confidence": 0.42,
+   "t_s": 1031.5,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_206",
+   "id": 19,
+   "first_k": 15,
+   "frames": 1,
+   "dist": [
+    47.5,
+    47.5
+   ],
+   "lateral": 0.62,
+   "height": 0.34,
+   "points": 8,
+   "confidence": 0.43,
+   "t_s": 1031.5,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_206",
+   "id": 25,
+   "first_k": 15,
+   "frames": 1,
+   "dist": [
+    49.3,
+    49.3
+   ],
+   "lateral": 0.56,
+   "height": 0.37,
+   "points": 8,
+   "confidence": 0.53,
+   "t_s": 1031.5,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_207",
+   "id": 15,
+   "first_k": 10,
+   "frames": 4,
+   "dist": [
+    35.0,
+    40.9
+   ],
+   "lateral": 0.84,
+   "height": 0.42,
+   "points": 12,
+   "confidence": 0.44,
+   "t_s": 1036.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_207",
+   "id": 4,
+   "first_k": 11,
+   "frames": 1,
+   "dist": [
+    38.3,
+    38.3
+   ],
+   "lateral": 0.82,
+   "height": 0.46,
+   "points": 17,
+   "confidence": 0.4,
+   "t_s": 1036.1,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_207",
+   "id": 6,
+   "first_k": 12,
+   "frames": 1,
+   "dist": [
+    36.7,
+    36.7
+   ],
+   "lateral": 0.89,
+   "height": 0.45,
+   "points": 16,
+   "confidence": 0.55,
+   "t_s": 1036.2,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_213",
+   "id": 3,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    88.6,
+    88.6
+   ],
+   "lateral": -0.29,
+   "height": 0.32,
+   "points": 6,
+   "confidence": 0.39,
+   "t_s": 1066.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_4",
+   "id": 29,
+   "first_k": 47,
+   "frames": 3,
+   "dist": [
+    109.9,
+    113.8
+   ],
+   "lateral": -0.12,
+   "height": 0.79,
+   "points": 8,
+   "confidence": 0.4,
+   "t_s": 24.7,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_51",
+   "id": 5,
+   "first_k": 41,
+   "frames": 1,
+   "dist": [
+    81.9,
+    81.9
+   ],
+   "lateral": -0.79,
+   "height": 0.73,
+   "points": 6,
+   "confidence": 0.67,
+   "t_s": 259.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_51",
+   "id": 7,
+   "first_k": 41,
+   "frames": 4,
+   "dist": [
+    94.8,
+    99.6
+   ],
+   "lateral": -0.68,
+   "height": 0.64,
+   "points": 5,
+   "confidence": 0.54,
+   "t_s": 259.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_51",
+   "id": 13,
+   "first_k": 48,
+   "frames": 2,
+   "dist": [
+    104.1,
+    105.7
+   ],
+   "lateral": -0.61,
+   "height": 0.59,
+   "points": 4,
+   "confidence": 0.76,
+   "t_s": 259.8,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 2,
+   "first_k": 10,
+   "frames": 1,
+   "dist": [
+    117.9,
+    117.9
+   ],
+   "lateral": -0.51,
+   "height": 2.69,
+   "points": 15,
+   "confidence": 0.55,
+   "t_s": 261.0,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 11,
+   "first_k": 11,
+   "frames": 5,
+   "dist": [
+    95.9,
+    103.5
+   ],
+   "lateral": -0.25,
+   "height": 2.55,
+   "points": 23,
+   "confidence": 0.4,
+   "t_s": 261.1,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 18,
+   "first_k": 12,
+   "frames": 5,
+   "dist": [
+    59.6,
+    65.5
+   ],
+   "lateral": 0.13,
+   "height": 0.93,
+   "points": 13,
+   "confidence": 0.42,
+   "t_s": 261.2,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 27,
+   "first_k": 13,
+   "frames": 1,
+   "dist": [
+    50.1,
+    50.1
+   ],
+   "lateral": -0.64,
+   "height": 1.22,
+   "points": 20,
+   "confidence": 0.55,
+   "t_s": 261.3,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 58,
+   "first_k": 25,
+   "frames": 3,
+   "dist": [
+    78.0,
+    80.8
+   ],
+   "lateral": 0.13,
+   "height": 0.74,
+   "points": 12,
+   "confidence": 0.56,
+   "t_s": 262.5,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 80,
+   "first_k": 44,
+   "frames": 1,
+   "dist": [
+    89.1,
+    89.1
+   ],
+   "lateral": -0.6,
+   "height": 0.48,
+   "points": 4,
+   "confidence": 0.39,
+   "t_s": 264.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_52",
+   "id": 83,
+   "first_k": 46,
+   "frames": 1,
+   "dist": [
+    104.3,
+    104.3
+   ],
+   "lateral": 0.63,
+   "height": 0.61,
+   "points": 6,
+   "confidence": 0.42,
+   "t_s": 264.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 6,
+   "first_k": 11,
+   "frames": 18,
+   "dist": [
+    80.8,
+    87.9
+   ],
+   "lateral": -0.15,
+   "height": 0.56,
+   "points": 21,
+   "confidence": 0.97,
+   "t_s": 306.1,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 11,
+   "first_k": 16,
+   "frames": 4,
+   "dist": [
+    67.9,
+    68.7
+   ],
+   "lateral": -0.07,
+   "height": 0.39,
+   "points": 22,
+   "confidence": 0.99,
+   "t_s": 306.6,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 18,
+   "first_k": 18,
+   "frames": 5,
+   "dist": [
+    63.3,
+    67.1
+   ],
+   "lateral": -0.05,
+   "height": 0.34,
+   "points": 20,
+   "confidence": 0.64,
+   "t_s": 306.8,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 19,
+   "first_k": 19,
+   "frames": 4,
+   "dist": [
+    62.7,
+    64.2
+   ],
+   "lateral": -0.04,
+   "height": 0.3,
+   "points": 21,
+   "confidence": 0.7,
+   "t_s": 306.9,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 31,
+   "first_k": 24,
+   "frames": 3,
+   "dist": [
+    98.3,
+    101.7
+   ],
+   "lateral": -0.32,
+   "height": 0.79,
+   "points": 6,
+   "confidence": 0.63,
+   "t_s": 307.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 32,
+   "first_k": 24,
+   "frames": 1,
+   "dist": [
+    107.5,
+    107.5
+   ],
+   "lateral": -0.75,
+   "height": 0.85,
+   "points": 4,
+   "confidence": 0.43,
+   "t_s": 307.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_61",
+   "id": 39,
+   "first_k": 30,
+   "frames": 4,
+   "dist": [
+    124.6,
+    127.0
+   ],
+   "lateral": 0.13,
+   "height": 0.63,
+   "points": 6,
+   "confidence": 0.42,
+   "t_s": 308.0,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_62",
+   "id": 24,
+   "first_k": 46,
+   "frames": 2,
+   "dist": [
+    49.7,
+    50.7
+   ],
+   "lateral": -0.65,
+   "height": 0.31,
+   "points": 5,
+   "confidence": 0.53,
+   "t_s": 314.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_62",
+   "id": 27,
+   "first_k": 46,
+   "frames": 2,
+   "dist": [
+    47.8,
+    48.8
+   ],
+   "lateral": -0.62,
+   "height": 0.34,
+   "points": 10,
+   "confidence": 0.72,
+   "t_s": 314.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_62",
+   "id": 29,
+   "first_k": 46,
+   "frames": 1,
+   "dist": [
+    52.7,
+    52.7
+   ],
+   "lateral": -0.49,
+   "height": 0.27,
+   "points": 3,
+   "confidence": 0.49,
+   "t_s": 314.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_70",
+   "id": 6,
+   "first_k": 14,
+   "frames": 1,
+   "dist": [
+    145.9,
+    145.9
+   ],
+   "lateral": -0.42,
+   "height": 1.17,
+   "points": 4,
+   "confidence": 0.38,
+   "t_s": 351.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_80",
+   "id": 6,
+   "first_k": 41,
+   "frames": 3,
+   "dist": [
+    69.9,
+    71.4
+   ],
+   "lateral": 0.02,
+   "height": 0.66,
+   "points": 8,
+   "confidence": 0.4,
+   "t_s": 404.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_80",
+   "id": 7,
+   "first_k": 47,
+   "frames": 1,
+   "dist": [
+    64.3,
+    64.3
+   ],
+   "lateral": -0.52,
+   "height": 0.65,
+   "points": 14,
+   "confidence": 0.4,
+   "t_s": 404.7,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 16,
+   "first_k": 16,
+   "frames": 2,
+   "dist": [
+    120.0,
+    121.4
+   ],
+   "lateral": -0.77,
+   "height": 0.95,
+   "points": 4,
+   "confidence": 0.42,
+   "t_s": 406.6,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 19,
+   "first_k": 19,
+   "frames": 3,
+   "dist": [
+    79.6,
+    101.1
+   ],
+   "lateral": 0.43,
+   "height": 2.03,
+   "points": 6,
+   "confidence": 0.5,
+   "t_s": 406.9,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 24,
+   "first_k": 21,
+   "frames": 2,
+   "dist": [
+    46.6,
+    47.1
+   ],
+   "lateral": -0.61,
+   "height": 1.0,
+   "points": 16,
+   "confidence": 0.46,
+   "t_s": 407.1,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 25,
+   "first_k": 21,
+   "frames": 2,
+   "dist": [
+    49.2,
+    49.5
+   ],
+   "lateral": -0.38,
+   "height": 1.04,
+   "points": 8,
+   "confidence": 0.49,
+   "t_s": 407.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 26,
+   "first_k": 21,
+   "frames": 1,
+   "dist": [
+    51.6,
+    51.6
+   ],
+   "lateral": 0.01,
+   "height": 1.08,
+   "points": 13,
+   "confidence": 0.41,
+   "t_s": 407.1,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 32,
+   "first_k": 21,
+   "frames": 6,
+   "dist": [
+    70.4,
+    79.5
+   ],
+   "lateral": -0.13,
+   "height": 1.9,
+   "points": 29,
+   "confidence": 0.45,
+   "t_s": 407.1,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 33,
+   "first_k": 21,
+   "frames": 3,
+   "dist": [
+    83.8,
+    86.6
+   ],
+   "lateral": 0.38,
+   "height": 2.78,
+   "points": 50,
+   "confidence": 0.4,
+   "t_s": 407.1,
+   "evidence": "strong"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 29,
+   "first_k": 22,
+   "frames": 1,
+   "dist": [
+    62.0,
+    62.0
+   ],
+   "lateral": 0.47,
+   "height": 0.53,
+   "points": 13,
+   "confidence": 0.44,
+   "t_s": 407.2,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 58,
+   "first_k": 34,
+   "frames": 5,
+   "dist": [
+    90.9,
+    96.4
+   ],
+   "lateral": 0.7,
+   "height": 0.89,
+   "points": 9,
+   "confidence": 0.57,
+   "t_s": 408.4,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 60,
+   "first_k": 35,
+   "frames": 1,
+   "dist": [
+    104.3,
+    104.3
+   ],
+   "lateral": -0.52,
+   "height": 2.7,
+   "points": 20,
+   "confidence": 0.42,
+   "t_s": 408.5,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 65,
+   "first_k": 41,
+   "frames": 1,
+   "dist": [
+    86.9,
+    86.9
+   ],
+   "lateral": -0.52,
+   "height": 0.83,
+   "points": 8,
+   "confidence": 0.87,
+   "t_s": 409.1,
+   "evidence": "weak"
+  },
+  {
+   "piece": "new_data_81",
+   "id": 56,
+   "first_k": 43,
+   "frames": 1,
+   "dist": [
+    83.4,
+    83.4
+   ],
+   "lateral": -0.64,
+   "height": 0.99,
+   "points": 12,
+   "confidence": 0.49,
+   "t_s": 409.3,
+   "evidence": "medium"
+  },
+  {
+   "piece": "new_data_92",
+   "id": 23,
+   "first_k": 50,
+   "frames": 1,
+   "dist": [
+    115.8,
+    115.8
+   ],
+   "lateral": 0.7,
+   "height": 1.44,
+   "points": 9,
+   "confidence": 0.37,
+   "t_s": 465.0,
+   "evidence": "weak"
+  }
+ ],
+ "event_classes": {
+  "weak": 52,
+  "medium": 28,
+  "strong": 10
+ }
+}

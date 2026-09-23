@@ -1,0 +1,133 @@
+# TunnelGuard parameters (generated from the defaults in tunnel_guard/core/*.py by tools/gen_config.py).
+# Every value can be overridden here or on the command line, e.g.
+#   ros2 run tunnel_guard detector_node --ros-args -p gauge.h_min:=0.2
+
+tunnel_guard:
+  ros__parameters:
+    input_topic: 'auto'
+    publish_envelope_points: true
+    marker_step: 2.0
+    forward_axis: 'auto'
+    min_range: 1.5
+    max_range: 300.0
+    report_range_cap: 210.0
+    half_fov_deg: 70.0
+    min_distance: 3.0
+    horizon_slack: 5.0
+    cand_min_points: 3
+    min_in_gauge_points: 2
+    cand_min_points_far: 3
+    near_decimate_x: 25.0
+    near_decimate: 3
+    sight_clearance: 1.8
+    containment_check: true
+    containment_gap: 0.3
+    containment_min_points: 3
+    containment_sigma_k: 3.0
+    wall_min_offset: 1.48
+    gravity_min_s: 60.0
+    gravity_max_base: 1.0
+    extent_min_s: 40.0
+    extent_min_beams: 1.2
+    extent_min_points_exempt: 15
+    scorer_model: ''
+    scorer_near_override_s: 30.0
+    scorer_shell_veto: true
+    scorer_smooth_k: 0
+    two_tier: true
+    shell_check: true
+    shell_min_height: 2.5
+    shell_gap: 1.2
+    shell_lateral: 0.4
+    shell_min_points: 3
+    ego_check: true
+    ego_min_travel: 4.0
+    ego_max_slope: -0.35
+    ego_history: 10
+    ego_pool_min_dx: 5.0
+    ego_pool_ds: 2.5
+    ego_pool_dl: 0.8
+    stop_debounce_frames: 1
+    stop_debounce_window: 3
+    stop_debounce_s: 30.0
+    geometry:
+      x_max: 300.0
+      grid_step: 1.0
+      rail_x_max: 45.0
+      rail_dy: 0.03
+      rail_min_evidence: 0.05
+      rail_sigma: 0.03
+      rail_trust_x: 15.0
+      template_x: [4.0, 30.0]
+      template_l: [-8.0, 8.0]
+      template_h: [-2.5, 7.5]
+      template_res: 0.05
+      template_memory: 0.85
+      template_every: 2
+      align_x_min: 12.0
+      align_points: 12000
+      align_sigma: 0.05
+      align_node_points: 30.0
+      align_iters: [1.0, 2.0, 0.5, 2.0, 0.25, 2.0]
+      lateral_max_trunc: 0.75
+      align_min_info: 800.0
+      vertical_ref_max_h: 0.8
+      vertical_ref_min_l: 1.2
+      vertical_bed_h: 0.3
+      core_half_width: 1.1
+      core_h: [0.3, 3.2]
+      core_penalty: 0.0
+      dp_range: 12.0
+      dp_step: 0.25
+      dp_trunc: 0.6
+      dp_max_heading_change: 0.06
+      dp_smooth: 50.0
+      dp_points: 200
+      dp_local_range: 3.0
+      dp_full_every: 10
+      smooth_lat: [1000.0, 100000000.0]
+      smooth_vert: [1000.0, 100000000.0]
+      temporal_weight: 1.0
+      temporal_process: [0.05, 0.03]
+      temporal_max_weight: 400.0
+      roll_alpha: 0.2
+      sample_seed: 0
+      sigma_sys_l: [0.04, 0.1]
+      sigma_sys_v: [0.03, 0.05]
+      sigma_unmeasured_per_m: 0.02
+      trusted_sigma: 0.45
+    gauge:
+      profile: [0.0, 1.1, 0.5, 1.1, 0.55, 1.25, 1.6, 1.25, 1.7, 1.35, 2.9, 1.35, 3.1, 1.05, 3.25, 0.7]
+      h_min: 0.15
+      sigma_k: 2.0
+      near_margin: 0.08
+    cluster:
+      s_max: 300.0
+      s_cell_min: 0.4
+      s_cell_rel: 0.012
+      l_range: 2.2
+      l_cell: 0.25
+      min_points: 3
+      h_gap_min: 0.6
+      h_gap_beams: 2.5
+      beam_vertical_rad: 0.00218
+    tracker:
+      window: 5
+      confirm_hits: 3
+      max_misses_tentative: 2
+      max_misses_confirmed: 5
+      gate_s_base: 1.2
+      gate_s_rel: 0.02
+      gate_l: 0.8
+      max_closing_speed: 30.0
+      alpha: 0.5
+      beta: 0.2
+    adapt:
+      enabled: false
+      quantile: 0.995
+      tau_max: 0.7
+      min_samples: 200
+      reservoir: 400
+      min_s: 30.0
+      traverse_margin: 3.0
+      max_pending_s: 60.0

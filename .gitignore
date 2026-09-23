@@ -1,0 +1,20 @@
+# Python / build artefacts
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+install/
+log/
+
+# large binaries: the demo video and the editable deck are published on the cloud disk (links in README)
+docs/*.mp4
+presentation/*.pptx
+!presentation/TunnelGuard_LCT2026.pptx
+presentation/TunnelGuard_LCT2026_final.pptx
+
+# local data and evaluation outputs (bags, range-image caches, results)
+*.db3
+*.zst
+*.bin
+results/
+tools/cache/

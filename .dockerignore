@@ -1,0 +1,5 @@
+presentation/
+docs/*.mp4
+tools/cache/
+**/__pycache__/
+**/.pytest_cache/

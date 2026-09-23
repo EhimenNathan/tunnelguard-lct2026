@@ -1,0 +1,26 @@
+{
+ "holdout_first_stop": [
+  10,
+  55.465789794921875
+ ],
+ "holdout_levels": [
+  73,
+  70,
+  58
+ ],
+ "synthetic_first_stop": [
+  42,
+  149.6,
+  149.337890625
+ ],
+ "ds2_person_first_stop": [
+  2.2,
+  142.07956067651048,
+  141.8175811767578,
+  59.96857209356377
+ ],
+ "ds2_compare_stop_frames": {
+  "previous": 12,
+  "deployed": 0
+ }
+}

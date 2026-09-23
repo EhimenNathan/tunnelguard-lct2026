@@ -1,0 +1,88 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 10
+      Plane Cell Count: 40
+      Color: 60; 60; 60
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Lidar
+      Enabled: true
+      Topic:
+        Value: /lidar_points
+        Reliability Policy: Best Effort
+        Depth: 2
+      Size (m): 0.03
+      Style: Points
+      Size (Pixels): 1
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: true
+      Autocompute Intensity Bounds: false
+      Min Intensity: 0
+      Max Intensity: 60
+      Decay Time: 0
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Lidar (hesai128 topic)
+      Enabled: true
+      Topic:
+        Value: /sensing/lidar/hesai128/pointcloud
+        Reliability Policy: Best Effort
+        Depth: 2
+      Style: Points
+      Size (Pixels): 1
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Use rainbow: true
+      Autocompute Intensity Bounds: false
+      Min Intensity: 0
+      Max Intensity: 60
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Envelope points
+      Enabled: true
+      Topic:
+        Value: /tunnel_guard/envelope_points
+      Style: Points
+      Size (Pixels): 3
+      Color Transformer: FlatColor
+      Color: 255; 170; 0
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Obstacle points
+      Enabled: true
+      Topic:
+        Value: /tunnel_guard/obstacle_points
+      Style: Points
+      Size (Pixels): 6
+      Color Transformer: FlatColor
+      Color: 255; 0; 0
+    - Class: rviz_default_plugins/MarkerArray
+      Name: TunnelGuard markers
+      Enabled: true
+      Topic:
+        Value: /tunnel_guard/markers
+  Global Options:
+    Background Color: 20; 20; 28
+    Fixed Frame: hesai_lidar
+    Frame Rate: 30
+  Views:
+    Current:
+      Class: rviz_default_plugins/ThirdPersonFollower
+      Name: Current View
+      Target Frame: <Fixed Frame>
+      Distance: 45
+      Pitch: 0.35
+      Yaw: 1.57
+      Focal Point:
+        X: 0
+        Y: -25
+        Z: 0
+Window Geometry:
+  Width: 1600
+  Height: 900
