@@ -1,0 +1,817 @@
+<meta charset="utf-8">
+<title>TunnelGuard</title>
+<meta name="description" content="Интерактивный прототип: обнаружение посторонних объектов в габарите беспилотного поезда метро по 3D-лидару">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap&subset=cyrillic">
+<style>
+:root {
+  color-scheme: dark;
+  --ground: #0f1418;
+  --ground-2: #0b0f12;
+  --panel: #161d22;
+  --panel-2: #1c252b;
+  --line: #26323a;
+  --ink: #e6ecef;
+  --muted: #8fa0aa;
+  --faint: #5c6c76;
+  --copper: #d08a4e;
+  --copper-soft: rgba(208, 138, 78, 0.14);
+  --clear: #3bd671;
+  --caution: #f5b942;
+  --stop: #ff4d5e;
+  --syn: #ff9f43;
+  --display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--ground); }
+body { color: var(--ink); font: 15px/1.6 var(--body); padding-inline: 16px; }
+.wrap { max-width: 1240px; margin: 0 auto; }
+a { color: var(--copper); }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.15; }
+h3 { font-size: 16px; font-weight: 500; }
+p { margin: 0; }
+.eyebrow { font: 600 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--copper); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(15, 20, 24, 0.92);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); margin-inline: -16px; padding-inline: 16px; }
+.bar .wrap { display: flex; align-items: center; gap: 24px; height: 52px; }
+.mark { font: 700 15px var(--display); letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.mark i { display: inline-flex; gap: 3px; }
+.mark i b { width: 7px; height: 7px; border-radius: 50%; }
+.bar nav { display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none; }
+.bar nav a { color: var(--muted); text-decoration: none; font-size: 13px; white-space: nowrap; }
+.bar nav a:hover { color: var(--ink); }
+
+section { padding-block: 56px; border-bottom: 1px solid var(--line); }
+section > .wrap > header { display: grid; gap: 10px; margin-bottom: 28px; max-width: 760px; }
+
+/* hero */
+.hero { padding-block: 36px 40px; }
+.hero-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+.hero h1 { font-size: clamp(22px, 3.1vw, 38px); line-height: 1.1; max-width: 26ch; }
+.hero h1 em { font-style: normal; color: var(--copper); }
+.hero .lede { color: var(--muted); max-width: 62ch; margin-top: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 10px 22px; }
+.kpi { border-left: 2px solid var(--line); padding-left: 12px; }
+.kpi b { display: block; font: 600 22px var(--mono); font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12px; color: var(--muted); }
+
+.proto { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; }
+.stage { min-width: 0; background: var(--ground-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto; }
+.tabs { display: flex; gap: 2px; padding: 6px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { background: none; border: 0; padding: 8px 12px; border-radius: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; text-align: left; }
+.tab small { display: block; font: 10px var(--mono); letter-spacing: 0.08em; color: var(--faint); text-transform: uppercase; }
+.tab[aria-selected="true"] { background: var(--panel-2); color: var(--ink); }
+.viewport { position: relative; aspect-ratio: 16 / 9; width: 100%; min-width: 0; min-height: 260px; overflow: hidden; }
+.viewport canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.overlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tag { position: absolute; font: 11px var(--mono); color: var(--muted); transform: translate(-50%, -100%); white-space: nowrap; }
+.syn-mark { position: absolute; transform: translate(-50%, -50%); width: 34px; height: 34px; border: 2px solid var(--syn); border-radius: 50%; }
+.syn-mark span { position: absolute; left: 40px; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 12px var(--body);
+  color: var(--syn); background: rgba(11, 15, 18, 0.85); padding: 2px 7px; border-radius: 4px; }
+.badges { position: absolute; left: 12px; top: 12px; display: grid; gap: 6px; justify-items: start; }
+.badge { font: 600 11px var(--mono); letter-spacing: 0.04em; padding: 4px 8px; border-radius: 4px; background: rgba(11, 15, 18, 0.85); }
+.badge.syn { background: var(--syn); color: #1a0f05; }
+.badge.ds { border: 1px solid var(--line); color: var(--ink); }
+.legend { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px; font: 10px var(--mono); color: var(--muted);
+  background: rgba(11, 15, 18, 0.8); padding: 5px 8px; border-radius: 4px; }
+.legend i { width: 110px; height: 7px; border-radius: 2px; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font: 12px var(--mono); color: var(--muted); }
+
+.controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); }
+.ctl { display: flex; gap: 4px; }
+.cams { position: absolute; right: 12px; top: 12px; z-index: 2; }
+.cams .btn { background: rgba(11, 15, 18, 0.85); }
+.btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 12px; }
+.btn[aria-pressed="true"] { border-color: var(--copper); color: var(--copper); }
+.btn.play { width: 38px; }
+.timeline { position: relative; height: 34px; }
+.timeline canvas { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 8px; border-radius: 2px; }
+.timeline input { position: absolute; inset: 0; width: 100%; margin: 0; background: none; -webkit-appearance: none; appearance: none; height: 26px; }
+.timeline input::-webkit-slider-runnable-track { height: 26px; background: transparent; }
+.timeline input::-webkit-slider-thumb { -webkit-appearance: none; width: 3px; height: 26px; background: var(--ink); border-radius: 1px; }
+.timeline input::-moz-range-thumb { width: 3px; height: 26px; background: var(--ink); border: 0; border-radius: 1px; }
+.timeline input::-moz-range-track { background: transparent; }
+.tl-time { position: absolute; left: 0; top: 0; font: 10px var(--mono); color: var(--faint); }
+
+.side { display: grid; gap: 14px; align-content: start; }
+.signal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 54px 1fr; gap: 16px; align-items: center; }
+.head { background: #07090b; border-radius: 27px; padding: 8px; display: grid; gap: 8px; justify-items: center; border: 1px solid #222b31; }
+.lamp { width: 36px; height: 36px; border-radius: 50%; background: #1a2126; transition: background 0.06s, box-shadow 0.06s; }
+.lamp.on.r { background: var(--stop); box-shadow: 0 0 22px var(--stop); }
+.lamp.on.y { background: var(--caution); box-shadow: 0 0 22px var(--caution); }
+.lamp.on.g { background: var(--clear); box-shadow: 0 0 22px var(--clear); }
+.verdict b { display: block; font: 700 19px/1.15 var(--display); }
+.verdict .dist { font: 600 30px var(--mono); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.verdict span { font-size: 12px; color: var(--muted); }
+.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 16px; }
+.readout div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.readout div:last-child { border-bottom: 0; }
+.readout dt { color: var(--muted); }
+.readout dd { margin: 0; font: 600 13px var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.about { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--muted); display: grid; gap: 10px; }
+.about b { color: var(--ink); font-weight: 600; }
+.modelsw { display: flex; gap: 4px; }
+
+/* generic grids */
+.cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; }
+.box h3 { color: var(--ink); }
+.box p { color: var(--muted); font-size: 14px; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; text-align: left; display: grid; gap: 4px; }
+.step small { font: 11px var(--mono); color: var(--faint); }
+.step b { font-weight: 600; font-size: 14px; }
+.step[aria-selected="true"] { border-color: var(--copper); background: var(--copper-soft); }
+.step-detail { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
+.step-detail ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; }
+
+/* envelope lab */
+.lab { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.lab svg { width: 100%; height: auto; background: var(--ground-2); border: 1px solid var(--line); border-radius: 10px; touch-action: none; }
+.slider { display: grid; gap: 4px; font-size: 13px; }
+.slider label { display: flex; justify-content: space-between; color: var(--muted); }
+.slider input { width: 100%; accent-color: var(--copper); }
+.zone-out { font: 700 18px var(--display); }
+
+/* decision */
+.aspects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.aspect { border-radius: 10px; padding: 18px; border: 1px solid var(--line); background: var(--panel); display: grid; gap: 10px; align-content: start; }
+.aspect header { display: flex; align-items: center; gap: 10px; }
+.aspect header i { width: 16px; height: 16px; border-radius: 50%; }
+.aspect h3 { font-family: var(--display); font-weight: 700; font-size: 17px; }
+.aspect ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+
+/* charts */
+figure { margin: 0; }
+figcaption { font-size: 12px; color: var(--faint); margin-top: 6px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font: 11px var(--mono); }
+.chart .t-ink { fill: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--panel-2); border-radius: 8px; padding: 12px; }
+.tile b { display: block; font: 600 22px var(--mono); font-variant-numeric: tabular-nums; }
+.tile span { font-size: 12px; color: var(--muted); }
+
+/* cv grid */
+.cv { overflow-x: auto; }
+.cv table { border-collapse: separate; border-spacing: 4px; font: 11px var(--mono); min-width: 620px; }
+.cv td, .cv th { text-align: center; }
+.cv th { color: var(--muted); font-weight: 600; padding: 2px 6px; }
+.cv td.c { width: 52px; height: 22px; border-radius: 3px; }
+.cv .tr { background: #3b4a7a; } .cv .va { background: var(--stop); } .cv .nv { background: #2a343b; } .cv .sl { background: #06080a; border: 1px solid #333f47; } .cv .ft { background: var(--clear); }
+.cv td.lbl { text-align: right; color: var(--muted); padding-right: 6px; }
+.keys { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.keys i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -2px; margin-right: 6px; }
+
+/* run */
+.cmd { background: var(--ground-2); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.cmd pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 12.5px/1.5 var(--mono); color: var(--ink); }
+.cmd button { border: 0; border-left: 1px solid var(--line); background: none; color: var(--muted); font-size: 12px; padding: 0 14px; }
+.topics { overflow-x: auto; }
+.topics table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.topics td { border-bottom: 1px solid var(--line); padding: 8px 10px 8px 0; vertical-align: top; }
+.topics td:first-child { font-family: var(--mono); color: var(--copper); white-space: nowrap; }
+
+footer.foot { padding-block: 36px 48px; color: var(--faint); font-size: 12px; }
+
+@media (max-width: 980px) {
+  .proto, .lab, .step-detail { grid-template-columns: 1fr; }
+  .side { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .pipe { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-head { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .cols-2, .cols-3, .aspects { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cams { top: auto; bottom: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .lamp { transition: none; } }
+</style>
+
+<div class="bar"><div class="wrap">
+  <div class="mark"><i><b style="background:var(--stop)"></b><b style="background:var(--caution)"></b><b style="background:var(--clear)"></b></i>TunnelGuard</div>
+  <nav aria-label="Разделы">
+    <a href="#prototype">Прототип</a><a href="#how">Как работает</a><a href="#envelope">Габарит</a><a href="#decision">Решение</a>
+    <a href="#model">Модель</a><a href="#results">Результаты</a><a href="#validation">Проверка</a><a href="#run">Запуск</a>
+  </nav>
+</div></div>
+
+<section class="hero" id="prototype"><div class="wrap">
+  <div class="hero-head">
+    <div>
+      <div class="eyebrow">ЛЦТ 2026 · кейс «Московский транспорт» · 3D-лидар Hesai Pandar128</div>
+      <h1 style="margin-top:12px">Есть ли что-то в габарите поезда — и <em>насколько далеко</em> путь проверен свободным</h1>
+      <p class="lede">Ниже — живой вывод детектора на реальных записях лидара, кадр за кадром. Вращайте сцену, перематывайте, переключайте сценарии. Модель во всех сценариях — финальная: физический слой + ½·LightGBM + ½·CatBoost + ЭГО-тест.</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b>1.7 / км</b><span>ложных остановок на новой линии (было 10.3)</span></div>
+      <div class="kpi"><b>58 / 60</b><span>кадров с реальным человеком — STOP, 0 ложных</span></div>
+      <div class="kpi"><b>200 м</b><span>путь проверяется до предела лидара</span></div>
+      <div class="kpi"><b>56–70 мс</b><span>на кадр, одно ядро CPU (лидар 10 Гц)</span></div>
+    </div>
+  </div>
+
+  <div class="proto">
+    <div class="stage">
+      <div class="tabs" role="tablist" aria-label="Сценарии" id="tabs"></div>
+      <div class="viewport" id="viewport">
+        <canvas id="gl" aria-label="Облако точек лидара с габаритом поезда"></canvas>
+        <div class="overlay" id="overlay"></div>
+        <div class="badges" id="badges"></div>
+        <div class="legend"><span>3 м</span><i id="legendbar"></i><span>200 м · цвет = дальность</span></div>
+        <div class="loading" id="loading">загрузка кадров…</div>
+        <div class="ctl cams" role="group" aria-label="Камера">
+          <button class="btn" data-cam="cab" aria-pressed="true">Кабина</button><button class="btn" data-cam="top" aria-pressed="false">Сверху</button><button class="btn" data-cam="side" aria-pressed="false">Сбоку</button>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="ctl"><button class="btn play" id="play" aria-label="Пауза">❚❚</button><button class="btn" id="rate" aria-label="Скорость воспроизведения">1×</button></div>
+        <div class="timeline"><span class="tl-time mono" id="tltime">—</span><canvas id="ribbon" height="8"></canvas><input type="range" id="scrub" min="0" max="0" value="0" aria-label="Кадр"></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="signal" aria-live="polite">
+        <div class="head" aria-hidden="true"><div class="lamp r" id="lr"></div><div class="lamp y" id="ly"></div><div class="lamp g" id="lg"></div></div>
+        <div class="verdict"><b id="vtext">—</b><div class="dist" id="vdist">—</div><span id="vsub">&nbsp;</span></div>
+      </div>
+      <dl class="readout" style="margin:0">
+        <div><dt>Путь проверен до</dt><dd id="r-clear">—</dd></div>
+        <div><dt>Время до столкновения</dt><dd id="r-ttc">—</dd></div>
+        <div><dt>Смещение / высота объекта</dt><dd id="r-obj">—</dd></div>
+        <div><dt>Оценка ансамбля</dt><dd id="r-conf">—</dd></div>
+        <div><dt>Скорость поезда</dt><dd id="r-speed">—</dd></div>
+        <div><dt>Радиус кривой</dt><dd id="r-rad">—</dd></div>
+        <div><dt>Задержка обработки</dt><dd id="r-ms">—</dd></div>
+      </dl>
+      <div class="about">
+        <div id="about-text">—</div>
+        <div id="modelrow" hidden>
+          <div class="muted" style="font-size:12px;margin-bottom:6px">Модель в этом сценарии:</div>
+          <div class="modelsw" role="group" aria-label="Модель">
+            <button class="btn" data-model="0" aria-pressed="true">Финальная</button><button class="btn" data-model="1" aria-pressed="false">v1 (прежняя)</button>
+          </div>
+          <div class="mono" style="font-size:12px;margin-top:8px" id="stopcount"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <header><div class="eyebrow">Как это работает</div><h2>Не распознаём объекты — описываем «нормальный тоннель» и ищем всё, что в него не вписывается</h2>
+  <p class="muted">Каждые 100 мс кадр лидара проходит пять шагов. Выберите шаг.</p></header>
+  <div class="pipe" role="tablist" id="pipe"></div>
+  <div class="step-detail box" id="stepdetail"></div>
+</div></section>
+
+<section id="envelope"><div class="wrap">
+  <header><div class="eyebrow">Габарит поезда</div><h2>Габарит из самих тоннелей — и запас на неуверенность геометрии</h2>
+  <p class="muted">Контур — максимальное сечение, которое помещается в свободное пространство всех записей: контактный рельс на 1.22 м, край платформы ≥ 1.37 м, стены ≥ 1.48 м, свод 1.18 м на высоте 3.43 м. Перетащите точку и измените неуверенность σ — так детектор решает для каждой точки облака.</p></header>
+  <div class="lab">
+    <svg id="gauge" viewBox="-2.6 -4.2 5.2 4.6" role="img" aria-label="Сечение тоннеля и габарит поезда"></svg>
+    <div class="box">
+      <div class="slider"><label for="sl">σ поперёк пути <span class="mono" id="slv">0.05 м</span></label><input type="range" id="sl" min="0" max="0.25" step="0.01" value="0.05"></div>
+      <div class="slider"><label for="sv">σ по высоте <span class="mono" id="svv">0.03 м</span></label><input type="range" id="sv" min="0" max="0.25" step="0.01" value="0.03"></div>
+      <p class="muted" style="font-size:13px">Неуверенность растёт с дальностью: у стен и рельсов меньше, чем в 150 м. Внутренний контур — габарит, сжатый на 2σ.</p>
+      <div><div class="muted" style="font-size:12px">Точка <span class="mono" id="ptxt"></span></div><div class="zone-out" id="zone">—</div></div>
+    </div>
+  </div>
+</div></section>
+
+<section id="decision"><div class="wrap">
+  <header><div class="eyebrow">Логика решения</div><h2>Три сигнала, как у светофора метро</h2>
+  <p class="muted">Решение принимается в каждом кадре по объектам, подтверждённым трекером. Условия STOP выполняются одновременно.</p></header>
+  <div class="aspects">
+    <div class="aspect" style="border-color:rgba(255,77,94,.5)"><header><i style="background:var(--stop)"></i><h3>СТОП</h3></header>
+      <ul><li>объект подтверждён: ≥ 3 обнаружений из 5 кадров</li><li>≥ 2 точки внутри габарита, сжатого на 2σ, в измеренной в этом кадре геометрии</li>
+      <li>до 30 м — пройдены физические тесты; дальше — оценка ½·LGBM + ½·CatBoost ≥ 0.425 и нет крепления к оболочке</li><li>ЭГО-тест: объект приближается со скоростью поезда</li></ul>
+      <p class="muted" style="font-size:13px">Выход: дистанция, время до столкновения, размеры, положение.</p></div>
+    <div class="aspect" style="border-color:rgba(245,185,66,.45)"><header><i style="background:var(--caution)"></i><h3>ВНИМАНИЕ</h3></header>
+      <ul><li>объект у границы габарита (в пределах 2σ)</li><li>объект дальше измеренной геометрии пути</li><li>отклонён ансамблем или ЭГО-тестом</li><li>ещё не подтверждён (2 из 5)</li></ul>
+      <p class="muted" style="font-size:13px">Информирует систему поезда, не тормозит.</p></div>
+    <div class="aspect" style="border-color:rgba(59,214,113,.4)"><header><i style="background:var(--clear)"></i><h3>ПУТЬ СВОБОДЕН</h3></header>
+      <ul><li>кандидатов нет</li><li>выдаётся «путь проверен до X м»: горизонт видимости и измеренной геометрии, не дальше 200 м</li></ul>
+      <p class="muted" style="font-size:13px">На кривых X обычно 110–170 м: дальше путь закрыт стеной.</p></div>
+  </div>
+
+  <div class="lab" style="margin-top:22px">
+    <figure class="box chart"><h3>ЭГО-тест: настоящее препятствие приближается со скоростью поезда</h3>
+      <svg id="egochart" viewBox="0 0 560 260" role="img" aria-label="Дистанция до объекта в зависимости от пробега поезда"></svg>
+      <figcaption>Пробег поезда — по лидарной одометрии («штрихкод» стен тоннеля). Наклон −1: объект стоит на пути. Наклон ≈ 0: артефакт «едет» вместе с поездом.</figcaption></figure>
+    <div class="box">
+      <div class="slider"><label for="slope">Как ведёт себя объект <span class="mono" id="slopev"></span></label><input type="range" id="slope" min="-1" max="0.2" step="0.05" value="0"></div>
+      <div class="zone-out" id="egoverdict">—</div>
+      <p class="muted" style="font-size:13px">Порог наклона −0.35, нужно ≥ 4 м пробега. Стоящий поезд не отменяет ничего; обрыв одометрии сбрасывает доказательства. На исходных данных тест не изменил ни одного решения.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="model"><div class="wrap">
+  <header><div class="eyebrow">Модель</div><h2>½·LightGBM + ½·CatBoost + ЭГО-тест поверх физического слоя</h2>
+  <p class="muted">Физика решает, где путь и что в габарите; ансамбль оценивает правдоподобие дальних кандидатов; ЭГО-тест отсекает то, что движется вместе с поездом.</p></header>
+  <div class="cols-3">
+    <div class="box"><div class="eyebrow">Физический слой · без обучения</div><h3>Геометрия и тесты</h3><p>Ось, уклон, кривизна пути до 200 м с неопределённостью σ(x). Габарит с запасом 2σ. Гравитация, форма, стенка за объектом, вето оболочки, трекер 3 из 5.</p></div>
+    <div class="box"><div class="eyebrow">Ансамбль · финальная</div><h3>½·LightGBM + ½·CatBoost</h3><p>LightGBM с ограничениями монотонности (больше точек в габарите — оценка не падает), CatBoost на симметричных деревьях. Среднее логитов, сглаживание по 5 кадрам, порог 0.425. Обучен на датасетах 1 + 2 без запечатанного блока.</p></div>
+    <div class="box"><div class="eyebrow">Прежняя · v1</div><h3>⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP</h3><p>С физически-информированной нейросетью, обучена только на датасете 1, порог 0.37. PI-MLP убран: вне фолда не дал прироста. На новой линии v1 давала 10.3 ложных остановки на км.</p></div>
+  </div>
+  <figure class="box chart" style="margin-top:18px"><h3>Как выбраны веса: групповая проверка вне фолда, 11 значений w₁</h3>
+    <svg id="wchart" viewBox="0 0 900 250" role="img" aria-label="Полнота и ложные срабатывания в зависимости от веса LightGBM"></svg>
+    <figcaption>8 групп (5 тоннелей + 3 блока новой линии); порог каждого фолда — только на обучающих группах. Полнота 67.3–67.6 %, ложные STOP 0.30–0.33 % во всём диапазоне: оптимум плоский, поэтому веса взяты равными заранее, без подгонки.</figcaption></figure>
+</div></section>
+
+<section id="results"><div class="wrap">
+  <header><div class="eyebrow">Результаты · каждый датасет отдельно</div><h2>Мало ложных остановок — и реальные препятствия не пропущены</h2></header>
+  <div class="cols-2">
+    <div class="box">
+      <div class="eyebrow">Датасет 1 · 6 записей, 5 типов тоннелей</div>
+      <div class="tiles">
+        <div class="tile"><b>100 %</b><span>точность STOP (58 из 58)</span></div>
+        <div class="tile"><b>96.7 %</b><span>полнота: 58 из 60 кадров</span></div>
+        <div class="tile"><b>99.0 %</b><span>accuracy, F1 0.98</span></div>
+        <div class="tile"><b>≤ 0.13 %</b><span>ложных STOP на 2 287 кадрах</span></div>
+      </div>
+      <figure class="chart"><svg id="rangechart" viewBox="0 0 520 230" role="img" aria-label="Полнота по дальности"></svg>
+        <figcaption>Синтетический человек и коробка 0.5 м в реальных лучах, первая секунда сближения; 6–10 проб на ячейку.</figcaption></figure>
+    </div>
+    <div class="box">
+      <div class="eyebrow">Датасет 2 · новая линия, 20 мин, 13 км, без препятствий</div>
+      <div class="tiles">
+        <div class="tile"><b>1.7 / км</b><span>ложных STOP-событий</span></div>
+        <div class="tile"><b>×6</b><span>меньше, чем у v1</span></div>
+        <div class="tile"><b>0.43 %</b><span>кадров с ложным STOP</span></div>
+        <div class="tile"><b>142 м</b><span>синтетический человек: STOP на 60 км/ч</span></div>
+      </div>
+      <figure class="chart"><svg id="sealchart" viewBox="0 0 520 230" role="img" aria-label="Запечатанный тест"></svg>
+        <figcaption>Запечатанный тест: последние 5 минут (2.8 км) не использовались ни для обучения, ни для настройки. Точки — 3 зерна подвыборки геометрии.</figcaption></figure>
+    </div>
+  </div>
+  <figure class="box chart" style="margin-top:18px"><h3>Путь к результату: что давал каждый этап</h3>
+    <svg id="evochart" viewBox="0 0 900 250" role="img" aria-label="Эволюция ложных срабатываний"></svg>
+    <figcaption>Этап 0 (рельсы + стены) давал 249 ложных кадров из 252 на одной кривой. Левая часть — датасет 1 (% кадров), правая — датасет 2 (событий на км).</figcaption></figure>
+</div></section>
+
+<section id="validation"><div class="wrap">
+  <header><div class="eyebrow">Проверка без утечек</div><h2>Каждая цифра — на данных, которые модель не видела</h2></header>
+  <div class="lab">
+    <div class="box cv"><table id="cvtable" aria-label="Схема перекрёстной проверки"></table>
+      <div class="keys"><span><i style="background:#3b4a7a"></i>обучение, порог выбирается здесь</span><span><i style="background:var(--stop)"></i>проверка фолда</span><span><i style="background:#2a343b"></i>запись с людьми не трогаем</span><span><i style="background:#06080a;border:1px solid #333f47"></i>B3 запечатан</span><span><i style="background:var(--clear)"></i>финальный тест</span></div></div>
+    <div class="box">
+      <h3>Правила</h3>
+      <p><b style="color:var(--ink)">Деление по записям и блокам.</b> Соседние кадры почти одинаковы — случайное деление по кадрам было бы утечкой.</p>
+      <p><b style="color:var(--ink)">Метки не от детектора.</b> Негативы новой линии доказаны проездом поезда через место тревоги; позитивы — лучевое моделирование с точным положением.</p>
+      <p><b style="color:var(--ink)">Честно:</b> ЭГО-тест придуман после анализа ошибок B3; параметров, подогнанных к B3, у него нет, и на датасете 1 он не изменил ни одного решения.</p>
+    </div>
+  </div>
+  <div class="cols-2" style="margin-top:18px">
+    <div class="box"><div class="eyebrow">Зачем синтетика</div><h3>Чтобы измерить дальность и обучить ансамбль</h3>
+      <p>В данных нет реальных препятствий дальше ~60 м, в датасете 2 — нет совсем. Человек или коробка вставляются лучевым моделированием: для каждого реального луча Pandar128 считается пересечение с объектом, всё вокруг остаётся реальной записью.</p>
+      <p>Синтетика есть только в инструментах оценки. ROS-узел ничего не добавляет: данные заказчика и скрытый тест обрабатываются как есть. В прототипе такие сценарии помечены оранжевым.</p></div>
+    <div class="box"><div class="eyebrow">Ограничения</div><h3>Что мы знаем о границах</h3>
+      <p>300 м недостижимы для Pandar128: измеряемая дальность 200 м. Коробка 0.5 м на 160 м даёт 1–2 отражения — меньше, чем нужно, чтобы отличить её от шума. Реальных препятствий в данных — одна запись на ~55 м. Внезапный «рельс» на ~24 м без предыстории по движению неотличим от человека, шагнувшего на путь, — его мы не гасим.</p></div>
+  </div>
+</div></section>
+
+<section id="run"><div class="wrap">
+  <header><div class="eyebrow">Запуск</div><h2>docker build → docker run → ros2 bag play → результат</h2>
+  <p class="muted">Ubuntu 22.04 + ROS 2 Humble внутри образа, все зависимости ставятся при сборке. Входной топик и ось лидара определяются автоматически.</p></header>
+  <div style="display:grid;gap:10px">
+    <div class="cmd"><pre>docker build -t tunnel_guard .</pre><button data-copy>Копировать</button></div>
+    <div class="cmd"><pre>docker run --rm -v /path/to/bags:/data tunnel_guard ros2 launch tunnel_guard tunnel_guard.launch.py bag:=/data/doubleT_obstacle</pre><button data-copy>Копировать</button></div>
+    <div class="cmd"><pre>docker run --rm -v /path/to/bags:/data tunnel_guard ros2 run tunnel_guard evaluate_bag --bag /data/doubleT_obstacle --out /data/results</pre><button data-copy>Копировать</button></div>
+    <div class="cmd"><pre>docker run --rm tunnel_guard python3 -m pytest -q /ws/src/tunnel_guard/test</pre><button data-copy>Копировать</button></div>
+  </div>
+  <div class="box topics" style="margin-top:18px"><h3>Интерфейсы для систем поезда</h3><table>
+    <tr><td>/tunnel_guard/status</td><td>tunnel_guard_msgs/ObstacleStatus — решение, ближайшая дистанция, время до столкновения, «путь проверен до», все объекты</td></tr>
+    <tr><td>/tunnel_guard/detections</td><td>vision_msgs/Detection3DArray — объекты как стандартные 3D-детекции</td></tr>
+    <tr><td>/tunnel_guard/alarm</td><td>std_msgs/UInt8 — 0 свободно · 1 внимание · 2 стоп</td></tr>
+    <tr><td>/tunnel_guard/nearest_distance</td><td>std_msgs/Float32 — дистанция до ближайшего объекта в габарите</td></tr>
+    <tr><td>/tunnel_guard/markers</td><td>visualization_msgs/MarkerArray — габарит, ось пути, объекты для RViz</td></tr>
+  </table></div>
+</div></section>
+
+<footer class="foot"><div class="wrap">TunnelGuard · ЛЦТ 2026 · кейс «Система обнаружения посторонних объектов для беспилотных поездов в тоннеле метро по данным 3D-лидара». Все кадры прототипа — вывод детектора на записях, предоставленных организаторами; синтетические объекты помечены.</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const LEVEL = [
+  { txt: 'ПУТЬ СВОБОДЕН', col: '#3bd671', lamp: 'g' },
+  { txt: 'ВНИМАНИЕ', col: '#f5b942', lamp: 'y' },
+  { txt: 'СТОП — ПРЕПЯТСТВИЕ', col: '#ff4d5e', lamp: 'r' },
+];
+const fmt = (v, d = 1, u = '') => (v === null || v === undefined || !isFinite(v)) ? '—' : v.toFixed(d) + u;
+
+/* ---------- turbo colormap (range colouring, same log scale as the video renderer) ---------- */
+function turbo(t) {
+  t = Math.min(1, Math.max(0, t));
+  const r = 0.13572138 + t * (4.61539260 + t * (-42.66032258 + t * (132.13108234 + t * (-152.94239396 + t * 59.28637943))));
+  const g = 0.09140261 + t * (2.19418839 + t * (4.84296658 + t * (-14.18503333 + t * (4.27729857 + t * 2.82956604))));
+  const b = 0.10667330 + t * (12.64194608 + t * (-60.58204836 + t * (110.36276771 + t * (-89.90310912 + t * 27.34824973))));
+  return [Math.min(1, Math.max(0, r)), Math.min(1, Math.max(0, g)), Math.min(1, Math.max(0, b))];
+}
+const L3 = Math.log(3), L220 = Math.log(220);
+const rangeT = x => 1 - (Math.log(Math.max(x, 3)) - L3) / (L220 - L3);   /* near = red, far = blue */
+$('#legendbar').style.background = 'linear-gradient(90deg,' + Array.from({ length: 9 }, (_, i) => {
+  const c = turbo(1 - i / 8).map(v => Math.round(v * 255)); return `rgb(${c})`; }).join(',') + ')';
+
+/* ---------- scenarios ---------- */
+const SCEN = [
+  { id: 'ds1_real', tab: 'Реальные люди', ds: 'Датасет 1' },
+  { id: 'ds1_range', tab: 'Человек с 200 м', ds: 'Датасет 1 · синтетика' },
+  { id: 'ds2_person', tab: 'Новая линия, 60 км/ч', ds: 'Датасет 2 · синтетика' },
+  { id: 'ds2_compare', tab: 'Ложные тревоги: v1 vs финал', ds: 'Датасет 2' },
+];
+const tabs = $('#tabs');
+SCEN.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab'); b.id = 'tab-' + s.id; b.setAttribute('aria-selected', i === 0);
+  b.innerHTML = `<small>${s.ds}</small>${s.tab}`;
+  b.addEventListener('click', () => load(i));
+  tabs.appendChild(b);
+});
+
+/* ---------- three.js scene ---------- */
+const canvas = $('#gl'), vp = $('#viewport'), overlay = $('#overlay');
+let renderer = null, scene, camera, controls, points, envGroup, objGroup, lineObj;
+const MAXP = 17000;
+const pos = new Float32Array(MAXP * 3), col = new Float32Array(MAXP * 3);
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color('#0b0f12');
+  camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.1, 600);
+  controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.12;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  points = new THREE.Points(g, new THREE.PointsMaterial({ size: 1.8, sizeAttenuation: false, vertexColors: true }));
+  scene.add(points);
+  envGroup = new THREE.Group(); objGroup = new THREE.Group(); scene.add(envGroup); scene.add(objGroup);
+} catch (e) {
+  $('#loading').textContent = 'Для 3D-прототипа нужен браузер с WebGL.';
+}
+/* forward frame (X fwd, Y left, Z up) -> three.js (x right, y up, -z forward) */
+const T = (x, y, z) => new THREE.Vector3(-y, z, -x);
+
+function setCam(kind) {
+  if (!renderer) return;
+  $$('[data-cam]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cam === kind));
+  if (kind === 'cab') { camera.position.set(0, 0.35, 2); controls.target.set(0, -0.6, -70); }
+  if (kind === 'top') { camera.position.set(0, 58, -48); controls.target.set(0, 0, -55); }
+  if (kind === 'side') { camera.position.set(-38, 14, -40); controls.target.set(0, -0.5, -70); }
+  controls.update();
+}
+$$('[data-cam]').forEach(b => b.addEventListener('click', () => setCam(b.dataset.cam)));
+
+function resize() {
+  if (!renderer) return;
+  const w = vp.clientWidth, h = vp.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(vp);
+
+/* ---------- data loading ---------- */
+const cache = {};
+async function fetchScenario(id) {
+  if (cache[id]) return cache[id];
+  const meta = await (await fetch(`data/${id}.json`)).json();
+  const txt = await (await fetch(`data/${meta.file}`)).text();          /* base64 of the gzip stream */
+  const bin = atob(txt.trim()), bytes = new Uint8Array(bin.length);
+  for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+  let buf = bytes.buffer;
+  const head = new Uint8Array(buf, 0, 2);
+  if (head[0] === 0x1f && head[1] === 0x8b) {          /* still gzip-compressed: decompress in the browser */
+    if (!('DecompressionStream' in window))
+      throw new Error('браузер не поддерживает распаковку (DecompressionStream) — откройте страницу в свежем Chrome, Edge, Firefox или Safari');
+    buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  }
+  return (cache[id] = { meta, buf });
+}
+
+let cur = null, frame = 0, playing = true, rate = 1, model = 0, lastTick = 0;
+const RATES = [0.5, 1, 2];
+
+async function load(i) {
+  $$('.tab').forEach((b, k) => b.setAttribute('aria-selected', k === i));
+  $('#loading').hidden = false; $('#loading').textContent = 'загрузка кадров…';
+  try {
+    const d = await fetchScenario(SCEN[i].id);
+    cur = { ...d, s: SCEN[i] };
+    model = 0;
+    $$('[data-model]').forEach(b => b.setAttribute('aria-pressed', b.dataset.model === '0'));
+    $('#modelrow').hidden = d.meta.n_res < 2;
+    $('#about-text').innerHTML = `<b>${d.meta.title}</b><br>${d.meta.about}`;
+    $('#scrub').max = d.meta.frames.length - 1;
+    frame = 0; drawRibbon(); show(0);
+    $('#loading').hidden = true;
+  } catch (e) {
+    $('#loading').textContent = 'Не удалось загрузить кадры: ' + e.message;
+  }
+}
+
+function drawRibbon() {
+  const c = $('#ribbon'), fr = cur.meta.frames, w = c.clientWidth || 600;
+  c.width = w; const g = c.getContext('2d');
+  fr.forEach((f, i) => { g.fillStyle = LEVEL[f.r[model].level].col; g.fillRect(Math.floor(i / fr.length * w), 0, Math.ceil(w / fr.length) + 1, 8); });
+  if (cur.meta.n_res > 1) {
+    const n = fr.filter(f => f.r[model].level === 2).length;
+    $('#stopcount').textContent = `STOP-кадров в сценарии: ${n} (все ложные: препятствий нет)`;
+  }
+}
+
+function show(i) {
+  if (!cur) return;
+  frame = i; $('#scrub').value = i;
+  const f = cur.meta.frames[i], r = f.r[model];
+  $('#tltime').textContent = `t = ${f.t.toFixed(1)} с · кадр ${i + 1}/${cur.meta.frames.length}`;
+  /* signal + readouts */
+  const L = LEVEL[r.level];
+  ['r', 'y', 'g'].forEach(k => $('#l' + k).classList.toggle('on', k === L.lamp));
+  $('#vtext').textContent = L.txt; $('#vtext').style.color = L.col;
+  $('#vdist').textContent = r.level === 2 && r.nearest !== null ? r.nearest.toFixed(1) + ' м' : (r.clear !== null ? r.clear.toFixed(0) + ' м' : '—');
+  $('#vsub').textContent = r.level === 2 ? 'до препятствия' : 'путь проверен свободным';
+  const stop = r.obs.filter(o => o.zone === 2).sort((a, b) => a.d - b.d)[0];
+  $('#r-clear').textContent = fmt(r.clear, 0, ' м');
+  $('#r-ttc').textContent = stop && stop.ttc !== null ? fmt(stop.ttc, 1, ' с') : '—';
+  $('#r-obj').textContent = stop ? `${stop.l >= 0 ? '+' : ''}${stop.l.toFixed(2)} / ${stop.h.toFixed(2)} м` : '—';
+  $('#r-conf').textContent = stop ? fmt(stop.conf, 2) : '—';
+  $('#r-speed').textContent = r.speed !== null ? r.speed.toFixed(0) + ' км/ч' : (cur.meta.dataset === 1 && cur.s.id === 'ds1_real' ? 'стоит' : '—');
+  $('#r-rad').textContent = r.radius === null ? '∞ (прямая)' : r.radius > 5000 ? '∞ (прямая)' : r.radius.toFixed(0) + ' м';
+  $('#r-ms').textContent = fmt(r.ms, 0, ' мс');
+  /* badges */
+  const bd = [`<span class="badge ds">${cur.s.ds.split(' · ')[0]}</span>`];
+  if (cur.meta.synthetic) bd.push('<span class="badge syn">СИНТЕТИКА · лучевое моделирование в реальных лучах</span>');
+  bd.push(`<span class="badge ds">Модель: ${model === 0 ? '½·LightGBM + ½·CatBoost + ЭГО-тест' : 'v1: ⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP'}</span>`);
+  $('#badges').innerHTML = bd.join('');
+  if (!renderer) return;
+  /* points */
+  const n = Math.min(f.n, MAXP), buf = cur.buf;
+  const xyz = new Int16Array(buf, f.off, f.n * 3);
+  const lab = new Uint8Array(buf, f.off + f.n * 6 + model * f.n, f.n);
+  const labCols = [null, [0.96, 0.73, 0.26], [1, 0.30, 0.37], [0.96, 0.73, 0.26]];
+  for (let k = 0; k < n; k++) {
+    const x = xyz[3 * k] / 100, y = xyz[3 * k + 1] / 100, z = xyz[3 * k + 2] / 100;
+    pos[3 * k] = -y; pos[3 * k + 1] = z; pos[3 * k + 2] = -x;
+    const c = lab[k] ? labCols[lab[k]] : turbo(rangeT(x));
+    col[3 * k] = c[0]; col[3 * k + 1] = c[1]; col[3 * k + 2] = c[2];
+  }
+  points.geometry.setDrawRange(0, n);
+  points.geometry.attributes.position.needsUpdate = true;
+  points.geometry.attributes.color.needsUpdate = true;
+  /* envelope rings + centreline */
+  const clearGroup = gr => { while (gr.children.length) { const o = gr.children.pop(); o.geometry.dispose(); o.material.dispose(); } };
+  clearGroup(envGroup); clearGroup(objGroup);
+  const lc = new THREE.Color(L.col);
+  r.env.forEach((ring, k) => {
+    const pts = []; for (let j = 0; j < ring.length; j += 3) pts.push(T(ring[j], ring[j + 1], ring[j + 2]));
+    const m = new THREE.LineBasicMaterial({ color: lc, transparent: true, opacity: k < 4 ? 0.95 : 0.6 });
+    envGroup.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), m));
+  });
+  if (r.line.length) {
+    const pts = []; for (let j = 0; j < r.line.length; j += 3) pts.push(T(r.line[j], r.line[j + 1], r.line[j + 2]));
+    envGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: lc, transparent: true, opacity: 0.35 })));
+  }
+  const railZ = x => { const ln = r.line; if (!ln.length) return -1.1; let best = ln[2], bd = 1e9;
+    for (let j = 0; j < ln.length; j += 3) { const dd = Math.abs(ln[j] - x); if (dd < bd) { bd = dd; best = ln[j + 2]; } } return best; };
+  r.obs.forEach(o => {
+    const z0 = railZ(o.d), h = Math.max(o.h, 0.4);
+    const box = new THREE.BoxGeometry(0.9, h, 0.9);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: o.zone === 2 && !o.ego ? '#ff4d5e' : '#f5b942' }));
+    box.dispose();
+    e.position.copy(T(o.d + 0.3, o.l, z0 + h / 2)); objGroup.add(e);
+  });
+  cur.labels = { f, r, railZ };
+  placeTags();
+}
+
+function placeTags() {
+  if (!cur || !renderer) return;
+  const { f, r, railZ } = cur.labels, w = vp.clientWidth, h = vp.clientHeight, html = [];
+  const proj = v => { const p = v.clone().project(camera); return p.z < 1 && p.z > -1 ? [(p.x + 1) / 2 * w, (1 - p.y) / 2 * h] : null; };
+  const centre = x => { const ln = r.line; let best = 0, bd = 1e9; for (let j = 0; j < ln.length; j += 3) { const dd = Math.abs(ln[j] - x); if (dd < bd) { bd = dd; best = ln[j + 1]; } } return best; };
+  [25, 50, 100, 150, 200].forEach(d => {
+    if (!r.line.length || d > (r.clear || 0) + 1) return;
+    const p = proj(T(d, centre(d) - 1.9, railZ(d) - 0.2));
+    if (p && p[0] > 0 && p[0] < w && p[1] > 0 && p[1] < h) html.push(`<span class="tag" style="left:${p[0]}px;top:${p[1]}px">${d} м</span>`);
+  });
+  if (f.syn) {
+    const p = proj(T(f.syn.x, f.syn.y, f.syn.z));
+    if (p && p[0] > 0 && p[0] < w && p[1] > 0 && p[1] < h)
+      html.push(`<div class="syn-mark" style="left:${p[0]}px;top:${p[1]}px"><span>синтетический человек · ${f.syn.x.toFixed(0)} м · ${f.syn.hits} отражений</span></div>`);
+  }
+  overlay.innerHTML = html.join('');
+}
+
+/* ---------- playback ---------- */
+$('#scrub').addEventListener('input', e => { playing = false; setPlay(); show(+e.target.value); });
+function setPlay() { $('#play').textContent = playing ? '❚❚' : '▶'; $('#play').setAttribute('aria-label', playing ? 'Пауза' : 'Воспроизвести'); }
+$('#play').addEventListener('click', () => { playing = !playing; setPlay(); });
+$('#rate').addEventListener('click', () => { rate = RATES[(RATES.indexOf(rate) + 1) % RATES.length]; $('#rate').textContent = rate + '×'; });
+$$('[data-model]').forEach(b => b.addEventListener('click', () => {
+  model = +b.dataset.model; $$('[data-model]').forEach(x => x.setAttribute('aria-pressed', x === b)); drawRibbon(); show(frame);
+}));
+function loop(ts) {
+  requestAnimationFrame(loop);
+  if (cur && playing && ts - lastTick > 100 / rate) {
+    lastTick = ts; show((frame + 1) % cur.meta.frames.length);
+  }
+  if (renderer) { controls.update(); renderer.render(scene, camera); if (cur) placeTags(); }
+}
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) playing = false;
+setPlay(); setCam('cab'); resize(); requestAnimationFrame(loop); load(0);
+
+/* ---------- pipeline stepper ---------- */
+const STEPS = [
+  ['Кадр лидара', '10 Гц · до 921 600 лучей', ['Любой sensor_msgs/PointCloud2, топик находится автоматически.', 'Ось «вперёд» определяется по дальним отражениям — работает при другом монтаже лидара.', 'Обрезка поля зрения, прорежение плотной ближней зоны.'], 'Облако — единственный вход. Ни карты, ни GPS, ни разметки.'],
+  ['Геометрия пути', 'ось, уклон, кривизна до 200 м', ['Рельсы вблизи, шаблон сечения тоннеля, глобальное динамическое программирование и плотное выравнивание Гаусса–Ньютона.', 'Для каждой дальности — неопределённость σ(x): растёт там, где путь виден хуже.', 'Временная фильтрация сливает только измеренную информацию.'], 'Без этого шага прямой коридор давал 436 ложных STOP-кадров вместо 3.'],
+  ['Точки → зоны', 'ВНУТРИ / РЯДОМ / ВНЕ', ['Каждая точка переводится в координаты пути: вдоль, поперёк, высота над рельсом.', 'ВНУТРИ — в габарите, сжатом на 2σ; РЯДОМ — у границы с учётом неуверенности.', 'Точки ниже 0.15 м над рельсом не учитываются.'], 'Попробуйте на схеме габарита ниже: сдвиньте σ и перетащите точку.'],
+  ['Кластеры и тесты', 'физическое правдоподобие', ['Кластеризация вдоль пути с ячейкой, растущей с дальностью.', 'Гравитация: дальше 60 м объект должен опираться на пол. Форма: вертикальный размер в шагах лучей.', 'Стенка за объектом и вето крепления к оболочке тоннеля — это инфраструктура.'], 'Дальше 30 м к тестам добавляется ансамбль ½·LightGBM + ½·CatBoost.'],
+  ['Решение', 'трекер, ЭГО-тест, сигнал', ['Трекер: объект подтверждается при ≥ 3 обнаружениях из 5 кадров, оценивается скорость сближения.', 'ЭГО-тест: объект обязан приближаться со скоростью поезда.', 'Выход в ROS 2: уровень, дистанция, время до столкновения, «путь проверен до X м».'], 'Задержка 56–70 мс на кадр на одном ядре — быстрее 10 Гц лидара.'],
+];
+const pipe = $('#pipe');
+STEPS.forEach((s, i) => {
+  const b = document.createElement('button'); b.className = 'step'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0);
+  b.innerHTML = `<small>шаг ${i + 1}</small><b>${s[0]}</b><span class="muted" style="font-size:12px">${s[1]}</span>`;
+  b.addEventListener('click', () => pickStep(i)); pipe.appendChild(b);
+});
+function pickStep(i) {
+  $$('.step').forEach((b, k) => b.setAttribute('aria-selected', k === i));
+  const s = STEPS[i];
+  $('#stepdetail').innerHTML = `<div><div class="eyebrow">шаг ${i + 1} из 5</div><h3 style="font-family:var(--display);font-size:20px;margin:8px 0 12px">${s[0]}</h3><ul>${s[2].map(x => `<li>${x}</li>`).join('')}</ul></div><p style="align-self:center;font-size:16px;color:var(--ink);border-left:2px solid var(--copper);padding-left:14px">${s[3]}</p>`;
+}
+pickStep(0);
+
+/* ---------- envelope lab (same classification as core/gauge.py) ---------- */
+const PROFILE = [[0, 1.10], [0.5, 1.10], [0.55, 1.25], [1.6, 1.25], [1.7, 1.35], [2.9, 1.35], [3.1, 1.05], [3.25, 0.70]];
+const TOP = 3.25, HMIN = 0.15, NEAR = 0.08, K = 2;
+function hw(h) { if (h < PROFILE[0][0] || h > TOP) return -1;
+  for (let i = 1; i < PROFILE.length; i++) if (h <= PROFILE[i][0]) { const [h0, w0] = PROFILE[i - 1], [h1, w1] = PROFILE[i]; return w0 + (w1 - w0) * (h - h0) / (h1 - h0); } return -1; }
+function classify(l, h, sl, sv) {
+  const al = Math.abs(l);
+  if (!(h >= HMIN && al < hw(h) + NEAR)) return 0;
+  const topc = Math.max(TOP - K * sv, 0.5);
+  if (h >= HMIN + K * sv && h <= topc && al < hw(h * TOP / topc) - K * sl) return 2;
+  return 1;
+}
+const svg = $('#gauge'), NS = 'http://www.w3.org/2000/svg';
+const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+let obj = { l: 0.9, h: 1.2 };
+function profilePath(shrinkL, shrinkV) {
+  const topc = Math.max(TOP - K * shrinkV, 0.5), pts = [];
+  const hs = [HMIN + K * shrinkV, ...PROFILE.map(p => p[0] * topc / TOP)].filter(h => h >= HMIN + K * shrinkV).sort((a, b) => a - b);
+  hs.forEach(h => pts.push([hw(h * TOP / topc) - K * shrinkL, h]));
+  const right = pts.map(([w, h]) => `${w.toFixed(3)},${(-h).toFixed(3)}`);
+  const left = pts.slice().reverse().map(([w, h]) => `${(-w).toFixed(3)},${(-h).toFixed(3)}`);
+  return 'M' + right.concat(left).join(' L') + ' Z';
+}
+function drawGauge() {
+  const sl = +$('#sl').value, sv = +$('#sv').value;
+  $('#slv').textContent = sl.toFixed(2) + ' м'; $('#svv').textContent = sv.toFixed(2) + ' м';
+  svg.innerHTML = '';
+  /* round tunnel fitted through the measured wall (1.48 m) and crown (1.18 m at 3.43 m) */
+  svg.appendChild(el('circle', { cx: 0, cy: -1.83, r: 1.99, fill: 'none', stroke: '#3a4850', 'stroke-width': 0.03 }));
+  svg.appendChild(el('line', { x1: -2.4, y1: 0.18, x2: 2.4, y2: 0.18, stroke: '#3a4850', 'stroke-width': 0.02 }));
+  [-0.8, 0.8].forEach(x => svg.appendChild(el('rect', { x: x - 0.04, y: -0.02, width: 0.08, height: 0.14, fill: '#6b7a83' })));
+  svg.appendChild(el('rect', { x: 1.18, y: -0.45, width: 0.1, height: 0.25, fill: '#d08a4e' }));
+  const t1 = el('text', { x: 1.34, y: -0.28, fill: '#8fa0aa', 'font-size': 0.11, 'font-family': 'JetBrains Mono' }); t1.textContent = 'контактный рельс'; svg.appendChild(t1);
+  svg.appendChild(el('path', { d: profilePath(-NEAR / K, 0), fill: 'rgba(245,185,66,0.08)', stroke: '#f5b942', 'stroke-width': 0.015, 'stroke-dasharray': '0.05 0.04' }));
+  svg.appendChild(el('path', { d: profilePath(0, 0), fill: 'none', stroke: '#e6ecef', 'stroke-width': 0.02 }));
+  svg.appendChild(el('path', { d: profilePath(sl, sv), fill: 'rgba(255,77,94,0.12)', stroke: '#ff4d5e', 'stroke-width': 0.025 }));
+  [['габарит', 0, -3.4, '#e6ecef'], ['сжат на 2σ', 0, -1.7, '#ff4d5e']].forEach(([s, x, y, c]) => { const t = el('text', { x, y, fill: c, 'font-size': 0.13, 'text-anchor': 'middle', 'font-family': 'JetBrains Mono' }); t.textContent = s; svg.appendChild(t); });
+  const z = classify(obj.l, obj.h, sl, sv), zc = ['#8fa0aa', '#f5b942', '#ff4d5e'][z];
+  svg.appendChild(el('circle', { cx: obj.l, cy: -obj.h, r: 0.09, fill: zc, stroke: '#0b0f12', 'stroke-width': 0.02, style: 'cursor:grab' }));
+  $('#ptxt').textContent = `l = ${obj.l >= 0 ? '+' : ''}${obj.l.toFixed(2)} м, h = ${obj.h.toFixed(2)} м`;
+  $('#zone').textContent = ['ВНЕ габарита — не тревога', 'РЯДОМ — ВНИМАНИЕ', 'ВНУТРИ — кандидат в СТОП'][z];
+  $('#zone').style.color = zc;
+}
+function svgPoint(ev) { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return { l: Math.max(-2.3, Math.min(2.3, q.x)), h: Math.max(0, Math.min(4, -q.y)) }; }
+let drag = false;
+svg.addEventListener('pointerdown', e => { drag = true; svg.setPointerCapture(e.pointerId); obj = svgPoint(e); drawGauge(); });
+svg.addEventListener('pointermove', e => { if (drag) { obj = svgPoint(e); drawGauge(); } });
+svg.addEventListener('pointerup', () => { drag = false; });
+$('#sl').addEventListener('input', drawGauge); $('#sv').addEventListener('input', drawGauge);
+drawGauge();
+
+/* ---------- charts (SVG from measured numbers) ---------- */
+const ink = '#e6ecef', mut = '#8fa0aa', grid = '#26323a';
+function axisText(s, x, y, a = 'middle', c = mut, sz = 11, w = 400) { return `<text x="${x}" y="${y}" text-anchor="${a}" fill="${c}" font-size="${sz}" font-weight="${w}">${s}</text>`; }
+
+function egoChart() {
+  const s = +$('#slope').value, W = 560, H = 260, x0 = 50, y0 = 220, xs = v => x0 + v / 12 * 470, ys = v => y0 - (v - 10) / 60 * 190;
+  let g = '';
+  [10, 30, 50, 70].forEach(v => { g += `<line x1="${x0}" x2="${x0 + 470}" y1="${ys(v)}" y2="${ys(v)}" stroke="${grid}"/>` + axisText(v + ' м', x0 - 8, ys(v) + 4, 'end'); });
+  [0, 4, 8, 12].forEach(v => { g += axisText(v + ' м', xs(v), y0 + 18); });
+  g += axisText('пробег поезда →', x0 + 470, y0 + 34, 'end');
+  g += `<polyline points="${[0, 12].map(v => `${xs(v)},${ys(60 - v)}`).join(' ')}" fill="none" stroke="#3bd671" stroke-width="2" stroke-dasharray="5 4" opacity="0.6"/>` + axisText('стоящий объект: −1', xs(12) - 4, ys(48) - 8, 'end', '#3bd671');
+  g += `<polyline points="${[0, 12].map(v => `${xs(v)},${ys(25)}`).join(' ')}" fill="none" stroke="#f5b942" stroke-width="2" stroke-dasharray="5 4" opacity="0.6"/>` + axisText('артефакт: 0', xs(12) - 4, ys(25) - 8, 'end', '#f5b942');
+  const start = 45, pts = [0, 12].map(v => `${xs(v)},${ys(start + s * v)}`).join(' ');
+  const ok = s <= -0.35, c = ok ? '#ff4d5e' : '#f5b942';
+  g += `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="3"/>`;
+  for (let v = 0; v <= 12; v += 1.2) g += `<circle cx="${xs(v)}" cy="${ys(start + s * v + (Math.sin(v * 3) * 0.6))}" r="3.2" fill="${c}"/>`;
+  $('#egochart').innerHTML = g;
+  $('#slopev').textContent = 'наклон ' + s.toFixed(2);
+  $('#egoverdict').textContent = ok ? 'Приближается — СТОП разрешён' : 'Держит дистанцию — только ВНИМАНИЕ';
+  $('#egoverdict').style.color = ok ? '#ff4d5e' : '#f5b942';
+}
+$('#slope').addEventListener('input', egoChart); egoChart();
+
+(function weights() {
+  const w = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1];
+  const rec = [67.4, 67.6, 67.6, 67.4, 67.4, 67.3, 67.4, 67.4, 67.3, 67.4, 67.6];
+  const fp = [35, 34, 37, 36, 36, 35, 34, 36, 37, 36, 37].map(v => v / 11159 * 100);
+  let g = '';
+  const panel = (ox, vals, max, col, title, unit, dec) => {
+    const x = v => ox + 40 + v * 360, y = v => 200 - v / max * 160;
+    let s = axisText(title, ox + 40, 18, 'start', ink, 12, 600);
+    [0, max / 2, max].forEach(v => { s += `<line x1="${ox + 40}" x2="${ox + 400}" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/>` + axisText(v.toFixed(dec) + unit, ox + 34, y(v) + 4, 'end'); });
+    [0, .5, 1].forEach(v => { s += axisText(v.toFixed(1), x(v), 220); });
+    s += `<line x1="${x(.5)}" x2="${x(.5)}" y1="36" y2="200" stroke="${mut}" stroke-dasharray="4 4"/>` + axisText('w₁ = w₂ = ½', x(.5) + 6, 48, 'start', mut);
+    s += `<polyline points="${vals.map((v, i) => `${x(w[i])},${y(v)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="2.4"/>`;
+    vals.forEach((v, i) => { s += `<circle cx="${x(w[i])}" cy="${y(v)}" r="3.4" fill="${col}"/>`; });
+    s += axisText(`${Math.min(...vals).toFixed(dec + 1)}…${Math.max(...vals).toFixed(dec + 1)}${unit}`, ox + 400, y(vals[0]) - 12, 'end', col, 12, 600);
+    return s + axisText('вес LightGBM w₁', ox + 220, 242);
+  };
+  g += panel(0, rec, 100, '#d08a4e', 'Полнота вне фолда', ' %', 0);
+  g += panel(460, fp, 1, '#ff4d5e', 'Ложные STOP-кадры вне фолда', ' %', 1);
+  $('#wchart').innerHTML = g;
+})();
+
+(function rangeChart() {
+  const d = [80, 120, 160], person = [100, 77.8, 33.3], box = [90, 71.4, 0];
+  const y = v => 190 - v / 100 * 160; let g = '';
+  [0, 50, 100].forEach(v => { g += `<line x1="46" x2="510" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/>` + axisText(v + ' %', 40, y(v) + 4, 'end'); });
+  d.forEach((dd, i) => {
+    const cx = 110 + i * 150;
+    [[person[i], '#d08a4e', -24], [box[i], '#8a9ba5', 24]].forEach(([v, c, dx]) => {
+      g += `<rect x="${cx + dx - 20}" y="${y(v)}" width="40" height="${Math.max(190 - y(v), 1)}" fill="${c}" rx="2"/>` + axisText(v.toFixed(0) + ' %', cx + dx, y(v) - 6, 'middle', ink, 11, 600);
+    });
+    g += axisText(dd + ' м', cx, 210, 'middle', ink);
+  });
+  g += `<rect x="330" y="10" width="10" height="10" fill="#d08a4e"/>` + axisText('человек 1.75 м', 346, 19, 'start') + `<rect x="430" y="10" width="10" height="10" fill="#8a9ba5"/>` + axisText('коробка 0.5 м', 446, 19, 'start');
+  $('#rangechart').innerHTML = g;
+})();
+
+(function sealChart() {
+  const km = 2.81, rows = [['v1 · ⅓+⅓+⅓', [39, 28, 20], '#5c6c76'], ['½ LGBM + ½ CatBoost', [11, 7, 2], '#8a9ba5'], ['+ ЭГО-тест · финал', [8, 5, 1], '#d08a4e']];
+  const y = v => 190 - v / 15 * 160; let g = '';
+  [0, 5, 10, 15].forEach(v => { g += `<line x1="46" x2="510" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/>` + axisText(v + '/км', 40, y(v) + 4, 'end'); });
+  rows.forEach(([name, ev, c], i) => {
+    const cx = 120 + i * 150, per = ev.map(e => e / km), m = per.reduce((a, b) => a + b) / 3;
+    g += `<rect x="${cx - 32}" y="${y(m)}" width="64" height="${190 - y(m)}" fill="${c}" rx="2" opacity="0.9"/>`;
+    per.forEach((p, k) => { g += `<circle cx="${cx - 16 + k * 16}" cy="${y(p)}" r="3.4" fill="${ink}"/>`; });
+    g += axisText(m.toFixed(1) + ' / км', cx, Math.min(y(m), y(Math.max(...per))) - 10, 'middle', ink, 12, 600) + axisText(name, cx, 210, 'middle', ink);
+  });
+  $('#sealchart').innerHTML = g;
+})();
+
+(function evoChart() {
+  const a = [['1', 'геометрия', 3.94], ['2', 'σ(x), 2σ', 3.89], ['3', 'физ. тесты', 1.49], ['4', 'ансамбль v1', 0.52], ['5', 'вето, numba', 0.13]];
+  const b = [['5 · v1', 10.3], ['6', 2.4], ['7 · финал', 1.7]];
+  const ya = v => 200 - v / 4.5 * 160, yb = v => 200 - v / 12 * 160; let g = axisText('Датасет 1 · ложные STOP, % кадров', 40, 18, 'start', ink, 12, 600) + axisText('Датасет 2 · ложные остановки на км', 600, 18, 'start', ink, 12, 600);
+  [0, 2, 4].forEach(v => { g += `<line x1="40" x2="540" y1="${ya(v)}" y2="${ya(v)}" stroke="${grid}"/>` + axisText(v + ' %', 34, ya(v) + 4, 'end'); });
+  a.forEach(([n, s, v], i) => { const cx = 90 + i * 100; g += `<rect x="${cx - 26}" y="${ya(v)}" width="52" height="${Math.max(200 - ya(v), 1)}" fill="${i < 3 ? '#5c6c76' : i === 3 ? '#8a9ba5' : '#d08a4e'}" rx="2"/>` + axisText(v.toFixed(2) + ' %', cx, ya(v) - 6, 'middle', ink, 11, 600) + axisText('этап ' + n, cx, 216, 'middle', ink) + axisText(s, cx, 230); });
+  [0, 5, 10].forEach(v => { g += `<line x1="600" x2="890" y1="${yb(v)}" y2="${yb(v)}" stroke="${grid}"/>` + axisText(v, 594, yb(v) + 4, 'end'); });
+  b.forEach(([n, v], i) => { const cx = 650 + i * 95; g += `<rect x="${cx - 26}" y="${yb(v)}" width="52" height="${200 - yb(v)}" fill="${i === 2 ? '#d08a4e' : i === 1 ? '#8a9ba5' : '#5c6c76'}" rx="2"/>` + axisText(v.toFixed(1), cx, yb(v) - 6, 'middle', ink, 11, 600) + axisText('этап ' + n, cx, 216, 'middle', ink); });
+  $('#evochart').innerHTML = g;
+})();
+
+(function cvTable() {
+  const cols = ['T1', 'T2', 'T3', 'T4', 'T5', 'люди', 'B0', 'B1', 'B2', 'B3'];
+  let h = '<tr><th></th>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  const val = [0, 1, 2, 3, 4, 6, 7, 8];
+  val.forEach((v, r) => { h += `<tr><td class="lbl">фолд ${r + 1}</td>` + cols.map((c, k) => `<td class="c ${k === 5 ? 'nv' : k === 9 ? 'sl' : k === v ? 'va' : 'tr'}"></td>`).join('') + '</tr>'; });
+  h += '<tr><td class="lbl" style="color:var(--ink)">финал</td>' + cols.map((c, k) => `<td class="c ${k === 5 || k === 9 ? 'ft' : 'tr'}"></td>`).join('') + '</tr>';
+  $('#cvtable').innerHTML = h;
+})();
+
+/* ---------- copy buttons ---------- */
+$$('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+  const txt = b.previousElementSibling.textContent;
+  try { await navigator.clipboard.writeText(txt); b.textContent = 'Скопировано'; }
+  catch { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Выделено'; }
+  setTimeout(() => { b.textContent = 'Копировать'; }, 1500);
+}));
+})();
+</script>
