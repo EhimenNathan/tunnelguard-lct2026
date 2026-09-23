@@ -71,8 +71,17 @@ Run in PowerShell from the solution folder (no Docker account is needed; ~6 GB f
 ```powershell
 docker build -t tunnel_guard .
 docker run --rm tunnel_guard python3 -m pytest -q /ws/src/tunnel_guard/test
-docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 run tunnel_guard evaluate_bag --bag /data/doubleT_obstacle_7s --out /data/results/doubleT_obstacle_7s
+docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 launch tunnel_guard tunnel_guard.launch.py bag:=/data/doubleT_obstacle_7s copy_bag:=true
+docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 run tunnel_guard evaluate_bag --bag /data/doubleT_obstacle_7s --out /data/results
 ```
+
+`copy_bag:=true` matters on Docker Desktop (Windows/macOS): `ros2 bag play` reads the bag's SQLite file through the
+host-folder mount far slower than real time, so most frames never reach the detector. The option copies the bag into
+the container first. On a Linux host the mount is native and the option is not needed.
+
+Verified with Docker Desktop 4.91 (WSL2 engine) on the exported test bag: 14 tests pass; `ros2 launch ... copy_bag:=true`
+→ 66 frames processed, `/tunnel_guard/status` CLEAR → CAUTION → STOP, 58 STOP frames, first STOP at 55.5 m, ~100 ms per
+frame on a 15 W laptop CPU (921 600-ray clouds of the obstacle recording; 56–70 ms on the 307 200-ray recordings).
 
 RViz needs a display: run the Linux command of step 2 above from a WSL (Ubuntu) terminal, where WSLg provides it.
 

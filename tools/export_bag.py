@@ -136,7 +136,7 @@ def main():
         nanoseconds: {dur}
       message_count: {n}
 """
-    open(os.path.join(a.out, 'metadata.yaml'), 'w').write(meta)
+    open(os.path.join(a.out, 'metadata.yaml'), 'w', newline='\n').write(meta)
     print(f'{n} frames, {dur / 1e9:.1f} s, {os.path.getsize(db_path) / 1e6:.0f} MB -> {a.out}')
 
 
