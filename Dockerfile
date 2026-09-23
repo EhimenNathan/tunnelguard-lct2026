@@ -20,8 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-sensor-msgs-py \
     && rm -rf /var/lib/apt/lists/*
 
-# numba accelerates the geometry kernels ~2x; if it cannot be installed the verified numpy path is used
-RUN (pip3 install --no-cache-dir "numba==0.56.4" && python3 -c "import numba") \
+# numba accelerates the geometry kernels ~2x (needed for 10 Hz on one core); Ubuntu's package matches the system numpy.
+# If it cannot be installed, pip is tried, and failing that the verified (slower) numpy path is used.
+RUN (apt-get update && apt-get install -y --no-install-recommends python3-numba && rm -rf /var/lib/apt/lists/* \
+        && python3 -c "import numba") \
+    || (apt-get update && apt-get install -y --no-install-recommends python3-pip && rm -rf /var/lib/apt/lists/* \
+        && pip3 install --no-cache-dir "numba==0.56.4" && python3 -c "import numba") \
     || echo "numba unavailable - numpy fallback will be used"
 
 WORKDIR /ws

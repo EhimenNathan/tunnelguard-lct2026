@@ -38,6 +38,14 @@ def bag_cloud_topic(bag):
 def launch_setup(context):
     share = get_package_share_directory('tunnel_guard')
     bag = LaunchConfiguration('bag').perform(context)
+    if bag and LaunchConfiguration('copy_bag').perform(context).lower() in ('1', 'true', 'yes'):
+        # Docker Desktop on Windows/macOS: rosbag2 reads SQLite through the host-folder mount far slower than real time
+        # (most frames never reach the detector); a copy inside the container plays at full rate.
+        import shutil
+        import tempfile
+        local = os.path.join(tempfile.mkdtemp(prefix='tunnel_guard_bag_'), os.path.basename(os.path.normpath(bag)))
+        shutil.copytree(bag, local)
+        bag = local
     topic = LaunchConfiguration('input_topic').perform(context)
     if bag and topic == 'auto':
         topic = bag_cloud_topic(bag) or 'auto'
@@ -86,6 +94,8 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz', default_value='false'),
         DeclareLaunchArgument('bag', default_value='', description='rosbag2 directory to play (optional)'),
         DeclareLaunchArgument('rate', default_value='1.0'),
+        DeclareLaunchArgument('copy_bag', default_value='false',
+                              description='copy the bag into the container first (use on Docker Desktop for Windows/macOS)'),
         DeclareLaunchArgument('play_delay', default_value='1.0',
                               description='seconds between detector ready and bag playback'),
         OpaqueFunction(function=launch_setup),
