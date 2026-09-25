@@ -314,3 +314,13 @@ Every frame is the live output of the detector on real recorded lidar frames. Sy
 * CAUTION is frequent near infrastructure that touches the envelope within the measurement error (switches,
   platforms): it is informational and never commands braking.
 * Only one real obstacle recording was available; range figures rely on physically ray-cast obstacles.
+* **No network at run time.** The node needs no internet: both scorers are tree ensembles exported to JSON and evaluated
+  in numpy (no LightGBM/CatBoost at run time), all parameters come from `config/`. Only `docker build` downloads
+  packages; for an offline machine ship the built image (`docker save tunnel_guard | gzip > tunnel_guard.tar.gz`,
+  then `docker load -i tunnel_guard.tar.gz`).
+* **Glass and other transparent or mirror-like surfaces.** A lidar sees such objects only through their frames, edges,
+  dirt or near-normal reflections, so a clean glass pane yields few returns — like the 5 cm rod of dataset 3 it may
+  not be confirmed. Its frame or any opaque part is detected like any other object.
+* **Gauge.** The envelope is the free space measured in all recordings (car profile, `gauge.profile`); if the
+  operator's gauge is narrower, objects just outside it (dataset 3, objects 5 and 7) still trigger STOP until the
+  profile is set to the official one.
