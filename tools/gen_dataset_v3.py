@@ -23,7 +23,7 @@ from run_drive import DriveCache
 from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
 from tunnel_guard.core.features import FEATURE_NAMES
 from tunnel_guard.core.geometry import GeometryEstimator, warmup
-from tunnel_guard.core.synth import Shape, inject
+from tunnel_guard.core.synth import Shape, inject, random_hazard
 
 SEQ, EVERY, START = 10, 40, 30
 rng = np.random.default_rng(20260918)
@@ -59,7 +59,8 @@ def main():
         for c, x in zip(res.all_candidates or [], res.features if res.features is not None else []):
             label, obj_id = 0, -1
             for o in objects:
-                if abs(c['s_min'] - o['dist']) < 1.5 + 0.02 * o['dist'] and abs(c['l_mean'] - o['lat']) < 0.9:
+                # objects are placed in the loader frame, whose lateral axis is mirrored relative to the detector's
+                if abs(c['s_min'] - o['dist']) < 1.5 + 0.02 * o['dist'] and abs(c['l_mean'] + o['lat']) < 0.9:
                     label, obj_id = 1, o['id']
             tr = c['ml_view'].get('track')
             rows_X.append(x)
@@ -84,7 +85,7 @@ def main():
                         break
                 used.append(d0)
                 objects.append(dict(id=seq_id * 10 + kk, d0=d0, speed=float(rng.choice([0.0, rng.uniform(3, 15)])),
-                                    lat=float(rng.uniform(-1.2, 1.2)), shape=random_shape()))
+                                    **random_hazard(rng)))
             for k in range(SEQ):
                 j = i + k
                 yc, zr, roll, ok = geos[j]
@@ -95,11 +96,11 @@ def main():
                 for o in objects:
                     dist = o['d0'] - o['speed'] * 0.1 * k
                     xi = int(np.clip(round(dist), 0, len(yc) - 1))
-                    centre = np.array([dist, yc[xi] + o['lat'], zr[xi] + roll * o['lat']])
+                    centre = np.array([dist, yc[xi] + o['lat'], zr[xi] + roll * o['lat'] + o['lift']])
                     rimg, nret = inject(rimg, b.dirs, centre, o['shape'], rng)
                     now.append(dict(id=o['id'], dist=dist, lat=o['lat']))
                     objs.append((10 + block, seq_id, j, k, o['id'], dist, o['lat'], nret, o['shape'].kind, *o['shape'].size,
-                                 o['shape'].reflectivity))
+                                 o['shape'].reflectivity, o['lift'], o['shape'].name))
                 V = rimg > 0.5
                 fwd = b.dirs[V] * rimg[V][:, None]
                 res = d.process(np.stack([-fwd[:, 1], -fwd[:, 0], fwd[:, 2]], 1), drive.t[j], intensity=inten[V])

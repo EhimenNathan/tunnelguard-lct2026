@@ -31,6 +31,8 @@ tunnel_guard:
     extent_min_beams: 1.2
     extent_min_points_exempt: 15
     scorer_model: ''
+    scorer_model_hang: 'auto'
+    route_hang_h: 0.5
     scorer_near_override_s: 30.0
     scorer_shell_veto: true
     scorer_smooth_k: 0
@@ -40,6 +42,9 @@ tunnel_guard:
     shell_gap: 1.2
     shell_lateral: 0.4
     shell_min_points: 3
+    shell_hanging_h: 0.8
+    shell_touch_min: 0.25
+    shell_touch_beams: 3.0
     ego_check: true
     ego_min_travel: 4.0
     ego_max_slope: -0.35
@@ -50,6 +55,7 @@ tunnel_guard:
     stop_debounce_frames: 1
     stop_debounce_window: 3
     stop_debounce_s: 30.0
+    skip_duplicates: true
     geometry:
       x_max: 300.0
       grid_step: 1.0
@@ -121,6 +127,7 @@ tunnel_guard:
       gate_l: 0.8
       max_closing_speed: 30.0
       alpha: 0.5
+      motion_slack: 1.0
       beta: 0.2
     adapt:
       enabled: false
@@ -131,3 +138,5 @@ tunnel_guard:
       min_s: 30.0
       traverse_margin: 3.0
       max_pending_s: 60.0
+      max_gap_s: 1.0
+      max_speed: 25.0

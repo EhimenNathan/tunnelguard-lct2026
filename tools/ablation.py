@@ -58,6 +58,9 @@ VARIANTS = {
                'ego_check': True, 'stop_debounce_frames': 1},
     'v3_ego_db': {'scorer_model': os.path.join(SOL, 'src', 'tunnel_guard', 'config', 'obstacle_scorer_v3.json'),
                   'ego_check': True, 'stop_debounce_frames': 2, 'stop_debounce_window': 2},
+    'det_v4': {},
+    'router': {'scorer_model_hang': os.path.join(SOL, 'src', 'tunnel_guard', 'config', 'obstacle_scorer_v4.json')},
+    'det_v4_s4': {'scorer_model': os.path.join(SOL, 'src', 'tunnel_guard', 'config', 'obstacle_scorer_v4.json')},                      # detector with frame-gap odometry, slack tracker gate, shell continuity, hanging exemption
     'v3_ego_db23': {'scorer_model': os.path.join(SOL, 'src', 'tunnel_guard', 'config', 'obstacle_scorer_v3.json'),
                     'ego_check': True, 'stop_debounce_frames': 2, 'stop_debounce_window': 3},
 }

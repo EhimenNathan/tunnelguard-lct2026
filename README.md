@@ -251,18 +251,20 @@ All parameters are ROS parameters (`--ros-args -p group.name:=value`), generated
 
 ## 5. Results (details and reproduction: `docs/EXPERIMENTS.md`, `tools/`)
 
-Final model: physics layer + **½·LightGBM (monotone) + ½·CatBoost + ego-motion test** (internal name v3; the previous
-model v1 was ⅓·LightGBM + ⅓·CatBoost + ⅓·physics-informed MLP).  Ensemble weights: fixed equal (mean of logits);
-a grouped out-of-fold sweep of w over 0…1 changes recall only 67.3–67.6 % and false STOP 0.30–0.33 %
-(`tools/weight_sweep.py`), so equal weights were kept.  The two data sets
-are always reported separately.
+Final model: physics layer + **router of two ½·LightGBM (monotone) + ½·CatBoost ensembles + ego-motion test**.
+Floor-supported candidates are judged by the ensemble trained on people and boxes (`config/obstacle_scorer.json`),
+floating and hanging candidates (bottom ≥ 0.5 m above the rails) by the ensemble trained on the full hazard space
+(`config/obstacle_scorer_hang.json`), each against its own out-of-fold threshold.  The previous model v1 was
+⅓·LightGBM + ⅓·CatBoost + ⅓·physics-informed MLP.  Ensemble weights: fixed equal (mean of logits); a grouped
+out-of-fold sweep of w over 0…1 changes recall only 67.3–67.6 % and false STOP 0.30–0.33 % (`tools/weight_sweep.py`).
+The data sets are always reported separately.
 
 **Dataset 1: original recordings (5 obstacle-free tunnels + 1 held-out recording with people)**
 
 | What | Result |
 |---|---|
 | Held-out real recording (never used for development, training or tuning): person inside the gauge | STOP in **58 / 60** frames, first STOP at **55.5 m**; **0** spurious STOP (precision 100 %, recall 96.7 %, accuracy 99.0 %) |
-| False STOP on all 2 287 frames of the 5 obstacle-free tunnels | 0–3 frames (≤ 0.13 %) over 3 geometry seeds |
+| False STOP on all 2 287 frames of the 5 obstacle-free tunnels | **0** frames |
 | Ray-cast person / 0.5 m box in real beams, first second of approach | person **100 / 78 / 33 %** at 80 / 120 / 160 m; box 90 / 71 / 0 % |
 
 **Dataset 2: new line, 20-min drive, 13 km, no obstacles (not used to develop the detector)**
@@ -270,14 +272,23 @@ are always reported separately.
 | What | Result |
 |---|---|
 | Self-labelling by traversal | all 91 alarms of the previous model proven false (the train later drove through each place) |
-| Sealed final test (last 5 min, 2.8 km, never used for training or tuning), mean of 3 seeds | **1.7 false STOP events / km** (previous model 10.3), 0.43 % of frames (was 2.06 %) |
+| Sealed final test (last 5 min, 2.8 km, never used for training or tuning), mean of 3 seeds | **1.8 false STOP events / km** (previous model 10.3), **0.32 %** of frames (was 2.06 %) |
 | Ray-cast person standing on the line, train at its real speed (60 km/h) | first STOP at **142 m** (demo video) |
+
+**Dataset 3: the organisers' synthetic obstacles (readable 29 % of the bag) and a full ten-object replica**
+
+| What | Result |
+|---|---|
+| 2×2 m cube in the centre of the gauge (floating 1.4 m above the descending track) | first STOP at **98 m**, STOP held in 94 % of frames |
+| 0.3 m cube in the centre / on a rail; 2×0.2 m bar lying on the rails | first STOP at 20 m / 23 m / 60 m |
+| Replica (all ten objects, moving train): objects outside the gauge (0.3 m close, 2×2 m) | no STOP |
+| Replica: 2×2 m centre, 0.3 m centre, 2×2 m at the edge, 0.05 m rod from the roof | STOP from 116 / 99 / 29 / 30 m |
 
 Median latency: **56–70 ms** per frame on one CPU core (laptop i5-8250U), below the 100 ms of the 10 Hz lidar.
 
 Further analysis in `docs/EXPERIMENTS.md`: precision / recall / accuracy (§6), leakage controls and generalization (§7),
 long-range study (§8), ablation study (§9), Pandar128 files (§10), the new line: self-labelling, domain-robust scorer,
-ego-motion test, sealed test (§12).
+ego-motion test, sealed test (§12); dataset 3, the hazard-space retraining and the router (§13).
 
 Demo video (105 s, Russian captions): `docs/demo_tunnelguard.mp4`:
 - dataset 1: held-out real people (STOP at 55.5 m), and a ray-cast person approaching from 200 m (first STOP at 150 m);

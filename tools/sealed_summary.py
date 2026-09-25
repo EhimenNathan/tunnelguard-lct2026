@@ -7,7 +7,7 @@ import numpy as np
 
 KM = 2.81            # lidar odometry, t >= 900 s
 RUNS = [('v1: ⅓ LGBM + ⅓ CatBoost\n+ ⅓ PI-MLP', 'seal_v1_s{}'), ('½ LGBM + ½ CatBoost', 'seal_efalse_s{}'),
-        ('½ LGBM + ½ CatBoost\n+ ЭГО-тест (финал)', 'seal_ego2_s{}')]
+        ('+ ЭГО-тест', 'seal_ego2_s{}'), ('финал: роутер двух\nансамблей + ЭГО', 'seal_d4rt_s{}')]
 
 
 def sealed(d):

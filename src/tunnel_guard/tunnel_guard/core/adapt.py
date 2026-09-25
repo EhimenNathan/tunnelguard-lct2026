@@ -27,6 +27,8 @@ class AdaptConfig:
     min_s: float = 30.0            # only candidates beyond the near field
     traverse_margin: float = 3.0   # the train must be this far past X
     max_pending_s: float = 60.0    # forget unconfirmed candidates after this time (train stopped, data gap)
+    max_gap_s: float = 1.0         # odometry bridges frame gaps up to this long
+    max_speed: float = 25.0        # [m/s] upper bound of train speed (90 km/h): sets the odometry search range
 
 
 SIG = np.arange(6.0, 90.0, 0.1)
@@ -70,21 +72,32 @@ class ClutterCalibrator:
         self.pending = []                     # (X, score, t)
         self.proven = deque(maxlen=self.cfg.reservoir)
         self.speed = float('nan')
+        self.speeds = deque(maxlen=5)
         self.segment = 0                      # increments whenever the odometry chain breaks
 
     def update_motion(self, s, l, h, t):
         sig = signature(s, l, h)
-        if self.prev_sig is not None and self.prev_t is not None and 0 < t - self.prev_t < 0.3:
-            prior = float(np.median(self.steps)) if self.steps else None
-            d, _ = shift_between(self.prev_sig, sig, prior)
+        dt = t - self.prev_t if self.prev_t is not None else -1.0
+        if self.prev_sig is not None and 0 < dt <= self.cfg.max_gap_s:
+            # frame gaps are common in recordings: search up to max_speed * dt, prior = measured speed * dt
+            v = self.ego_speed()
+            prior = v * dt if v is not None else (float(np.median(self.steps)) if self.steps else None)
+            max_shift = int(min(len(SIG) // 2, np.ceil(max(4.5, self.cfg.max_speed * dt) / 0.1)))
+            d, _ = shift_between(self.prev_sig, sig, prior, max_shift=max_shift)
             self.x += d
             self.steps.append(d)
             self.speed = d / (t - self.prev_t)
+            self.speeds.append(self.speed)
         else:
             self.pending = []                 # odometry chain broken: unconfirmed positions are unusable
             self.segment += 1
             self.steps.clear()
+            self.speeds.clear()
         self.prev_sig, self.prev_t = sig, t
+
+    def ego_speed(self):
+        """Robust train speed [m/s] from the last odometry steps; None while the chain is too short."""
+        return float(np.median(self.speeds)) if len(self.speeds) >= 3 else None
 
     def observe(self, candidates, t):
         """candidates: iterable of (s_min, score) of scored far-field candidates of this frame."""

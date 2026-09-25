@@ -2,6 +2,7 @@
 
 Pure numpy/scipy, no ROS dependency, so the same code runs in the ROS 2 node, in offline evaluation and in tests.
 """
+import os
 import time
 from collections import deque
 from dataclasses import dataclass, field
@@ -47,6 +48,9 @@ class DetectorConfig:
     extent_min_points_exempt: int = 15  # well-supported clusters are exempt
     scorer_model: str = ''              # learned second-stage scorer (JSON); '' / 'none' = physics rules only (the ROS node
                                         # and evaluate_bag substitute the packaged model for '')
+    scorer_model_hang: str = 'auto'     # scorer for floating / hanging candidates: 'auto' = obstacle_scorer_hang.json next to
+                                        # the main scorer, a path, or 'none' (main scorer only)
+    route_hang_h: float = 0.5           # candidates whose bottom is at least this high above the rails use it [m]
     scorer_near_override_s: float = 30.0  # below this distance the rule decision stands (scorer cannot suppress)
     scorer_shell_veto: bool = True      # shell-attached clusters can never be promoted by the scorer
     scorer_smooth_k: int = 0            # temporal score smoothing window; 0 = value stored with the model
@@ -56,6 +60,9 @@ class DetectorConfig:
     shell_gap: float = 1.2              # search window above the cluster top [m]
     shell_lateral: float = 0.4
     shell_min_points: int = 3
+    shell_hanging_h: float = 0.8       # a shell-attached cluster whose bottom is above this is 'hanging', not infrastructure
+    shell_touch_min: float = 0.25      # max gap between cluster top and shell for attachment [m]
+    shell_touch_beams: float = 3.0     #   or this many vertical beam spacings at the cluster's range
     geometry: GeometryConfig = field(default_factory=GeometryConfig)
     gauge: GaugeConfig = field(default_factory=GaugeConfig)
     cluster: ClusterConfig = field(default_factory=ClusterConfig)
@@ -73,6 +80,7 @@ class DetectorConfig:
     stop_debounce_window: int = 3       # stop_debounce_window frames.  Off: on the sealed drive it removed ~1 false event
                                         # per 2.8 km but cost far-field recall (box@120 m 71 -> 57 %) - not worth it
     stop_debounce_s: float = 30.0
+    skip_duplicates: bool = True        # re-issue the last decision for a bit-identical repeated cloud
 
 
 @dataclass
@@ -106,12 +114,23 @@ class ObstacleDetector:
         if self.cfg.scorer_model and self.cfg.scorer_model.lower() != 'none':
             from .scorer import ObstacleScorer
             self.scorer = ObstacleScorer(self.cfg.scorer_model)
+        self.scorer_hang = None
+        hang = self.cfg.scorer_model_hang
+        if self.scorer is not None and hang.lower() == 'auto':
+            # the floating/hanging expert ships next to the main scorer (config/obstacle_scorer_hang.json)
+            cand = os.path.join(os.path.dirname(os.path.abspath(self.cfg.scorer_model)), 'obstacle_scorer_hang.json')
+            hang = cand if os.path.exists(cand) else ''
+        if self.scorer is not None and hang and hang.lower() != 'none':
+            from .scorer import ObstacleScorer
+            self.scorer_hang = ObstacleScorer(hang)
         self.axis = AxisDetector()
         self.calib = ClutterCalibrator(self.cfg.adapt)
         self.recent = deque(maxlen=self.cfg.ego_history)   # per frame: (odometry segment, x, s, l) of candidates
+        self._last, self._last_fp = None, None
 
     def reset(self):
         self.recent.clear()
+        self._last, self._last_fp = None, None
         self.geo.reset()
         self.tracker.reset()
         self.calib.reset()
@@ -138,7 +157,12 @@ class ObstacleDetector:
         si, li, hi = s[i], l[i], h[i]
         m = ((si > c['s_min'] - ds) & (si < c['s_max'] + ds) & (hi > c['h_max']) & (hi < c['h_max'] + cfg.shell_gap)
              & (li > c['l_min'] - cfg.shell_lateral) & (li < c['l_max'] + cfg.shell_lateral))
-        return int(np.count_nonzero(m))
+        if not m.any():
+            return 0
+        # attachment needs continuity: the shell must start right above the cluster top (a few beam spacings); an object
+        # floating below the roof with a clear gap is not infrastructure
+        touch = max(cfg.shell_touch_min, cfg.shell_touch_beams * cfg.cluster.beam_vertical_rad * c['s_min'])
+        return int(np.count_nonzero(m)) if float(hi[m].min()) - c['h_max'] <= touch else 0
 
     def _carried_along(self, tr):
         """True when the track keeps its distance while the train demonstrably advances (lidar odometry): a solid
@@ -177,6 +201,12 @@ class ObstacleDetector:
         t0 = time.perf_counter()
         tm = {}
         xyz = np.asarray(xyz, dtype=np.float32)
+        # a bit-identical repeat of the previous cloud (recorders and simulators re-send frames) carries no new
+        # information: re-issue the last decision instead of feeding the trackers a frame with zero motion
+        fp = (len(xyz), hash(xyz[::max(1, len(xyz) // 4096)].tobytes()))
+        if cfg.skip_duplicates and self._last is not None and fp == self._last_fp:
+            return self._last
+        self._last_fp = fp
         r2 = np.einsum('ij,ij->i', xyz, xyz)
         valid = np.isfinite(r2) & (r2 > cfg.min_range ** 2) & (r2 < cfg.max_range ** 2)
         if cfg.forward_axis != 'auto':
@@ -253,7 +283,10 @@ class ObstacleDetector:
             depth = cfg.wall_min_offset - max(abs(c['l_min']), abs(c['l_max'])) if c['l_min'] * c['l_max'] > 0 else cfg.wall_min_offset
             c['contained'] = (not cfg.containment_check) or depth > cfg.containment_sigma_k * sig_l or ok
             c['shell_pts'] = self._shell_points(c, s, l, h)
-            c['shell'] = cfg.shell_check and c['h_max'] >= cfg.shell_min_height and c['shell_pts'] >= cfg.shell_min_points
+            # infrastructure = a floor-to-roof slice attached to the shell (tunnel wall at a curve, pole); an object hanging
+            # from the roof whose bottom is clear of the floor is a hazard and is judged by the scorer instead
+            c['shell'] = (cfg.shell_check and c['h_max'] >= cfg.shell_min_height and c['shell_pts'] >= cfg.shell_min_points
+                          and c['h_min'] < cfg.shell_hanging_h)
         # rule-based decision path: suspended / sliver clusters cannot trigger STOP; uncontained or shell-attached
         # clusters are infrastructure
         cands = []
@@ -270,7 +303,8 @@ class ObstacleDetector:
         feats = []
         for c in cands_all:
             c['ml_view'] = dict(c)
-        self.ftracker.update([c['ml_view'] for c in cands_all], stamp)
+        self.ftracker.update([c['ml_view'] for c in cands_all], stamp,
+                             ego_speed=self.calib.ego_speed() if (cfg.adapt.enabled or cfg.ego_check) else None)
         for c in cands_all:
             feats.append(candidate_features(c['ml_view'], g, cfg.gauge, sight, c['ml_view'].get('track')))
         feats = np.asarray(feats, np.float32).reshape(-1, len(FEATURE_NAMES))
@@ -281,15 +315,24 @@ class ObstacleDetector:
             probs = self.scorer.prob(feats)
             tau = self.calib.threshold(self.scorer.threshold)
             tm['tau'] = tau
+            # mixture of experts by physical state: floor-supported candidates are judged by the main scorer, floating /
+            # hanging ones (bottom clear of the rails) by the scorer trained on the full hazard space.  Each score is
+            # compared with its own out-of-fold threshold, so the smoothed quantity is the margin p - tau
+            margins = probs - tau
+            if self.scorer_hang is not None:
+                ph = self.scorer_hang.prob(feats)
+                hang = np.array([c['h_min'] >= cfg.route_hang_h for c in cands_all])
+                margins = np.where(hang, ph - self.scorer_hang.threshold, margins)
+                probs = np.where(hang, ph, probs)
             live = {t.id for t in self.ftracker.tracks}
             decided = []
-            for c, pr in zip(cands_all, probs):
+            for c, pr, mg in zip(cands_all, probs, margins):
                 tr = c['ml_view'].get('track')
                 key = tr.id if tr is not None else -1
                 hist = self.score_hist.setdefault(key, [])
-                hist.append(float(pr))
+                hist.append(float(mg))
                 del hist[:-(cfg.scorer_smooth_k or self.scorer.smooth_k)]
-                c['score'] = float(np.mean(hist))
+                c['score'] = tau + float(np.mean(hist))      # = smoothed probability when a single scorer is used
                 rule_kept = c['contained'] and not c['shell']
                 rule_stop = rule_kept and c['in_gauge'] >= cfg.min_in_gauge_points
                 # physical evidence of fixed infrastructure (attachment to the tunnel shell) is a hard veto
@@ -303,7 +346,8 @@ class ObstacleDetector:
             self.score_hist = {k: v for k, v in self.score_hist.items() if k in live}
             if cfg.adapt.enabled:
                 self.calib.observe([(c['s_min'], c['score']) for c in cands_all if 'score' in c], stamp)
-        tracks = self.tracker.update(cands, stamp)
+        ego_v = self.calib.ego_speed() if (cfg.adapt.enabled or cfg.ego_check) else None
+        tracks = self.tracker.update(cands, stamp, ego_speed=ego_v)
         for tr in tracks:
             if tr.last is not None:
                 tr.obs.append((self.calib.segment, self.calib.x, float(tr.last['s_min'])))
@@ -344,7 +388,8 @@ class ObstacleDetector:
         clear = min(float(np.nanmin([horizon, nearest])) if in_g else float(horizon), cfg.report_range_cap)
         tm['tracking'] = time.perf_counter() - t3
         tm['total'] = time.perf_counter() - t0
-        return FrameResult(stamp=stamp, level=level, obstacles=obstacles, nearest_distance=nearest, nearest_ttc=ttc,
+        self._last = FrameResult(stamp=stamp, level=level, obstacles=obstacles, nearest_distance=nearest, nearest_ttc=ttc,
                            clear_distance=clear, curvature=g.curvature(20.0) if g.ok else 0.0, geometry=g,
                            timings=tm, candidates=cands, forward_points=p, zone=zone, rotation=Rm,
                            all_candidates=cands_all, features=feats)
+        return self._last

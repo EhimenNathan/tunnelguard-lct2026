@@ -14,7 +14,7 @@ import numpy as np
 from loader import BagCache
 from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
 from tunnel_guard.core.features import FEATURE_NAMES
-from tunnel_guard.core.synth import Shape, inject
+from tunnel_guard.core.synth import Shape, inject, random_hazard
 
 bags = sys.argv[1].split(',')
 tag = sys.argv[2]
@@ -75,7 +75,7 @@ for bag_i_local, nm in enumerate(bags):
                     break
             used.append(d0)
             objects.append(dict(id=seq_id * 10 + k, d0=d0, speed=float(rng.choice([0.0, rng.uniform(3, 15)])),
-                                lat=float(rng.uniform(-1.2, 1.2)), shape=random_shape()))
+                                **random_hazard(rng)))
         for k in range(SEQ):
             f = f0 + k
             yc, zr, roll, ok = geos[f]
@@ -84,10 +84,10 @@ for bag_i_local, nm in enumerate(bags):
             for o in objects:
                 dist = o['d0'] - o['speed'] * 0.1 * k
                 xi = int(np.clip(round(dist), 0, len(yc) - 1))
-                centre = np.array([dist, yc[xi] + o['lat'], zr[xi] + roll * o['lat']])
+                centre = np.array([dist, yc[xi] + o['lat'], zr[xi] + roll * o['lat'] + o['lift']])
                 rimg, nret = inject(rimg, b.dirs, centre, o['shape'], rng)
                 now.append(dict(id=o['id'], dist=dist, lat=o['lat']))
-                objs.append((bag_i, seq_id, f, k, o['id'], dist, o['lat'], nret, o['shape'].kind, *o['shape'].size, o['shape'].reflectivity))
+                objs.append((bag_i, seq_id, f, k, o['id'], dist, o['lat'], nret, o['shape'].kind, *o['shape'].size, o['shape'].reflectivity, o['lift'], o['shape'].name))
             V = rimg > 0.5
             res = det.process(b.dirs[V] * rimg[V][:, None], b.t[f], intensity=inten[V])
             record(res, bag_i, 1, seq_id, f, now)

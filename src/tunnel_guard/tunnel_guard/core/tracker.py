@@ -20,6 +20,7 @@ class TrackerConfig:
     gate_l: float = 0.8
     max_closing_speed: float = 30.0   # [m/s] bound used to gate new tracks
     alpha: float = 0.5
+    motion_slack: float = 1.0         # gate tolerance in frames of the train's own travel (lidar odometry)
     beta: float = 0.2
 
 
@@ -54,22 +55,27 @@ class Tracker:
         self.tracks = []
         self.last_t = None
 
-    def update(self, clusters, t):
+    def update(self, clusters, t, ego_speed=None):
+        """ego_speed: train speed from lidar odometry [m/s] or None; a new track starts with this closing speed (a static
+        obstacle approaches exactly as fast as the train moves), so fast approaches are gated correctly from frame 1."""
         cfg = self.cfg
         dt = 0.1 if self.last_t is None else float(np.clip(t - self.last_t, 0.02, 1.0))
         self.last_t = t
         used = np.zeros(len(clusters), bool)
         # predicted positions
+        # one frame of the train's own travel is tolerated either way: recorders drop, repeat or re-time frames, and a
+        # synthetic object may be rendered a frame late, so an obstacle can appear to stall and then catch up
+        slack = cfg.motion_slack * (float(ego_speed) if ego_speed is not None and np.isfinite(ego_speed) else 0.0) * dt
         for tr in sorted(self.tracks, key=lambda k: (not k.confirmed, k.s)):
             s_pred = tr.s - tr.v * dt
-            unc = cfg.max_closing_speed * dt if tr.age < 3 else 0.35 * max(abs(tr.v), 3.0) * dt
+            unc = (cfg.max_closing_speed * dt if tr.age < 3 else 0.35 * max(abs(tr.v), 3.0) * dt) + slack
             best, bd = -1, np.inf
             for j, c in enumerate(clusters):
                 if used[j]:
                     continue
                 ds = c['s_min'] - s_pred
                 lo = -(cfg.gate_s_base + cfg.gate_s_rel * tr.s + unc)
-                hi = cfg.gate_s_base + cfg.gate_s_rel * tr.s + (unc if tr.age < 3 else 0.5 * unc)
+                hi = cfg.gate_s_base + cfg.gate_s_rel * tr.s + (unc if tr.age < 3 else 0.5 * (unc - slack) + slack)
                 if not (lo <= ds <= hi) or abs(c['l_mean'] - tr.l) > cfg.gate_l:
                     continue
                 d = abs(ds) / (cfg.gate_s_base + cfg.gate_s_rel * tr.s) + abs(c['l_mean'] - tr.l) / cfg.gate_l
@@ -101,7 +107,8 @@ class Tracker:
                        if k.misses <= (cfg.max_misses_confirmed if k.confirmed else cfg.max_misses_tentative) and k.s > -2.0]
         for j, c in enumerate(clusters):
             if not used[j]:
-                t = Track(self.next_id, c['s_min'], c['l_mean'], hits=[1], last=c, ls=[c['l_mean']])
+                t = Track(self.next_id, c['s_min'], c['l_mean'], hits=[1], last=c, ls=[c['l_mean']],
+                          v=float(ego_speed) if ego_speed is not None and np.isfinite(ego_speed) and ego_speed > 0 else 0.0)
                 c['track'] = t
                 self.tracks.append(t)
                 self.next_id += 1

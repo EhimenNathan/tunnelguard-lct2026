@@ -197,3 +197,18 @@ def test_ego_motion_neighbourhood_test_for_young_tracks():
     assert not det._carried_along(young)
     history(lambda k: 90.0)                                   # nothing nearby earlier (object just appeared)
     assert not det._carried_along(young)
+
+
+def test_router_loads_hanging_expert_next_to_main_scorer():
+    """The floating/hanging expert ships next to the main scorer and is picked up automatically; 'none' disables it."""
+    import os
+    from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
+    cfg_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config')
+    main = os.path.join(cfg_dir, 'obstacle_scorer.json')
+    det = ObstacleDetector(DetectorConfig(scorer_model=main))
+    assert det.scorer is not None and det.scorer_hang is not None
+    assert 0.0 < det.scorer_hang.threshold < 1.0
+    solo = ObstacleDetector(DetectorConfig(scorer_model=main, scorer_model_hang='none'))
+    assert solo.scorer_hang is None
+    rules = ObstacleDetector(DetectorConfig(scorer_model='none'))
+    assert rules.scorer is None and rules.scorer_hang is None

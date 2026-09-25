@@ -18,3 +18,6 @@ presentation/TunnelGuard_LCT2026_final.pptx
 *.bin
 results/
 tools/cache/
+
+# interim deck builds (merged into presentation/ by the team)
+presentation/updated/

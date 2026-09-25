@@ -103,3 +103,35 @@ def inject(rng_img, dirs, centre, shape: Shape, rng: np.random.Generator, noise=
     blocked = np.isfinite(t) & ~got & ((cur < 0.5) | (t < cur))
     out[wi[blocked], ri[blocked]] = 0.0
     return out, int(closer.sum())
+
+
+def random_hazard(rng: np.random.Generator):
+    """A training positive drawn from the hazard space, not only from people on the floor (evaluation / training only).
+
+    Returns dict(shape, lift, lat): `lift` raises the object's bottom above the rail plane, `lat` is its lateral offset.
+      floor-standing  person-like cylinders and boxes (as before)
+      floating        cubes 0.25-2 m whose bottom is 0.3-1.8 m above the rails: objects protruding into the envelope,
+                      and objects placed on a flat plane while the real track climbs or falls
+      bar on rails    a 1.5-2.6 m long, 0.12-0.3 m high bar lying across the track
+      hanging         a thin rod (3-12 cm) hanging from the roof (top 3.3-3.9 m) down into the envelope"""
+    refl = float(rng.uniform(0.05, 0.5))
+    u = rng.random()
+    if u < 0.40:
+        if rng.random() < 0.45:
+            shape = Shape('cylinder', (float(rng.uniform(0.15, 0.32)), float(rng.uniform(0.8, 1.95))), refl, 'person-like')
+        else:
+            shape = Shape('box', (float(rng.uniform(0.2, 1.4)), float(rng.uniform(0.2, 1.2)), float(rng.uniform(0.2, 1.6))),
+                          refl, 'box')
+        return dict(shape=shape, lift=0.0, lat=float(rng.uniform(-1.2, 1.2)))
+    if u < 0.62:
+        a = float(rng.uniform(0.25, 2.0))
+        size = tuple(float(a * rng.uniform(0.75, 1.25)) for _ in range(3))
+        return dict(shape=Shape('box', size, refl, 'floating'), lift=float(rng.uniform(0.3, 1.8)),
+                    lat=float(rng.uniform(-1.0, 1.0)))
+    if u < 0.74:
+        size = (float(rng.uniform(0.15, 0.3)), float(rng.uniform(1.5, 2.6)), float(rng.uniform(0.12, 0.3)))
+        return dict(shape=Shape('box', size, refl, 'bar on rails'), lift=0.0, lat=float(rng.uniform(-0.3, 0.3)))
+    w = float(rng.uniform(0.03, 0.12))
+    height = float(rng.uniform(0.8, 2.2))
+    top = float(rng.uniform(3.3, 3.9))
+    return dict(shape=Shape('box', (w, w, height), refl, 'hanging'), lift=top - height, lat=float(rng.uniform(-0.9, 0.9)))

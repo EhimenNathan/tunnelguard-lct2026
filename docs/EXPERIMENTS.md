@@ -421,3 +421,76 @@ for LightGBM, CatBoost and the physics-informed MLP; the MLP was dropped because
 * **CLEAR**: nothing of the above; the output still reports how far the path is verified clear (visibility horizon and
   measured geometry, capped at the 200 m instrumented range of the Pandar128).
 
+## 13. Dataset 3: the organisers' synthetic obstacles, and the final model
+
+### 13.1 The data
+One bag (`cloud_with_fake_obj`, `/lidar_points`, 1 510 frames, 16-byte points x, y, z, intensity, unorganised clouds):
+a real tunnel recording with ten synthetic objects ~100 m apart (2×2 m and 0.3 m cubes in the centre and at the edge
+of the gauge, a 0.3 m cube on a rail, objects outside and above the gauge, a 2×0.2 m bar on the rails, a 0.05 m rod
+hanging from the roof).  Our copy of the archive is corrupted after 438 frames (zstd checksum error, single frame), so
+only obstacles 1-3 and 9 are in the readable part (`tools/peek_ds3.py`, `tools/stream_eval_ds3.py`).
+
+### 13.2 What the data taught us
+* **The objects float.** The generator places them on a flat, straight plane in the lidar frame at rail-head level,
+  while the real track descends ~1.5 m over 100 m: the "2×2 m box on the track" is 1.4 m above the real rails at 98 m.
+  Our geometry was right (floor returns confirm it); our tests assumed hazards stand on the floor.
+* **The objects stall and jump** (a frame late, then catching up) and frames arrive with 0.1-0.8 s gaps.
+
+### 13.3 Changes (all general, none specific to this bag)
+| Change | Why |
+|---|---|
+| New tracks start with the train's closing speed from lidar odometry; the gate tolerates one frame of the train's travel | a static obstacle closes exactly at train speed; recorders drop, repeat and re-time frames |
+| Odometry bridges frame gaps up to 1 s (search range = 25 m/s × dt) | it froze at 381 m on this bag; now tracks the whole run |
+| Bit-identical repeated clouds re-issue the last decision | a repeat carries no new information |
+| Shell attachment needs continuity (roof starts within 3 beam spacings above the cluster top) | a floating object below the roof is not infrastructure |
+| Shell veto only for floor-reaching slices (h_min < 0.8 m) | real shell-attached negatives are floor-to-roof wall slices; hanging objects are hazards |
+| Scorer retrained on the full hazard space (`synth.random_hazard`: floor objects, floating cubes 0.25-2 m lifted 0.3-1.8 m, bars across the rails, rods 3-12 cm hanging from the roof), ray-cast into datasets 1 and 2 only | the original positives were floor-standing only |
+| **Router (mixture of experts by physical state):** floor-supported candidates → ½·LGBM + ½·CatBoost (v3), candidates with bottom ≥ 0.5 m → hazard-space ½·LGBM + ½·CatBoost (v4); each against its own out-of-fold threshold | v4 is best on floating objects, v3 on far floor objects |
+
+A labelling bug was found and fixed on the way: the drive-data generator matched lateral offsets in a mirrored frame
+(3 664 correct positives instead of 1 783).  Two monotone constraints (shell attachment, floor support) that encoded
+the floor-standing assumption were removed for v4.
+
+### 13.4 Dataset 3, readable part (first STOP distance, share of frames with STOP after the first)
+| Obstacle | Before | Detector fixes, v3 | Detector fixes, v4 | **Final: router** |
+|---|---|---|---|---|
+| 2×2 m, centre | 48 m, 71 % | 48 m, 91 % | 98 m, 96 % | **98 m, 94 %** |
+| 0.3 m, centre | 15 m, 33 % | 20 m, 89 % | 20 m, 89 % | **20 m, 89 %** |
+| 0.3 m on a rail | 18 m, 25 % | 23 m, 82 % | 23 m, 82 % | **23 m, 82 %** |
+| 2×0.2 m bar on the rails | 30 m, 27 % | 60 m, 43 % | 44 m, 53 % | **60 m, 52 %** |
+
+### 13.5 Full ten-object replica (`tools/replica_ds3.py`)
+The organisers' sequence rebuilt in the real beams of a moving train on the new line (50-60 km/h), placed as their
+generator does (flat and straight in the lidar frame).  Evaluation only.
+
+| Object | Expected | v3 | **Router** |
+|---|---|---|---|
+| 1 · 2×2 m centre | STOP | 32 m | **116 m** |
+| 2 · 0.3 m centre | STOP | 58 m | **99 m** |
+| 3 · 0.3 m on a rail | STOP | 8 m | 8 m |
+| 4 · 0.3 m at the gauge edge | STOP | — | — |
+| 5 · 0.3 m outside, close | no STOP | ✓ | ✓ |
+| 6 · 2×2 m at the edge, inside | STOP | 29 m | 29 m |
+| 7 · 2×2 m outside | no STOP | ✓ | ✓ |
+| 8 · 2×2 m above the gauge | no STOP | ✓ | one STOP frame at 164 m |
+| 9 · 2×0.2 m bar on the rails | STOP | 45 m | 45 m |
+| 10 · 0.05 m rod from the roof | STOP | 30 m | 30 m |
+
+Caveats: on this stretch the track climbs, so flat-placed objects near rail level sink below the track bed and get no
+returns until close (objects 3, 9); object 4 sits exactly on our envelope boundary (1.25 m at that height) and its
+status depends on the organisers' gauge definition, which is not published.  The bar (0.2 m) is scored 0.83-0.87 by the
+model but stays below the confident envelope floor (0.15 m + 2σ ≈ 0.23 m), a deliberate margin against rail-plane
+errors, where earlier real false alarms lived.
+
+### 13.6 False alarms and recall of the final model
+| | v3 | v4 | **Router (final)** |
+|---|---|---|---|
+| Dataset 1: false STOP frames / 2 287 | 3 | 0 | **0** |
+| Dataset 1: held-out real people, STOP frames / 60 | 58 | 56 | **58** |
+| Dataset 1: person 80 / 120 / 160 m | 100 / 78 / 33 % | 100 / 67 / 0 % | **100 / 78 / 33 %** |
+| Dataset 2 sealed block: false STOP events per seed (3 seeds, 2.8 km) | 9 / 2 / 2 | 9 / 0 / 2 | 11 / 2 / 2 |
+| Dataset 2 sealed block: false STOP frames (sum of 3 seeds) | 26 | 17 | 23 |
+
+The router's sealed events are the union of one event from each expert's own domain (a floating blip at 108 m, a floor
+object at 42 m on seed 0); the differences between the three models are within the seed-to-seed spread.
+

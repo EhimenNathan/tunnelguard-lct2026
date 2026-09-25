@@ -24,14 +24,17 @@ sys.path.insert(0, os.path.join(SOL, 'src', 'tunnel_guard'))
 
 N_FRAMES_ORIG = {0: 252, 1: 877, 2: 345, 3: 545, 4: 268}
 SIGN = {'n_norm': 1, 'h_ext_beams': 1, 'in_frac': 1, 'depth_rel': 1, 'contained': 1, 'hits': 1,
-        'shell_pts': -1, 'gravity_fail': -1, 'shape_fail': -1, 'sigma_l': -1, 'l_std': -1}
+        'shape_fail': -1, 'sigma_l': -1, 'l_std': -1}
+if os.environ.get('DS_SUFFIX', '') == '':   # the floor-standing prior of the original scorer (v3)
+    SIGN.update({'shell_pts': -1, 'gravity_fail': -1})
 TUNED = json.load(open('tuned_params.json'))
 
 
 def load():
-    dsA = np.load('ds_dsA.npz', allow_pickle=True)
-    dsB = np.load('ds_dsB.npz', allow_pickle=True)
-    ds3 = np.load('ds3_drive.npz', allow_pickle=True)
+    suf = os.environ.get('DS_SUFFIX', '')      # '4': training sets with the full hazard space (floating, hanging, bars)
+    dsA = np.load(f'ds_dsA{suf}.npz', allow_pickle=True)
+    dsB = np.load(f'ds_dsB{suf}.npz', allow_pickle=True)
+    ds3 = np.load(f'ds3_drive{suf}.npz', allow_pickle=True)
     names = list(dsA['names'])
     assert names == list(ds3['names'])
     X = np.vstack([dsA['X'], dsB['X'], ds3['X']]).astype(np.float32)
@@ -165,5 +168,5 @@ if __name__ == '__main__':
             nobj = sum(r[g]['n_obj'] for g in gs); rec = sum(r[g]['recall'] * r[g]['n_obj'] for g in gs if r[g]['n_obj']) / max(nobj, 1)
             print(f'{name:9s} {part:20s} false STOP frames {fp:4d}/{fr} ({100 * fp / fr:.2f} %)  recall {100 * rec:.1f} % of {nobj}')
     json.dump({k: {str(g): v for g, v in r.items()} for k, r in res.items()}, open('train_v3_results.json', 'w'), indent=1)
-    np.savez('oof_v3.npz', orig=oof_orig, rob=oof_rob)
+    np.savez(f"oof_v3{os.environ.get('DS_SUFFIX', '')}.npz", orig=oof_orig, rob=oof_rob)
     print('done', time.time() - t0)
