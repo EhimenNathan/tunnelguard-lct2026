@@ -494,3 +494,28 @@ errors, where earlier real false alarms lived.
 The router's sealed events are the union of one event from each expert's own domain (a floating blip at 108 m, a floor
 object at 42 m on seed 0); the differences between the three models are within the seed-to-seed spread.
 
+### 13.7 Correction: the readable part contains all ten objects
+The first analysis of dataset 3 ran while odometry was still frozen, so only four approaches were identified.  With the
+gap-tolerant odometry the readable 438 frames cover ~1.8 km, i.e. all ten objects (tunnel positions ≈ 102, 307, 407, 507,
+607, 707, 808, 905, 1002, 1100 m).  Final model on the organisers' bag:
+
+| Object | Organisers' label | Final model |
+|---|---|---|
+| 1 · 2×2 m centre | inside | STOP from 98 m |
+| 2 · 0.3 m centre | inside | STOP from 20 m |
+| 3 · 0.3 m on a rail | inside | STOP from 23 m |
+| 4 · 0.3 m at the edge | inside | STOP from 20 m |
+| 5 · 0.3 m outside, close | outside | STOP from 25 m (inside our envelope) |
+| 6 · 2×2 m at the edge | inside | STOP from 25 m |
+| 7 · 2×2 m outside | outside | STOP from 29 m (inside our envelope) |
+| 8 · 2×2 m "сверху габарита" | ambiguous (upper part of the gauge or above it) | STOP from 75 m |
+| 9 · 2×0.2 m bar on the rails | inside | STOP from 60 m |
+| 10 · 0.05 m rod from the roof | inside | missed: 4 returns at 12 m in one frame |
+
+False STOP on the empty tunnel: 1 event (5 frames), a 2.66 m wide, 2 cm thick horizontal roof slice 146 m ahead.
+Objects 4-8 lie on a straight section; converted to the lidar frame, the organisers' gauge boundary is ≈ ±1.15 m
+(objects 4, 6 inside at ≈ 0.98 / 1.08 m, objects 5, 7 outside at ≈ 1.30 / 1.32 m), narrower than our envelope derived
+from the tunnels' free space (a 2.7 m car).  With a ±1.15 m profile object 7 loses its STOP, object 5 keeps it and object
+6 is only confirmed at 11 m, so the gauge is not tuned blindly; the organisers are asked for their exact profile, which
+is a single configuration value (`gauge.profile`).
+

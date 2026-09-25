@@ -279,10 +279,11 @@ The data sets are always reported separately.
 
 | What | Result |
 |---|---|
+| Readable part of the organisers' bag (438 frames, ~1.8 km) contains all ten objects | STOP on **7 of 8** objects inside the gauge; the 5 cm hanging rod is missed (4 returns at 12 m) |
 | 2×2 m cube in the centre of the gauge (floating 1.4 m above the descending track) | first STOP at **98 m**, STOP held in 94 % of frames |
-| 0.3 m cube in the centre / on a rail; 2×0.2 m bar lying on the rails | first STOP at 20 m / 23 m / 60 m |
-| Replica (all ten objects, moving train): objects outside the gauge (0.3 m close, 2×2 m) | no STOP |
-| Replica: 2×2 m centre, 0.3 m centre, 2×2 m at the edge, 0.05 m rod from the roof | STOP from 116 / 99 / 29 / 30 m |
+| 0.3 m cube centre / on a rail / at the edge; 2×2 m at the edge; 2×0.2 m bar on the rails | first STOP at 20 / 23 / 20 / 25 / 60 m |
+| False STOP on the empty tunnel, including curves of radius 243-390 m | **1 event** (5 frames, a horizontal roof slice at 146 m) |
+| Objects the organisers label "outside the gauge" (0.3 m close, 2×2 m) | STOP at 25 / 29 m: our envelope is a 2.7 m car, theirs is ≈ ±1.15 m from the lidar axis (inferred from their objects; `gauge.profile`) |
 
 Median latency: **56–70 ms** per frame on one CPU core (laptop i5-8250U), below the 100 ms of the 10 Hz lidar.
 

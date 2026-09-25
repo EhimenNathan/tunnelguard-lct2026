@@ -32,7 +32,6 @@ OUT = os.path.join(SOL, 'web', 'data')
 NPTS = 16000
 FAR_MAX = 5000
 os.makedirs(OUT, exist_ok=True)
-warmup()
 
 
 def r2(v):
@@ -116,89 +115,95 @@ def sensor_xyz(b, f):
     return np.stack([-fwd[:, 1], -fwd[:, 0], fwd[:, 2]], 1), (inten[V] if inten is not None else None)
 
 
-t0 = time.time()
-# ---------------------------------------------------------------- A. dataset 1, held-out real people
-w = Writer('ds1_real', 'Датасет 1 · реальные люди в тоннеле')
-b = BagCache('doubleT_obstacle')
-det = ObstacleDetector(DetectorConfig(scorer_model=MODEL))
-for f in range(120):
-    xyz, inten = sensor_xyz(b, f)
-    res = det.process(xyz, b.t[f], intensity=inten)
-    w.add([res], det.cfg.gauge, b.t[f])
-w.save(dict(dataset=1, synthetic=False, models=['final'],
-            about='Отложенная реальная запись: поезд стоит, человек A пересекает путь на ~56 м, человек B идёт рядом '
-                  'с поездом вне габарита. Запись не использовалась ни при разработке, ни при обучении.'))
+def main():
+    warmup()
+    t0 = time.time()
+    # ---------------------------------------------------------------- A. dataset 1, held-out real people
+    w = Writer('ds1_real', 'Датасет 1 · реальные люди в тоннеле')
+    b = BagCache('doubleT_obstacle')
+    det = ObstacleDetector(DetectorConfig(scorer_model=MODEL))
+    for f in range(120):
+        xyz, inten = sensor_xyz(b, f)
+        res = det.process(xyz, b.t[f], intensity=inten)
+        w.add([res], det.cfg.gauge, b.t[f])
+    w.save(dict(dataset=1, synthetic=False, models=['final'],
+                about='Отложенная реальная запись: поезд стоит, человек A пересекает путь на ~56 м, человек B идёт рядом '
+                      'с поездом вне габарита. Запись не использовалась ни при разработке, ни при обучении.'))
 
-# ---------------------------------------------------------------- B. dataset 1, synthetic person from 200 m
-D0, SPEED, F0, SEQ = 200.0, 12.0, 699, 130
-w = Writer('ds1_range', 'Датасет 1 · дальность: человек с 200 м')
-b = BagCache('squareT_platform_squareT_switch')
-geo_ref = GeometryEstimator()
-det = ObstacleDetector(DetectorConfig(forward_axis='x', scorer_model=MODEL))
-rng = np.random.default_rng(7)
-for f in range(F0 - 15, F0 + SEQ):
-    p, _, _ = b.points(f)
-    g = geo_ref.estimate(p[p[:, 0] > 1.0])
-    if f < F0:
-        det.process(p, b.t[f])
-        continue
-    dist = D0 - SPEED * (f - F0) / 10
-    rimg, inten = b.frame(f)
-    rimg2, nret = inject(rimg, b.dirs, np.array([dist, float(g.centre(dist)), float(g.rail_z(dist))]), SHAPES['person'], rng)
-    V = rimg2 > 0.5
-    res = det.process(b.dirs[V] * rimg2[V][:, None], b.t[f], intensity=inten[V])
-    w.add([res], det.cfg.gauge, b.t[f], syn=dict(x=r2(dist), y=r2(g.centre(dist)), z=r2(g.rail_z(dist) + 0.9), hits=int(nret)))
-w.save(dict(dataset=1, synthetic=True, models=['final'],
-            about='Синтетический человек 1.75 м (отражение 15 %) вставлен лучевым моделированием в реальные лучи '
-                  'Pandar128 и приближается с 200 м со скоростью 12 м/с. Всё остальное — реальная запись. '
-                  'Зачем: в данных нет реальных препятствий дальше ~60 м — иначе дальность не измерить.'))
-print('dataset 1 done', round(time.time() - t0), flush=True)
-
-# ---------------------------------------------------------------- C/D. dataset 2, continuous replay of the new line
-T_START, T_END = 869.0, 1071.0
-W_SYN, W_CMP, D_SYN = (1051.5, 1061.5), (1062.0, 1070.0), 180.0
-drive = DriveCache('cache/ds2')
-idx = [i for i in range(len(drive)) if T_START <= drive.t[i] <= T_END]
-det_new = ObstacleDetector(DetectorConfig(scorer_model=MODEL))
-det_old = ObstacleDetector(DetectorConfig(scorer_model=MODEL_V1, ego_check=False))
-det_syn, x_person = None, None
-w_syn = Writer('ds2_person', 'Датасет 2 · человек на пути новой линии')
-w_cmp = Writer('ds2_compare', 'Датасет 2 · ложные тревоги: v1 против финальной', n_res=2)
-rng = np.random.default_rng(11)
-
-
-def speed_kmh(d):
-    s = list(d.calib.steps)
-    return 36.0 * float(np.median(s)) if len(s) >= 3 else None
-
-
-for i in idx:
-    t = float(drive.t[i])
-    pi, kf = drive.index[i]
-    piece = drive.pieces[pi]
-    xyz, inten = drive.cloud(i)
-    if W_SYN[0] <= t <= W_SYN[1] and det_syn is None:
-        det_syn = copy.deepcopy(det_new)
-        x_person = det_new.calib.x + D_SYN
-    res = det_new.process(xyz, t, intensity=inten)
-    res_old = det_old.process(xyz, t, intensity=inten)
-    if det_syn is not None and t <= W_SYN[1]:
-        dist = x_person - det_new.calib.x
-        g = res.geometry
-        rimg, _ = piece.frame(kf)
-        rimg2, nret = inject(rimg, piece.dirs, np.array([dist, -float(g.centre(dist)), float(g.rail_z(dist))]),
-                             SHAPES['person'], rng)
+    # ---------------------------------------------------------------- B. dataset 1, synthetic person from 200 m
+    D0, SPEED, F0, SEQ = 200.0, 12.0, 699, 130
+    w = Writer('ds1_range', 'Датасет 1 · дальность: человек с 200 м')
+    b = BagCache('squareT_platform_squareT_switch')
+    geo_ref = GeometryEstimator()
+    det = ObstacleDetector(DetectorConfig(forward_axis='x', scorer_model=MODEL))
+    rng = np.random.default_rng(7)
+    for f in range(F0 - 15, F0 + SEQ):
+        p, _, _ = b.points(f)
+        g = geo_ref.estimate(p[p[:, 0] > 1.0])
+        if f < F0:
+            det.process(p, b.t[f])
+            continue
+        dist = D0 - SPEED * (f - F0) / 10
+        rimg, inten = b.frame(f)
+        rimg2, nret = inject(rimg, b.dirs, np.array([dist, float(g.centre(dist)), float(g.rail_z(dist))]), SHAPES['person'], rng)
         V = rimg2 > 0.5
-        fwd = piece.dirs[V] * rimg2[V][:, None]
-        rs = det_syn.process(np.stack([-fwd[:, 1], -fwd[:, 0], fwd[:, 2]], 1), t)
-        w_syn.add([rs], det_syn.cfg.gauge, t, speeds=[speed_kmh(det_syn)],
-                  syn=dict(x=r2(dist), y=r2(g.centre(dist)), z=r2(g.rail_z(dist) + 0.9), hits=int(nret)))
-    if W_CMP[0] <= t <= W_CMP[1]:
-        w_cmp.add([res, res_old], det_new.cfg.gauge, t, speeds=[speed_kmh(det_new)] * 2)
-w_syn.save(dict(dataset=2, synthetic=True, models=['final'],
-                about='В датасете 2 нет препятствий, поэтому обнаружение на ходу проверяется синтетическим человеком: '
-                      'он стоит в тоннеле в 180 м впереди, поезд приближается с реальной скоростью поездки (~60 км/ч).'))
-w_cmp.save(dict(dataset=2, synthetic=False, models=['final', 'v1'],
-                about='Одни и те же секунды новой линии без синтетики. Поезд позже проехал все места тревог — препятствий '
-                      'не было. Переключайте модель: прежняя v1 тормозит, финальная — нет.'))
-print('done', round(time.time() - t0), flush=True)
+        res = det.process(b.dirs[V] * rimg2[V][:, None], b.t[f], intensity=inten[V])
+        w.add([res], det.cfg.gauge, b.t[f], syn=dict(x=r2(dist), y=r2(g.centre(dist)), z=r2(g.rail_z(dist) + 0.9), hits=int(nret)))
+    w.save(dict(dataset=1, synthetic=True, models=['final'],
+                about='Синтетический человек 1.75 м (отражение 15 %) вставлен лучевым моделированием в реальные лучи '
+                      'Pandar128 и приближается с 200 м со скоростью 12 м/с. Всё остальное — реальная запись. '
+                      'Зачем: в данных нет реальных препятствий дальше ~60 м — иначе дальность не измерить.'))
+    print('dataset 1 done', round(time.time() - t0), flush=True)
+
+    # ---------------------------------------------------------------- C/D. dataset 2, continuous replay of the new line
+    T_START, T_END = 869.0, 1071.0
+    W_SYN, W_CMP, D_SYN = (1051.5, 1061.5), (1062.0, 1070.0), 180.0
+    drive = DriveCache('cache/ds2')
+    idx = [i for i in range(len(drive)) if T_START <= drive.t[i] <= T_END]
+    det_new = ObstacleDetector(DetectorConfig(scorer_model=MODEL))
+    det_old = ObstacleDetector(DetectorConfig(scorer_model=MODEL_V1, ego_check=False))
+    det_syn, x_person = None, None
+    w_syn = Writer('ds2_person', 'Датасет 2 · человек на пути новой линии')
+    w_cmp = Writer('ds2_compare', 'Датасет 2 · ложные тревоги: v1 против финальной', n_res=2)
+    rng = np.random.default_rng(11)
+
+
+    def speed_kmh(d):
+        s = list(d.calib.steps)
+        return 36.0 * float(np.median(s)) if len(s) >= 3 else None
+
+
+    for i in idx:
+        t = float(drive.t[i])
+        pi, kf = drive.index[i]
+        piece = drive.pieces[pi]
+        xyz, inten = drive.cloud(i)
+        if W_SYN[0] <= t <= W_SYN[1] and det_syn is None:
+            det_syn = copy.deepcopy(det_new)
+            x_person = det_new.calib.x + D_SYN
+        res = det_new.process(xyz, t, intensity=inten)
+        res_old = det_old.process(xyz, t, intensity=inten)
+        if det_syn is not None and t <= W_SYN[1]:
+            dist = x_person - det_new.calib.x
+            g = res.geometry
+            rimg, _ = piece.frame(kf)
+            rimg2, nret = inject(rimg, piece.dirs, np.array([dist, -float(g.centre(dist)), float(g.rail_z(dist))]),
+                                 SHAPES['person'], rng)
+            V = rimg2 > 0.5
+            fwd = piece.dirs[V] * rimg2[V][:, None]
+            rs = det_syn.process(np.stack([-fwd[:, 1], -fwd[:, 0], fwd[:, 2]], 1), t)
+            w_syn.add([rs], det_syn.cfg.gauge, t, speeds=[speed_kmh(det_syn)],
+                      syn=dict(x=r2(dist), y=r2(g.centre(dist)), z=r2(g.rail_z(dist) + 0.9), hits=int(nret)))
+        if W_CMP[0] <= t <= W_CMP[1]:
+            w_cmp.add([res, res_old], det_new.cfg.gauge, t, speeds=[speed_kmh(det_new)] * 2)
+    w_syn.save(dict(dataset=2, synthetic=True, models=['final'],
+                    about='В датасете 2 нет препятствий, поэтому обнаружение на ходу проверяется синтетическим человеком: '
+                          'он стоит в тоннеле в 180 м впереди, поезд приближается с реальной скоростью поездки (~60 км/ч).'))
+    w_cmp.save(dict(dataset=2, synthetic=False, models=['final', 'v1'],
+                    about='Одни и те же секунды новой линии без синтетики. Поезд позже проехал все места тревог — препятствий '
+                          'не было. Переключайте модель: прежняя v1 тормозит, финальная — нет.'))
+    print('done', round(time.time() - t0), flush=True)
+
+
+if __name__ == '__main__':
+    main()

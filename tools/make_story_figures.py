@@ -143,27 +143,32 @@ ax.plot([14.0, 14.0], [0.6, 12.6], color='#E5E7EB', lw=1.5)
 save(fig, 'model_stack.png')
 
 # ================================================================ 4. dataset-3 scorecard (organisers' objects)
-rows = [('1 · 2×2 м в центре', True, '32 м', '116 м', '48 → 98 м'), ('2 · 0.3 м в центре', True, '58 м', '99 м', '15 → 20 м'),
-        ('3 · 0.3 м на рельсе', True, '8 м*', '8 м*', '18 → 23 м'), ('4 · 0.3 м у края', True, '—', '—', 'нет данных'),
-        ('5 · 0.3 м за габаритом', False, 'нет', 'нет', 'нет данных'), ('6 · 2×2 м у края', True, '29 м', '29 м', 'нет данных'),
-        ('7 · 2×2 м за габаритом', False, 'нет', 'нет', 'нет данных'), ('8 · 2×2 м над габаритом', False, 'нет', '1 кадр', 'нет данных'),
-        ('9 · 2×0.2 м на рельсах', True, '45 м*', '45 м*', '30 → 60 м'), ('10 · 0.05 м с потолка', True, '30 м', '30 м', 'нет данных')]
-fig, ax = plt.subplots(figsize=(14, 7.0))
-ax.set_xlim(0, 28); ax.set_ylim(0, 12.6); ax.axis('off')
-cx = [0.3, 8.6, 11.9, 15.7, 20.2]
-for x, h in zip(cx, ['Объект организаторов', 'нужен STOP?', 'реплика · v3', 'реплика · роутер', 'их бэг (29 %) · было → стало']):
+rows = [('1 · 2×2 м в центре', 'да', 'STOP с 98 м', 'ok', '116 м'),
+        ('2 · 0.3 м в центре', 'да', 'STOP с 20 м', 'ok', '99 м'),
+        ('3 · 0.3 м на рельсе', 'да', 'STOP с 23 м', 'ok', '8 м*'),
+        ('4 · 0.3 м у края габарита', 'да', 'STOP с 20 м', 'ok', 'нет'),
+        ('5 · 0.3 м за габаритом, рядом', 'нет', 'STOP с 25 м', 'bad', 'нет STOP'),
+        ('6 · 2×2 м у края, в габарите', 'да', 'STOP с 25 м', 'ok', '29 м'),
+        ('7 · 2×2 м за габаритом', 'нет', 'STOP с 29 м', 'bad', 'нет STOP'),
+        ('8 · 2×2 м «сверху габарита»', '?', 'STOP с 75 м', 'amb', '—'),
+        ('9 · брус 2×0.2 м на рельсах', 'да', 'STOP с 60 м', 'ok', '45 м*'),
+        ('10 · стержень 5 см с потолка', 'да', 'нет (4 точки на 12 м)', 'bad', '30 м')]
+fig, ax = plt.subplots(figsize=(14, 7.3))
+ax.set_xlim(0, 28); ax.set_ylim(-0.6, 12.6); ax.axis('off')
+cx = [0.3, 9.6, 12.6, 20.6]
+for x, h in zip(cx, ['Объект организаторов', 'нужен STOP?', 'их бэг · финальная модель', 'реплика · финал']):
     ax.text(x, 12.0, h, fontsize=12, weight='bold', color=PURPLE)
-for r, (name, need, a, b, c) in enumerate(rows):
+for r, (name, need, res, verdict, rep) in enumerate(rows):
     y = 10.9 - r * 1.08
     ax.add_patch(FancyBboxPatch((0.1, y - 0.42), 27.7, 0.9, boxstyle='round,pad=0,rounding_size=0.12',
                                 fc='#F7F5FB' if r % 2 == 0 else 'white', ec='none'))
     ax.text(cx[0], y, name, fontsize=12, color=INK, va='center')
-    ax.text(cx[1], y, 'да' if need else 'нет', fontsize=12, color=INK, va='center', weight='bold')
-    for x, v in ((cx[2], a), (cx[3], b)):
-        good = (v not in ('—', '1 кадр')) if need else (v == 'нет')
-        ax.text(x, y, v, fontsize=12, va='center', weight='bold', color=GREEN if good else RED)
-    ax.text(cx[4], y, c, fontsize=12, va='center', color=MUT if c == 'нет данных' else INK)
-ax.text(0.3, -0.2, 'Дистанция первого STOP. Реплика: объекты организаторов в реальных лучах датасета 2 на ходу (50–60 км/ч). '
-        '* трасса идёт вверх: плоско размещённые объекты тонут в балласте до 10–40 м.', fontsize=10, color=MUT)
+    ax.text(cx[1], y, need, fontsize=12, color=INK, va='center', weight='bold')
+    col = {'ok': GREEN, 'bad': RED, 'amb': AMBER}[verdict]
+    ax.text(cx[2], y, res + {'ok': '', 'bad': '  (ошибка)', 'amb': '  (?)'}[verdict], fontsize=12, va='center', weight='bold', color=col)
+    ax.text(cx[3], y, rep, fontsize=11.5, va='center', color=MUT)
+ax.text(0.3, -0.35, 'Их бэг: читаются 29 % архива (438 кадров, 1.8 км) — в них все 10 объектов. Ложных STOP на пустом тоннеле: 1 событие '
+        '(5 кадров, горизонтальный срез свода на 146 м). 5 и 7: наш габарит — вагон 2.7 м, их ≈ ±1.15 м от оси лидара. '
+        '* реплика: трасса идёт вверх, объекты тонут в балласте.', fontsize=9.5, color=MUT, wrap=True)
 save(fig, 'ds3_scorecard.png')
 print('figures ->', FIG)

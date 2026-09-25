@@ -34,7 +34,11 @@ def main():
         for p_ in k.split('.')[:-1]:
             obj = getattr(obj, p_)
         cur = getattr(obj, k.split('.')[-1])
-        setattr(obj, k.split('.')[-1], v.lower() in ('1', 'true') if isinstance(cur, bool) else type(cur)(v))
+        if v.startswith('['):                      # list-valued parameters, e.g. gauge.profile=[[0,1.1],[0.5,1.1],...]
+            val = tuple(tuple(x) if isinstance(x, list) else x for x in json.loads(v))
+        else:
+            val = v.lower() in ('1', 'true') if isinstance(cur, bool) else type(cur)(v)
+        setattr(obj, k.split('.')[-1], val)
     os.makedirs(out, exist_ok=True)
     warmup()
     det = ObstacleDetector(cfg)

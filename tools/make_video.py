@@ -36,6 +36,7 @@ from run_drive import DriveCache
 from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
 from tunnel_guard.core.geometry import GeometryEstimator, warmup
 from tunnel_guard.core.synth import SHAPES, inject
+from ds3_stream import frames as ds3_frames, nearest_object
 from render_demo import render_frame, title_card, metrics_card, chart_card, INK, MUTED, PURPLE
 
 CFG_DIR = os.path.join(SOL, 'src', 'tunnel_guard', 'config')
@@ -282,6 +283,28 @@ chapter('5', 'Датасет 2 · ложные тревоги: было → ст
 put_seq([unpacked(d) for d in cmp_old], hold_first=3)
 put_seq([unpacked(d) for d in cmp_new], hold_first=3)
 
+# ================================================================ dataset 3 · the organisers' synthetic objects
+ORG = ('СИНТЕТИКА ОРГАНИЗАТОРОВ · их бэг, реальный тоннель', '#b45309')
+chapter('6', 'Датасет 3 · объекты организаторов',
+        ['Бэг организаторов: реальная запись тоннеля с десятью их синтетическими объектами через ~100 м.',
+         'Их генератор ставит объекты на плоскость в системе лидара, а путь идёт под уклон — объекты «парят».',
+         'Показаны куб 2×2 м в центре габарита и объекты 3–7 подряд. Финальная модель, живой вывод.'], n=40)
+det3 = ObstacleDetector(DetectorConfig(scorer_model=MODEL))
+seg6 = []
+for t3, xyz3 in ds3_frames():
+    res = det3.process(xyz3, t3)
+    if t3 <= 23.5 or 40.0 <= t3 <= 58.5:
+        o = nearest_object(det3.calib.x + 60.0)
+        dist = o[0] - det3.calib.x
+        label = f'{o[1]} · ≈{dist:.0f} м' if dist > 0 else o[1]
+        seg6.append(packed(render_frame(res, det3.cfg.gauge, info=dict(
+            chapter='6 · ' + label, badge=ORG, model=M_FINAL,
+            subtitle='бэг организаторов cloud_with_fake_obj · 16 байт на точку', clock=f't = {t3:.1f} с'))))
+    if t3 > 58.5:
+        break
+put_seq([unpacked(d) for d in seg6])
+print('segment 6 (dataset 3)', len(seg6), 'frames', time.time() - t0, flush=True)
+
 # ================================================================ results
 first_stop_m = f'{first_stop[1]:.1f} м' if first_stop else '—'
 far = f'{first_det[1]:.0f} м' if first_det else '—'
@@ -304,6 +327,15 @@ card2 = metrics_card('Датасет 2 · новая линия, запечат�
     ('56–70 мс', 'на кадр, одно ядро CPU\n(лидар 10 Гц = 100 мс)'),
 ], footer='Финальная модель · запечатанный тест: последние 5 минут поездки не использовались ни для обучения, ни для настройки')
 put(card2, 60, fade_from=last)
+card3 = metrics_card('Датасет 3 · объекты организаторов', [
+    ('98 м', 'куб 2×2 м в центре габарита:\nпервый STOP (было 48 м)'),
+    ('7 из 8', 'объектов «в габарите» — STOP\n(не найден стержень 5 см)'),
+    ('1', 'ложное STOP-событие на пустом\nтоннеле за 1.8 км (кривые R 243 м)'),
+    ('60 м', 'брус 2×0.2 м на рельсах:\nпервый STOP'),
+    ('2', 'объекта «за габаритом» с STOP:\nнаш габарит — вагон 2.7 м'),
+    ('1 параметр', 'габарит организаторов (≈ ±1.15 м)\nзадаётся в конфигурации'),
+], footer='Прочитано 29 % архива организаторов (438 кадров, повреждён) — в нём все 10 объектов')
+put(card3, 60, fade_from=last)
 chart = chart_card('Запечатанный тест: ложные остановки', os.path.join(FIG, 'deck', 'ds2_sealed.png'),
                    caption='Среднее по 3 зёрнам подвыборки геометрии; усы — минимум…максимум')
 put(chart, 50, fade_from=last)
