@@ -214,10 +214,10 @@ footer.foot { padding-block: 36px 48px; color: var(--faint); font-size: 12px; }
     <div>
       <div class="eyebrow">ЛЦТ 2026 · кейс «Московский транспорт» · 3D-лидар Hesai Pandar128</div>
       <h1 style="margin-top:12px">Есть ли что-то в габарите поезда — и <em>насколько далеко</em> путь проверен свободным</h1>
-      <p class="lede">Ниже — живой вывод детектора на реальных записях лидара, кадр за кадром. Вращайте сцену, перематывайте, переключайте сценарии. Модель во всех сценариях — финальная: физический слой + ½·LightGBM + ½·CatBoost + ЭГО-тест.</p>
+      <p class="lede">Ниже — живой вывод детектора на реальных записях лидара, кадр за кадром. Вращайте сцену, перематывайте, переключайте сценарии. Модель во всех сценариях — финальная: физический слой + роутер двух ансамблей ½·LightGBM + ½·CatBoost + ЭГО-тест.</p>
     </div>
     <div class="kpis">
-      <div class="kpi"><b>1.7 / км</b><span>ложных остановок на новой линии (было 10.3)</span></div>
+      <div class="kpi"><b>1.8 / км</b><span>ложных остановок на новой линии (было 10.3)</span></div>
       <div class="kpi"><b>58 / 60</b><span>кадров с реальным человеком — STOP, 0 ложных</span></div>
       <div class="kpi"><b>200 м</b><span>путь проверяется до предела лидара</span></div>
       <div class="kpi"><b>56–70 мс</b><span>на кадр, одно ядро CPU (лидар 10 Гц)</span></div>
@@ -321,11 +321,11 @@ footer.foot { padding-block: 36px 48px; color: var(--faint); font-size: 12px; }
 </div></section>
 
 <section id="model"><div class="wrap">
-  <header><div class="eyebrow">Модель</div><h2>½·LightGBM + ½·CatBoost + ЭГО-тест поверх физического слоя</h2>
+  <header><div class="eyebrow">Модель</div><h2>Роутер двух ансамблей ½·LightGBM + ½·CatBoost + ЭГО-тест поверх физики</h2>
   <p class="muted">Физика решает, где путь и что в габарите; ансамбль оценивает правдоподобие дальних кандидатов; ЭГО-тест отсекает то, что движется вместе с поездом.</p></header>
   <div class="cols-3">
     <div class="box"><div class="eyebrow">Физический слой · без обучения</div><h3>Геометрия и тесты</h3><p>Ось, уклон, кривизна пути до 200 м с неопределённостью σ(x). Габарит с запасом 2σ. Гравитация, форма, стенка за объектом, вето оболочки, трекер 3 из 5.</p></div>
-    <div class="box"><div class="eyebrow">Ансамбль · финальная</div><h3>½·LightGBM + ½·CatBoost</h3><p>LightGBM с ограничениями монотонности (больше точек в габарите — оценка не падает), CatBoost на симметричных деревьях. Среднее логитов, сглаживание по 5 кадрам, порог 0.425. Обучен на датасетах 1 + 2 без запечатанного блока.</p></div>
+    <div class="box"><div class="eyebrow">Роутер · финальная</div><h3>Два эксперта ½·LightGBM + ½·CatBoost</h3><p>Кандидат на полу → эксперт по людям и коробкам (порог 0.425). Низом ≥ 0.5 м над рельсами → эксперт по парящим и висящим объектам, обученный на всех формах опасности (порог 0.45). Оба — среднее логитов, сглаживание по 5 кадрам; датасеты 1 + 2 без запечатанного блока.</p></div>
     <div class="box"><div class="eyebrow">Прежняя · v1</div><h3>⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP</h3><p>С физически-информированной нейросетью, обучена только на датасете 1, порог 0.37. PI-MLP убран: вне фолда не дал прироста. На новой линии v1 давала 10.3 ложных остановки на км.</p></div>
   </div>
   <figure class="box chart" style="margin-top:18px"><h3>Как выбраны веса: групповая проверка вне фолда, 11 значений w₁</h3>
@@ -342,7 +342,7 @@ footer.foot { padding-block: 36px 48px; color: var(--faint); font-size: 12px; }
         <div class="tile"><b>100 %</b><span>точность STOP (58 из 58)</span></div>
         <div class="tile"><b>96.7 %</b><span>полнота: 58 из 60 кадров</span></div>
         <div class="tile"><b>99.0 %</b><span>accuracy, F1 0.98</span></div>
-        <div class="tile"><b>≤ 0.13 %</b><span>ложных STOP на 2 287 кадрах</span></div>
+        <div class="tile"><b>0</b><span>ложных STOP на 2 287 кадрах</span></div>
       </div>
       <figure class="chart"><svg id="rangechart" viewBox="0 0 520 230" role="img" aria-label="Полнота по дальности"></svg>
         <figcaption>Синтетический человек и коробка 0.5 м в реальных лучах, первая секунда сближения; 6–10 проб на ячейку.</figcaption></figure>
@@ -350,14 +350,24 @@ footer.foot { padding-block: 36px 48px; color: var(--faint); font-size: 12px; }
     <div class="box">
       <div class="eyebrow">Датасет 2 · новая линия, 20 мин, 13 км, без препятствий</div>
       <div class="tiles">
-        <div class="tile"><b>1.7 / км</b><span>ложных STOP-событий</span></div>
+        <div class="tile"><b>1.8 / км</b><span>ложных STOP-событий</span></div>
         <div class="tile"><b>×6</b><span>меньше, чем у v1</span></div>
-        <div class="tile"><b>0.43 %</b><span>кадров с ложным STOP</span></div>
+        <div class="tile"><b>0.32 %</b><span>кадров с ложным STOP</span></div>
         <div class="tile"><b>142 м</b><span>синтетический человек: STOP на 60 км/ч</span></div>
       </div>
       <figure class="chart"><svg id="sealchart" viewBox="0 0 520 230" role="img" aria-label="Запечатанный тест"></svg>
         <figcaption>Запечатанный тест: последние 5 минут (2.8 км) не использовались ни для обучения, ни для настройки. Точки — 3 зерна подвыборки геометрии.</figcaption></figure>
     </div>
+  </div>
+  <div class="box" style="margin-top:18px">
+    <div class="eyebrow">Датасет 3 · синтетические объекты организаторов (читаются 29 % файла) и полная реплика</div>
+    <div class="tiles">
+      <div class="tile"><b>98 м</b><span>куб 2×2 м в центре габарита: первый STOP (было 48 м)</span></div>
+      <div class="tile"><b>94 %</b><span>кадров со STOP после первого срабатывания на кубе</span></div>
+      <div class="tile"><b>0</b><span>STOP на объектах вне габарита (0.3 м рядом, 2×2 м)</span></div>
+      <div class="tile"><b>30 м</b><span>стержень 5 см, свисающий с потолка: STOP</span></div>
+    </div>
+    <p>Генератор организаторов ставит объекты на плоскость в системе лидара, а путь идёт под уклон — объекты «парят» над рельсами. Поэтому мы обучили второго эксперта на всех формах опасности (парящие, висящие, лежащие на рельсах) и направляем к нему кандидатов, чей низ выше 0.5 м над рельсами.</p>
   </div>
   <figure class="box chart" style="margin-top:18px"><h3>Путь к результату: что давал каждый этап</h3>
     <svg id="evochart" viewBox="0 0 900 250" role="img" aria-label="Эволюция ложных срабатываний"></svg>
@@ -563,7 +573,7 @@ function show(i) {
   /* badges */
   const bd = [`<span class="badge ds">${cur.s.ds.split(' · ')[0]}</span>`];
   if (cur.meta.synthetic) bd.push('<span class="badge syn">СИНТЕТИКА · лучевое моделирование в реальных лучах</span>');
-  bd.push(`<span class="badge ds">Модель: ${model === 0 ? '½·LightGBM + ½·CatBoost + ЭГО-тест' : 'v1: ⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP'}</span>`);
+  bd.push(`<span class="badge ds">Модель: ${model === 0 ? 'роутер двух ансамблей + ЭГО-тест' : 'v1: ⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP'}</span>`);
   $('#badges').innerHTML = bd.join('');
   if (!renderer) return;
   /* points */
@@ -774,7 +784,7 @@ $('#slope').addEventListener('input', egoChart); egoChart();
 })();
 
 (function sealChart() {
-  const km = 2.81, rows = [['v1 · ⅓+⅓+⅓', [39, 28, 20], '#5c6c76'], ['½ LGBM + ½ CatBoost', [11, 7, 2], '#8a9ba5'], ['+ ЭГО-тест · финал', [8, 5, 1], '#d08a4e']];
+  const km = 2.81, rows = [['v1 · ⅓+⅓+⅓', [39, 28, 20], '#5c6c76'], ['½ + ½ + ЭГО', [8, 5, 1], '#8a9ba5'], ['роутер · финал', [11, 2, 2], '#d08a4e']];
   const y = v => 190 - v / 15 * 160; let g = '';
   [0, 5, 10, 15].forEach(v => { g += `<line x1="46" x2="510" y1="${y(v)}" y2="${y(v)}" stroke="${grid}"/>` + axisText(v + '/км', 40, y(v) + 4, 'end'); });
   rows.forEach(([name, ev, c], i) => {
