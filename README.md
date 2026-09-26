@@ -9,6 +9,9 @@ itself (rails, cross-section, curvature, grade) and declares an obstacle when so
 train is about to sweep. Because of that it needs no labelled data and generalises to new tunnel sections,
 new obstacle types and even a different lidar mounting.
 
+**Links:** [interactive website](https://EhimenNathan.github.io/tunnelguard-lct2026/) (live detector output on the recordings, 3D) ·
+[demo video](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest) (GitHub Release) · presentation: `presentation/TunnelGuard_LCT2026.pptx`
+
 | Output (per lidar frame) | Topic | Type |
 |---|---|---|
 | Decision: CLEAR / CAUTION / STOP, nearest obstacle distance, time-to-collision, verified clear distance, all obstacles | `/tunnel_guard/status` | `tunnel_guard_msgs/ObstacleStatus` |
@@ -64,6 +67,24 @@ also detected automatically (`forward_axis:=auto`: the horizontal axis with the 
 
 ---
 
+### Offline machine (no internet, e.g. the test server)
+
+Nothing in the detector needs a network at run time: both scorers are tree ensembles stored as JSON and evaluated in
+numpy, all parameters come from `config/`. Only `docker build` downloads packages (base image, apt), so build the image
+once on any machine with internet and carry it over as a file:
+
+```bash
+docker build -t tunnel_guard .                               # machine with internet
+docker save tunnel_guard | gzip > tunnel_guard_image.tar.gz  # ~1.3 GB file -> copy to the test server
+docker load -i tunnel_guard_image.tar.gz                     # test server: creates tunnel_guard:latest (~5 GB on disk)
+docker run --rm --network none -v /path/to/bags:/data tunnel_guard \
+    ros2 run tunnel_guard evaluate_bag --bag /data/<bag> --out /data/results/<bag>
+```
+
+Verified with `--network none`: 15 tests pass, the exported obstacle bag gives 58 STOP frames with the first STOP at 55.5 m.
+Point clouds with 16-byte (x, y, z, intensity) and 26-byte (… + ring + timestamp) points are both read, because fields
+are decoded by name from the `PointCloud2` header.
+
 ### Windows (Docker Desktop, WSL2 engine)
 
 Run in PowerShell from the solution folder (no Docker account is needed; ~6 GB free disk for the image):
@@ -79,7 +100,7 @@ docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 run tunnel_guard ev
 host-folder mount far slower than real time, so most frames never reach the detector. The option copies the bag into
 the container first. On a Linux host the mount is native and the option is not needed.
 
-Verified with Docker Desktop 4.91 (WSL2 engine) on the exported test bag: 14 tests pass; `ros2 launch ... copy_bag:=true`
+Verified with Docker Desktop 4.91 (WSL2 engine) on the exported test bag: 15 tests pass; `ros2 launch ... copy_bag:=true`
 → 66 frames processed, `/tunnel_guard/status` CLEAR → CAUTION → STOP, 58 STOP frames, first STOP at 55.5 m, ~100 ms per
 frame on a 15 W laptop CPU (921 600-ray clouds of the obstacle recording; 56–70 ms on the 307 200-ray recordings).
 
@@ -291,10 +312,11 @@ Further analysis in `docs/EXPERIMENTS.md`: precision / recall / accuracy (§6), 
 long-range study (§8), ablation study (§9), Pandar128 files (§10), the new line: self-labelling, domain-robust scorer,
 ego-motion test, sealed test (§12); dataset 3, the hazard-space retraining and the router (§13).
 
-Demo video (105 s, Russian captions): `docs/demo_tunnelguard.mp4`:
+Demo video (144 s, Russian captions; download from the [release](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest), locally `docs/demo_tunnelguard.mp4`):
 - dataset 1: held-out real people (STOP at 55.5 m), and a ray-cast person approaching from 200 m (first STOP at 150 m);
 - dataset 2: the train at line speed with lidar odometry, a ray-cast person standing on the new line (STOP at 142 m),
-  and the same seconds with the previous model (12 false STOP frames) and the deployed one (0).
+  and the same seconds with the previous model (12 false STOP frames) and the deployed one (0);
+- dataset 3: the organisers' own bag with their synthetic objects (2×2 m cube: first STOP at 98 m; objects 3–7).
 
 Every frame is the live output of the detector on real recorded lidar frames. Synthetic objects are marked
 «СИНТЕТИКА». Presentation: `presentation/TunnelGuard_LCT2026.pptx` (figures: `tools/make_deck_figures.py`,
