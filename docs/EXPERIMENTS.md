@@ -1,521 +1,550 @@
-# Experiments
+# Эксперименты
 
-All numbers are produced by the scripts in `tools/` from the provided recordings. **The only recording with real
-obstacles (`doubleT_obstacle`) was held out**: it was never used to design or tune anything. Tuning used only
-false-positive analysis on the five obstacle-free recordings and ray-cast synthetic obstacles inside them.
+Все числа получены скриптами из `tools/` на предоставленных записях. **Единственная запись с реальными препятствиями
+(`doubleT_obstacle`) была отложена**: она никогда не использовалась для проектирования или настройки. Настройка
+опиралась только на анализ ложных срабатываний на пяти записях без препятствий и на синтетические препятствия,
+созданные в них лучевым моделированием.
 
-Hardware of these measurements: laptop Intel i5-8250U (15 W, 4 cores), single thread (numpy + numba kernels). The evaluation stand
-(i7-9700E, 65 W) is expected to be faster.
+Оборудование для этих измерений: ноутбук Intel i5-8250U (15 Вт, 4 ядра), один поток (numpy + ядра numba). Испытательный
+стенд (i7-9700E, 65 Вт), как ожидается, быстрее.
 
-## 1. False alarms on all obstacle-free recordings (every frame, 2287 frames)
+## 1. Ложные тревоги на всех записях без препятствий (каждый кадр, 2287 кадров)
 
-| Recording | Frames | False STOP frames | CAUTION frames | Median latency, ms |
+| Запись | Кадров | Кадров с ложным СТОП | Кадров ВНИМАНИЕ | Медианная задержка, мс |
 |---|---|---|---|---|
 | roundT→doubleT | 252 | 0 (0.0 %) | 104 | 74 |
-| squareT platform + switch | 877 | 2 (0.2 %) | 582 | 63 |
-| doubleT platform | 345 | 1 (0.3 %) | 169 | 78 |
-| roundT/squareT pressure gate | 545 | 0 (0.0 %) | 102 | 71 |
-| roundT pressure gate | 268 | 0 (0.0 %) | 49 | 66 |
-| **Total** | **2287** | **3 (0.13 %)** | 1006 | 69 |
+| squareT платформа + стрелка | 877 | 2 (0.2 %) | 582 | 63 |
+| doubleT платформа | 345 | 1 (0.3 %) | 169 | 78 |
+| roundT/squareT гермозатвор | 545 | 0 (0.0 %) | 102 | 71 |
+| roundT гермозатвор | 268 | 0 (0.0 %) | 49 | 66 |
+| **Итого** | **2287** | **3 (0.13 %)** | 1006 | 69 |
 
-Distinct false STOP tracks: 2. Median verified clear distance: 174 m.
+Различных треков с ложным СТОП: 2. Медианная проверенная свободная дистанция: 174 м.
 
-![false alarms](figures/false_alarms.png)
+![ложные тревоги](figures/false_alarms.png)
 
-## 2. Held-out real obstacle recording (`doubleT_obstacle`, stationary train, people in the tunnel)
+## 2. Отложенная реальная запись с препятствием (`doubleT_obstacle`, поезд стоит, люди в тоннеле)
 
-Reference positions of the people come from an independent method (per-pixel median background subtraction of the
-stationary recording), not from the detector.
+Эталонные положения людей получены независимым методом (попиксельное вычитание медианного фона неподвижной записи),
+а не детектором.
 
-* Frames in which person A was inside the train envelope: **60**
-* ... detected: **60**, confirmed STOP: **59** (detection distance ≈ 55.7 m)
-* Person B walking beside the train, outside the envelope: never raised STOP (correct).
-* STOP detections not corresponding to a person: **0**
-* Median processing time (921 600-point clouds): 89 ms
+* Кадров, в которых человек A находился внутри габарита поезда: **60**
+* ... обнаружен: **60**, подтверждённый СТОП: **59** (дистанция обнаружения ≈ 55.7 м)
+* Человек B, идущий рядом с поездом вне габарита: СТОП ни разу не вызвал (верно).
+* Обнаружений СТОП, не соответствующих человеку: **0**
+* Медианное время обработки (облака по 921 600 точек): 89 мс
 
-![held-out](figures/holdout_timeline.png)
+![отложенная запись](figures/holdout_timeline.png)
 
-## 3. Detection range: ray-cast obstacles in real frames
+## 3. Дальность обнаружения: препятствия лучевым моделированием в реальных кадрах
 
-Obstacles are ray-cast into the sensor's actual beam directions (occlusion and angular sampling of the real Pandar128),
-with returns lost at long range according to the Pandar128E3X link budget (200 m at 10 % reflectivity). Each case:
-start distance D0, approach at 10 m/s over 12 real consecutive frames, 3 start positions in each of the 5 empty
-recordings. Recall is computed over cases where the object is physically visible (≥ 3 returns; in curves objects
-beyond the sight distance are occluded by the tunnel wall and no sensor can see them).
+Препятствия «вставляются» в реальные направления лучей сенсора (затенение и угловая дискретизация настоящего
+Pandar128), а отражения на большой дальности теряются согласно энергетическому бюджету Pandar128E3X (200 м при
+отражательной способности 10 %). Каждый случай: начальная дистанция D0, приближение со скоростью 10 м/с на протяжении
+12 реальных последовательных кадров, 3 начальных положения в каждой из 5 пустых записей. Полнота считается по случаям,
+где объект физически виден (≥ 3 отражений; на кривых объекты за дальностью видимости закрыты стеной тоннеля, и их не
+увидит никакой сенсор).
 
-| Object | D0, m | cases | visible | recall | frames to confirm | returns at D0 |
+| Объект | D0, м | случаев | видимых | полнота | кадров до подтверждения | отражений на D0 |
 |---|---|---|---|---|---|---|
-| person 1.75 m (ρ 15%) | 40 | 15 | 15 | 1.00 | 2.0 | 285.1 |
-| person 1.75 m (ρ 15%) | 80 | 15 | 15 | 1.00 | 2.4 | 67.8 |
-| person 1.75 m (ρ 15%) | 120 | 15 | 13 | 0.77 | 2.6 | 23.1 |
-| person 1.75 m (ρ 15%) | 160 | 15 | 10 | 0.30 | 8.3 | 9.3 |
-| person 1.75 m (ρ 15%) | 200 | 15 | 5 | 0.00 | nan | 1.4 |
-| box 0.5 m (ρ 20%) | 40 | 15 | 15 | 1.00 | 2.0 | 83.7 |
-| box 0.5 m (ρ 20%) | 80 | 15 | 15 | 0.93 | 1.9 | 20.9 |
-| box 0.5 m (ρ 20%) | 120 | 15 | 10 | 0.70 | 2.7 | 6.7 |
-| box 0.5 m (ρ 20%) | 160 | 15 | 6 | 0.00 | nan | 2.5 |
-| box 0.5 m (ρ 20%) | 200 | 15 | 1 | 0.00 | nan | 0.5 |
-| dark box 0.5 m (ρ 5%) | 40 | 15 | 15 | 1.00 | 2.0 | 83.7 |
-| dark box 0.5 m (ρ 5%) | 80 | 15 | 15 | 0.93 | 1.9 | 20.9 |
-| dark box 0.5 m (ρ 5%) | 120 | 15 | 9 | 0.67 | 4.0 | 2.9 |
-| dark box 0.5 m (ρ 5%) | 160 | 15 | 0 | nan | nan | 0.0 |
-| dark box 0.5 m (ρ 5%) | 200 | 15 | 0 | nan | nan | 0.0 |
-| box 0.3 m (ρ 20%) | 40 | 15 | 15 | 1.00 | 2.3 | 29.3 |
-| box 0.3 m (ρ 20%) | 80 | 15 | 14 | 0.29 | 7.0 | 7.6 |
-| box 0.3 m (ρ 20%) | 120 | 15 | 7 | 0.00 | nan | 2.5 |
-| box 0.3 m (ρ 20%) | 160 | 15 | 0 | nan | nan | 0.5 |
-| box 0.3 m (ρ 20%) | 200 | 15 | 0 | nan | nan | 0.0 |
+| человек 1.75 м (ρ 15%) | 40 | 15 | 15 | 1.00 | 2.0 | 285.1 |
+| человек 1.75 м (ρ 15%) | 80 | 15 | 15 | 1.00 | 2.4 | 67.8 |
+| человек 1.75 м (ρ 15%) | 120 | 15 | 13 | 0.77 | 2.6 | 23.1 |
+| человек 1.75 м (ρ 15%) | 160 | 15 | 10 | 0.30 | 8.3 | 9.3 |
+| человек 1.75 м (ρ 15%) | 200 | 15 | 5 | 0.00 | nan | 1.4 |
+| коробка 0.5 м (ρ 20%) | 40 | 15 | 15 | 1.00 | 2.0 | 83.7 |
+| коробка 0.5 м (ρ 20%) | 80 | 15 | 15 | 0.93 | 1.9 | 20.9 |
+| коробка 0.5 м (ρ 20%) | 120 | 15 | 10 | 0.70 | 2.7 | 6.7 |
+| коробка 0.5 м (ρ 20%) | 160 | 15 | 6 | 0.00 | nan | 2.5 |
+| коробка 0.5 м (ρ 20%) | 200 | 15 | 1 | 0.00 | nan | 0.5 |
+| тёмная коробка 0.5 м (ρ 5%) | 40 | 15 | 15 | 1.00 | 2.0 | 83.7 |
+| тёмная коробка 0.5 м (ρ 5%) | 80 | 15 | 15 | 0.93 | 1.9 | 20.9 |
+| тёмная коробка 0.5 м (ρ 5%) | 120 | 15 | 9 | 0.67 | 4.0 | 2.9 |
+| тёмная коробка 0.5 м (ρ 5%) | 160 | 15 | 0 | nan | nan | 0.0 |
+| тёмная коробка 0.5 м (ρ 5%) | 200 | 15 | 0 | nan | nan | 0.0 |
+| коробка 0.3 м (ρ 20%) | 40 | 15 | 15 | 1.00 | 2.3 | 29.3 |
+| коробка 0.3 м (ρ 20%) | 80 | 15 | 14 | 0.29 | 7.0 | 7.6 |
+| коробка 0.3 м (ρ 20%) | 120 | 15 | 7 | 0.00 | nan | 2.5 |
+| коробка 0.3 м (ρ 20%) | 160 | 15 | 0 | nan | nan | 0.5 |
+| коробка 0.3 м (ρ 20%) | 200 | 15 | 0 | nan | nan | 0.0 |
 
-![recall](figures/recall_vs_distance.png)
+![полнота](figures/recall_vs_distance.png)
 
-Note: the scorer's training positives come from the same ray-cast generator (different random draws), so the gain of
-the hybrid in this table over the rules is optimistic; the leave-one-recording-out numbers in section 4 are the unbiased
-comparison.
+Примечание: положительные обучающие примеры классификатора получены тем же генератором лучевого моделирования (другие
+случайные реализации), поэтому выигрыш гибрида над правилами в этой таблице оптимистичен; несмещённое сравнение —
+числа «оставь одну запись» в разделе 4.
 
-## 4. Learned plausibility scorer (hybrid) — leakage-free validation
+## 4. Обучаемый классификатор правдоподобности (гибрид) — валидация без утечки
 
-**Caution when reading sections 1 and 3:** the deployed scorer was trained on candidates from the five obstacle-free
-recordings and on ray-cast obstacles, so the false-alarm count in section 1 (3 frames) is *in-sample* for the scorer.
-The unbiased estimate is the **leave-one-recording-out** simulation below: each tunnel is scored by a model that never
-saw it, and the decision threshold is chosen by nested CV on the other four. Section 2 (real people, held out) is
-fully out-of-sample.
+**Осторожно при чтении разделов 1 и 3:** развёрнутый классификатор обучался на кандидатах из пяти записей без
+препятствий и на препятствиях из лучевого моделирования, поэтому число ложных тревог в разделе 1 (3 кадра) для него —
+*на обучающей выборке*. Несмещённая оценка — моделирование **«оставь одну запись»** ниже: каждый тоннель оценивается
+моделью, которая его не видела, а порог решения выбирается вложенной кросс-валидацией на остальных четырёх. Раздел 2
+(реальные люди, отложенная запись) полностью вне выборки.
 
-Data: 5 864 candidate clusters (964 ray-cast positives) — `tools/gen_dataset.py`; models — `tools/train_scorer.py`;
-Optuna tuning — `tools/tune_scorer.py`; export and blend — `tools/export_scorer.py`, `tools/final_scorer.py`.
+Данные: 5 864 кластера-кандидата (964 положительных из лучевого моделирования) — `tools/gen_dataset.py`; модели —
+`tools/train_scorer.py`; настройка Optuna — `tools/tune_scorer.py`; экспорт и смешивание — `tools/export_scorer.py`,
+`tools/final_scorer.py`.
 
-| Model (38 physical features) | LORO AP | LORO ROC-AUC | tuned AP |
+| Модель (38 физических признаков) | AP (LORO) | ROC-AUC (LORO) | AP после настройки |
 |---|---|---|---|
-| logistic regression | 0.877 | 0.902 | — |
+| логистическая регрессия | 0.877 | 0.902 | — |
 | LightGBM | 0.888 | 0.907 | — |
-| LightGBM, monotone constraints (physics-constrained) | 0.887 | 0.905 | 0.893 |
-| XGBoost | 0.884 | 0.904 | — (excluded: exported parity 4·10⁻² logit) |
+| LightGBM с ограничениями монотонности (физически ограниченный) | 0.887 | 0.905 | 0.893 |
+| XGBoost | 0.884 | 0.904 | — (исключён: расхождение экспорта 4·10⁻² логита) |
 | CatBoost | 0.890 | 0.913 | 0.894 |
 | MLP | 0.864 | 0.888 | — |
-| physics-informed MLP (monotone-gradient penalty) | 0.858 | 0.886 | 0.867 |
+| физически информированная MLP (штраф за монотонность градиента) | 0.858 | 0.886 | 0.867 |
 
-Decision level (LORO, frame-level false STOP on 2 287 clean frames, recall over ray-cast objects):
+Уровень решения (LORO, ложные СТОП по кадрам на 2 287 чистых кадрах, полнота по объектам лучевого моделирования):
 
-| Policy | False STOP frames | Object recall | recall 50–100 m | recall 100–150 m |
+| Политика | Кадров с ложным СТОП | Полнота по объектам | полнота 50–100 м | полнота 100–150 м |
 |---|---|---|---|---|
-| physics rules only | 30 (1.31 %) | 62.8 % | 81.8 % | 15.6 % |
-| ML only (tuned blend) | 23–32 (≈1.0–1.4 %) | 64.5 % | 83.6 % | 18.8 % |
-| rules AND ML | 7–9 (≈0.3–0.4 %) | 61.2–62.8 % | 80–82 % | 12.5–15.6 % |
-| **deployed: rules < 30 m, ML ≥ 30 m, 5-frame smoothing, shell veto** | **7 (0.31 %)** | **64.5 %** | **83.6 %** | **18.8 %** |
+| только правила физики | 30 (1.31 %) | 62.8 % | 81.8 % | 15.6 % |
+| только ML (настроенная смесь) | 23–32 (≈1.0–1.4 %) | 64.5 % | 83.6 % | 18.8 % |
+| правила И ML | 7–9 (≈0.3–0.4 %) | 61.2–62.8 % | 80–82 % | 12.5–15.6 % |
+| **развёрнуто: правила < 30 м, ML ≥ 30 м, сглаживание по 5 кадрам, вето оболочки** | **7 (0.31 %)** | **64.5 %** | **83.6 %** | **18.8 %** |
 
-The hybrid reduces false stops **4×** while *increasing* recall. The shell veto costs no recall in the simulation and
-removed the only in-sample false-STOP track that the ML stage had introduced (inter-track column, roundT→doubleT).
-Blending the three structurally different models gave a better decision-level trade-off than the single best AP model.
+Гибрид сокращает ложные остановки **в 4 раза**, одновременно *повышая* полноту. Вето оболочки не стоит полноты в
+моделировании и убрало единственный трек с ложным СТОП на обучающей выборке, внесённый ML-этапом (колонна между
+путями, roundT→doubleT). Смесь трёх структурно разных моделей дала лучший компромисс на уровне решения, чем одна
+модель с лучшей AP.
 
-## 5. Speed
+## 5. Скорость
 
-| Stage | before | after |
+| Этап | до | после |
 |---|---|---|
-| total per frame (180×2400 clouds), median | 268 ms | **69 ms** (p95 102 ms) |
-| geometry estimator | ≈ 173 ms | 33 ms |
-| 921 600-point clouds, median | 552 ms | **89 ms** |
+| всего на кадр (облака 180×2400), медиана | 268 мс | **69 мс** (p95 102 мс) |
+| оценка геометрии | ≈ 173 мс | 33 мс |
+| облака по 921 600 точек, медиана | 552 мс | **89 мс** |
 
-Changes: vectorised coarse-DP cost (bincount, proven equal), numba kernels for rail DP / coarse DP / Gauss–Newton normal
-equations (numpy fallback gives the same decisions), column-selected rotation, distance-bucketed neighbourhood index,
-2 m sight grid. JIT compilation (~9 s) happens once at node start-up.
+Изменения: векторизованная стоимость грубого ДП (bincount, доказанно равная циклу), ядра numba для ДП по рельсам /
+грубого ДП / нормальных уравнений Гаусса–Ньютона (запасной путь на numpy даёт те же решения), поворот только нужных
+столбцов, индекс соседства по корзинам дальности, сетка видимости 2 м. JIT-компиляция (~9 с) выполняется один раз при
+старте узла.
 
-## 6. Metrics: precision, recall, accuracy
+## 6. Метрики: точность, полнота, accuracy
 
-**Held-out real recording** (`doubleT_obstacle`, 201 frames, never used for development; positive = person A inside the
-train envelope; predicted positive = STOP):
+**Отложенная реальная запись** (`doubleT_obstacle`, 201 кадр, не использовалась при разработке; положительный класс —
+человек A внутри габарита поезда; предсказанный положительный — СТОП):
 
-| TP | FP | FN | TN | Precision | Recall | Accuracy | F1 |
+| TP | FP | FN | TN | Точность | Полнота | Accuracy | F1 |
 |---|---|---|---|---|---|---|---|
 | 59 | 0 | 1 | 141 | **100 %** | **98.3 %** | **99.5 %** | 0.99 |
 
-The single missed frame was reported as CAUTION (object at the envelope boundary), not CLEAR.
+Единственный пропущенный кадр выдан как ВНИМАНИЕ (объект на границе габарита), а не СВОБОДНО.
 
-**Candidate classifier, leave-one-recording-out** (5 864 single-frame candidates, 964 ray-cast positives; before temporal
-smoothing and confirmation, so these numbers are lower than the decision-level ones):
+**Классификатор кандидатов, «оставь одну запись»** (5 864 кандидата по одному кадру, 964 положительных из лучевого
+моделирования; до временного сглаживания и подтверждения, поэтому эти числа ниже, чем на уровне решения):
 
-| Model | Precision | Recall | Accuracy | Balanced acc. | ROC-AUC | AP |
+| Модель | Точность | Полнота | Accuracy | Сбаланс. accuracy | ROC-AUC | AP |
 |---|---|---|---|---|---|---|
-| physics rules | 91.0 % | 73.0 % | 94.4 % | 85.8 % | — | — |
+| правила физики | 91.0 % | 73.0 % | 94.4 % | 85.8 % | — | — |
 | LightGBM (0.5) | 95.3 % | 81.7 % | 96.3 % | 90.5 % | 0.907 | 0.888 |
 | CatBoost (0.5) | 94.6 % | 80.3 % | 96.0 % | 89.7 % | 0.913 | 0.890 |
-| deployed blend (0.37) | 79.3 % | 83.8 % | 93.7 % | 89.8 % | 0.904 | 0.888 |
+| развёрнутая смесь (0.37) | 79.3 % | 83.8 % | 93.7 % | 89.8 % | 0.904 | 0.888 |
 
-Accuracy is dominated by the 84 % negatives and is not a useful headline. The deployed threshold favours recall at the
-candidate level because temporal smoothing and M-of-N confirmation remove isolated false candidates; at the decision
-level the blend gives 0.31 % false STOP frames and 64.5 % object recall (section 4). Recall by distance of the object's
-first position (candidate level): 100 % below 50 m, 87 % at 50–100 m, 50 % at 100–150 m, 0 % beyond 150 m.
+Accuracy определяется 84 % отрицательных примеров и не годится как главный показатель. Развёрнутый порог на уровне
+кандидатов смещён в пользу полноты, потому что временное сглаживание и подтверждение M из N убирают одиночные ложные
+кандидаты; на уровне решения смесь даёт 0.31 % кадров с ложным СТОП и 64.5 % полноты по объектам (раздел 4). Полнота
+по дальности первого положения объекта (уровень кандидатов): 100 % ближе 50 м, 87 % на 50–100 м, 50 % на 100–150 м,
+0 % дальше 150 м.
 
-## 7. Leakage controls and generalization
+## 7. Контроль утечек и обобщение
 
-| Risk | Control |
+| Риск | Контроль |
 |---|---|
-| Tuning on the test obstacles | The only real obstacle recording was held out from design, tuning, feature selection, training and threshold choice. Its reference positions come from background subtraction of the stationary train, not from the detector. |
-| Correlated frames across train/test | Every split is **by recording** (leave-one-recording-out): consecutive frames and ray-cast objects of the test tunnel never appear in training. |
-| Threshold chosen on test data | The decision threshold of each fold is selected on the four training recordings only (nested selection under a false-alarm budget). Per-fold thresholds were stable (0.35–0.43). |
-| Features that identify a recording | Intensity, ring index, track age, closing speed and candidates per frame are excluded; features are physical and normalised by the Pandar128 beam spacing. |
-| Model memorising spurious cues | Monotone constraints on physically signed features (LightGBM), a monotonicity penalty (physics-informed MLP), strong regularisation chosen by Optuna (LightGBM min_child_samples 107, CatBoost l2_leaf_reg 26.6), and a hard physical veto (shell attachment). |
-| Rules fitted to the data | Envelope and physical tests come from measured free space and the sensor specification, never from obstacle labels; each rule change was checked on all five recordings and on ray-cast recall at once. |
-| Optimistic reporting | End-to-end false alarms of the deployed model on its training recordings (3 frames, 0.13 %) are labelled in-sample; the headline number is the leave-one-recording-out 0.31 %. |
+| Настройка на тестовых препятствиях | Единственная реальная запись с препятствием исключена из проектирования, настройки, отбора признаков, обучения и выбора порога. Её эталонные положения получены вычитанием фона неподвижного поезда, а не детектором. |
+| Коррелированные кадры в обучении и тесте | Каждое разбиение — **по записи** (leave-one-recording-out): соседние кадры и объекты лучевого моделирования тестового тоннеля никогда не попадают в обучение. |
+| Порог, выбранный на тестовых данных | Порог решения каждого фолда выбирается только на четырёх обучающих записях (вложенный выбор при бюджете ложных тревог). Пороги по фолдам стабильны (0.35–0.43). |
+| Признаки, идентифицирующие запись | Интенсивность, номер кольца, возраст трека, скорость сближения и число кандидатов в кадре исключены; признаки физические и нормированы на шаг лучей Pandar128. |
+| Запоминание ложных подсказок | Ограничения монотонности на физически знаковых признаках (LightGBM), штраф за монотонность (физически информированная MLP), сильная регуляризация, выбранная Optuna (LightGBM min_child_samples 107, CatBoost l2_leaf_reg 26.6), и жёсткое физическое вето (крепление к оболочке). |
+| Правила, подогнанные под данные | Габарит и физические тесты взяты из измеренного свободного пространства и спецификации сенсора, а не из меток препятствий; каждое изменение правила проверялось сразу на всех пяти записях и на полноте лучевого моделирования. |
+| Оптимистичная отчётность | Сквозные ложные тревоги развёрнутой модели на её обучающих записях (3 кадра, 0.13 %) помечены как «на обучающей выборке»; главное число — 0.31 % по «оставь одну запись». |
 
-Evidence of generalization:
-* each tunnel scored by a model that never saw it: false STOP frames per fold 0 / 3 / 4 / 0 / 0, rules 4 / 10 / 13 / 0 / 3;
-* the held-out recording uses a **different lidar mounting** (rolled, 0.5 m higher, 7 200 columns, different topic):
-  axis detection and rail-based calibration adapted without configuration, 0 false STOP;
-* the physics-only system (no learning) already generalises (rules: 1.31 % false STOP), so the learned stage refines a
-  model that does not depend on training data.
+Свидетельства обобщения:
+* каждый тоннель оценён моделью, которая его не видела: кадров с ложным СТОП по фолдам 0 / 3 / 4 / 0 / 0, у правил
+  4 / 10 / 13 / 0 / 3;
+* отложенная запись сделана при **другом монтаже лидара** (крен, на 0.5 м выше, 7 200 столбцов, другой топик):
+  определение оси и калибровка по рельсам адаптировались без настройки, 0 ложных СТОП;
+* система только на физике (без обучения) уже обобщается (правила: 1.31 % ложных СТОП), поэтому обучаемый этап
+  уточняет модель, не зависящую от обучающих данных.
 
-Remaining limits: six recordings from one line and one sensor type; positives for learning and for range curves are
-ray-cast (different random draws, same generator), so range numbers for the hybrid are optimistic; one real obstacle
-scenario with a stationary train; hyperparameters were tuned on the same leave-one-recording-out folds (tuning gain in
-AP was small: +0.004 to +0.009).
+Оставшиеся ограничения: шесть записей одной линии и одного типа сенсора; положительные примеры для обучения и для
+кривых дальности получены лучевым моделированием (другие случайные реализации, тот же генератор), поэтому цифры
+дальности гибрида оптимистичны; один реальный сценарий с препятствием при неподвижном поезде; гиперпараметры
+настраивались на тех же фолдах «оставь одну запись» (выигрыш от настройки в AP мал: +0.004 … +0.009).
 
-## 8. Long-range study: can detection reach 200–300 m?
+## 8. Исследование дальности: можно ли обнаруживать на 200–300 м?
 
-The case grades range as 100 m good, 200 m very good, 300 m excellent. We measured where range is lost before trying
-to extend it (`tools/range_budget.py`, `tools/diag_range.py`, `tools/gen_dataset_v2.py`, `tools/train_scorer_v2.py`).
+Кейс оценивает дальность так: 100 м — хорошо, 200 м — очень хорошо, 300 м — отлично. Прежде чем пытаться её
+увеличить, мы измерили, где теряется дальность (`tools/range_budget.py`, `tools/diag_range.py`,
+`tools/gen_dataset_v2.py`, `tools/train_scorer_v2.py`).
 
-![range budget](figures/range_budget.png)
+![бюджет дальности](figures/range_budget.png)
 
-**1. The corridor is physically not visible that far in these recordings.** Per recording (every 5th frame):
+**1. В этих записях коридор физически не виден так далеко.** По записям (каждый 5-й кадр):
 
-| Recording | 99.9 % of returns closer than (median / max) | geometry measured to (median / max) | verified clear distance before the 210 m cap (median / max) |
+| Запись | 99.9 % отражений ближе (медиана / макс) | геометрия измерена до (медиана / макс) | проверенная свободная дистанция до ограничения 210 м (медиана / макс) |
 |---|---|---|---|
-| round → double-track | 128 / 164 m | 118 / 195 m | 122 / 206 m |
-| platform + switch | 140 / 158 m | 168 / 197 m | 190 / 232 m |
-| double-track platform | 132 / 196 m | 123 / 156 m | 145 / 156 m |
-| pressure gate 1 | 114 / 139 m | 127 / 194 m | 156 / 231 m |
-| pressure gate 2 | 111 / 140 m | 116 / 164 m | 108 / 204 m |
+| круглый → двухпутный | 128 / 164 м | 118 / 195 м | 122 / 206 м |
+| платформа + стрелка | 140 / 158 м | 168 / 197 м | 190 / 232 м |
+| двухпутная платформа | 132 / 196 м | 123 / 156 м | 145 / 156 м |
+| гермозатвор 1 | 114 / 139 м | 127 / 194 м | 156 / 231 м |
+| гермозатвор 2 | 111 / 140 м | 116 / 164 м | 108 / 204 м |
 
-None of the sampled frames (every 25th frame of every recording) contains a single return beyond 250 m. Tunnel walls seen at grazing incidence stop
-returning, and curves, platform structures and inter-track columns occlude the corridor.
+Ни в одном из проверенных кадров (каждый 25-й кадр каждой записи) нет ни одного отражения дальше 250 м. Стены тоннеля
+при скользящем падении перестают отражать, а кривые, конструкции платформ и колонны между путями закрывают коридор.
 
-**2. The sensor budget (Pandar128E3X user manual, Appendix A).** The instrumented time-of-flight range of the high-resolution channels is **200 m** — the recordings contain no return beyond 209 m — so nothing farther can be measured by this lidar, whatever its reflectivity; 300 m is out of reach for this sensor. Only channels 34–65 (elevation −2.9° … +1.0°) reach 200 m at 10 % reflectivity; the other high-resolution channels reach 140 m, the upper ones 100 m. From 80 m outwards the whole corridor (rail to 2 m above it) lies inside the 200 m channels for both lidar mountings. Within that, the reach of a 15 % target (a person) is ≈ 245 m on paper but capped at the instrumented 200 m, and at 0.1° × 0.125° sampling a person yields only ≈ 4–9 returns per frame at 180–200 m even with a clear line of sight.
+**2. Бюджет сенсора (руководство пользователя Pandar128E3X, приложение A).** Инструментальная дальность времяпролётного
+измерения каналов высокого разрешения — **200 м** (в записях нет ни одного отражения дальше 209 м), поэтому дальше этот
+лидар не измерит ничего, какой бы ни была отражательная способность; 300 м для этого сенсора недостижимы. Только каналы
+34–65 (угол места −2.9° … +1.0°) достают до 200 м при 10 %; остальные каналы высокого разрешения — 140 м, верхние —
+100 м. Начиная с 80 м весь коридор (от рельса до 2 м над ним) лежит внутри 200-метровых каналов при обоих монтажах
+лидара. В этих пределах дальность цели с 15 % (человек) на бумаге ≈ 245 м, но ограничена инструментальными 200 м, а при
+дискретизации 0.1° × 0.125° человек на 180–200 м даёт лишь ≈ 4–9 отражений на кадр даже при прямой видимости.
 
-**3. Detection funnel.** Ray-cast objects on the longest straight views (platform + switch, frames 289–311, geometry
-measured to 186 m): with a warm detector a person is confirmed at 140–160 m; at 180 m the learned scorer rejected it,
-at 200 m the two-tier rule reported CAUTION (beyond the measured range), at 220 m it was beyond the geometry horizon.
-Placing the objects with a warm clean-frame reference geometry (instead of a 12-frame one) showed that on the true
-corridor most 140–220 m positions receive **no return at all** — the earlier "visible" far objects had been placed off
-the track, in open space. (The synthetic range curves in section 3 used the short warm-up for both placement and
-detection, so their far bands carry this uncertainty.)
+**3. Воронка обнаружения.** Объекты лучевого моделирования на самых длинных прямых обзорах (платформа + стрелка, кадры
+289–311, геометрия измерена до 186 м): при «прогретом» детекторе человек подтверждается на 140–160 м; на 180 м его
+отклонил классификатор, на 200 м двухъярусное правило выдало ВНИМАНИЕ (дальше измеренной дальности), на 220 м он был
+за горизонтом геометрии. Размещение объектов по прогретой эталонной геометрии чистых кадров (вместо 12-кадровой)
+показало, что на настоящем коридоре большинство положений на 140–220 м **не получает ни одного отражения** — ранее
+«видимые» дальние объекты стояли вне пути, в открытом пространстве. (Синтетические кривые дальности в разделе 3
+использовали короткий прогрев и для размещения, и для обнаружения, поэтому их дальние полосы несут эту
+неопределённость.)
 
-**4. Attempt: long-range scorer v2 (negative result).** New dataset with warm geometry, half of the objects at
-120–245 m and candidates kept beyond the measured range (5 135 candidates, 596 positives, 134 beyond the measured
-range); leave-one-recording-out; three decision policies (STOP within the measured range; plus a stricter score and
-longer confirmation beyond it; plus sparse far clusters accumulated over frames):
+**4. Попытка: классификатор дальности v2 (отрицательный результат).** Новый набор данных с прогретой геометрией,
+половина объектов на 120–245 м, кандидаты сохраняются и за измеренной дальностью (5 135 кандидатов, 596 положительных,
+134 за измеренной дальностью); «оставь одну запись»; три политики решения (СТОП в пределах измеренной дальности; плюс
+более строгая оценка и более долгое подтверждение за ней; плюс накопление разреженных дальних кластеров по кадрам):
 
-| Features | AP | far AP (≥150 m) | best false STOP (budget 0.3 %) | recall 100–150 m | 150–200 m | 200–250 m |
+| Признаки | AP | AP дальних (≥150 м) | лучшие ложные СТОП (бюджет 0.3 %) | полнота 100–150 м | 150–200 м | 200–250 м |
 |---|---|---|---|---|---|---|
-| all | 0.832 | 0.413 | 0.61 % | 38 % | 6 % | 0 % (4 visible) |
-| distance-invariant | 0.850 | 0.464 | 0.52 % | 41 % | 6 % | 0 % (4 visible) |
+| все | 0.832 | 0.413 | 0.61 % | 38 % | 6 % | 0 % (4 видимых) |
+| инвариантные к дальности | 0.850 | 0.464 | 0.52 % | 41 % | 6 % | 0 % (4 видимых) |
 
-Of the objects deliberately placed at 150–245 m only 37 were visible at all (≥ 3 returns in some frame). Extending
-STOP beyond the measured range or accumulating sparse far clusters added false alarms but no recall. The deployed v1
-scorer was kept.
+Из объектов, намеренно размещённых на 150–245 м, видимыми оказались только 37 (≥ 3 отражений хотя бы в одном кадре).
+Расширение СТОП за измеренную дальность или накопление разреженных дальних кластеров добавило ложных тревог, но не
+полноты. Оставлен развёрнутый классификатор v1.
 
-**Conclusion.** In these tunnels the achievable, honestly validated range is ≈ 120–160 m for a person, with the free path
-verified up to the lidar's instrumented range (≈ 200 m) on straight sections. (Before this study the reported clear distance could reach 232 m through extrapolated geometry; it is now capped at 210 m because no return beyond that exists (`report_range_cap`; decisions are unchanged — capping the internal horizon instead would have shifted a scorer input). Reaching 200–300 m requires more photons and a view of the corridor, not
-more processing: a long-range narrow-field lidar (1550 nm) or camera/radar fusion for the far field, and a stored track
-map so that the envelope is known beyond the visible geometry. The software already reports `clear_distance`, the
-distance up to which the path was actually verified, so the train can plan its speed against that value.
+**Вывод.** В этих тоннелях достижимая, честно проверенная дальность для человека — ≈ 120–160 м, а свободный путь
+проверяется до инструментальной дальности лидара (≈ 200 м) на прямых участках. (До этого исследования выдаваемая
+свободная дистанция могла доходить до 232 м за счёт экстраполированной геометрии; теперь она ограничена 210 м, потому
+что отражений дальше не существует (`report_range_cap`; решения не изменились — ограничение внутреннего горизонта
+сдвинуло бы вход классификатора).) Для 200–300 м нужны больше фотонов и обзор коридора, а не больше вычислений:
+дальнобойный узкоугольный лидар (1550 нм) или слияние с камерой/радаром для дальней зоны и сохранённая карта пути,
+чтобы габарит был известен за пределами видимой геометрии. Программа уже выдаёт `clear_distance` — расстояние, до
+которого путь действительно проверен, — и поезд может планировать скорость по этому значению.
 
-## 9. Ablation study
+## 9. Абляция
 
-`tools/ablation.py` switches off one component at a time and reruns everything: every frame of the five obstacle-free
-recordings (false STOP frames), the held-out real recording, and ray-cast person / 0.5 m box approaching from 80, 120
-and 160 m (2 starts per recording; cases with fewer than 3 returns are excluded, leaving 5–10 cases per cell).
-`tools/make_ablation_figures.py` draws the plots.
+`tools/ablation.py` отключает по одному компоненту и заново прогоняет всё: каждый кадр пяти записей без препятствий
+(кадры с ложным СТОП), отложенную реальную запись и человека / коробку 0.5 м из лучевого моделирования, приближающихся
+с 80, 120 и 160 м (2 старта на запись; случаи с менее чем 3 отражениями исключены, остаётся 5–10 случаев на ячейку).
+Графики рисует `tools/make_ablation_figures.py`.
 
-Caveats: variants that keep the learned scorer are evaluated on the recordings it was trained on, so their false-alarm
-column is optimistic (the unbiased view of the learned stage is the leave-one-recording-out panel below); with 5–10
-cases per range cell a difference of one or two cases is not significant; ray-cast placement used the same short-warm-up
-reference geometry for all variants, so comparisons between variants are fair while absolute far-range values are
-uncertain (section 8).
+Оговорки: варианты с обучаемым классификатором оцениваются на записях, на которых он обучался, поэтому их столбец
+ложных тревог оптимистичен (несмещённый взгляд на обучаемый этап — панель «оставь одну запись» ниже); при 5–10 случаях
+на ячейку дальности разница в один-два случая незначима; размещение объектов использовало одну и ту же эталонную
+геометрию с коротким прогревом для всех вариантов, поэтому сравнения между вариантами честные, а абсолютные значения
+на большой дальности неопределённы (раздел 8).
 
-| Variant | false STOP frames | held-out STOP / in-gauge | held-out spurious | person 80 / 120 / 160 m | box 0.5 m 80 / 120 / 160 m |
+| Вариант | кадров с ложным СТОП | отлож. запись: СТОП / в габарите | отлож. запись: лишние | человек 80 / 120 / 160 м | коробка 0.5 м 80 / 120 / 160 м |
 |---|---|---|---|---|---|
-| full system | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − learned scorer (rules only) | 36 | 59 / 60 | 3 | 100 / 89 / 50 % | 100 / 29 / 20 % |
-| − shell veto in the ML path | 12 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − shell-attachment test | 14 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − wall containment test | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − gravity test | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − shape (beam-extent) test | 6 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − M-of-N confirmation (1 of 1) | 5 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
-| − temporal score smoothing | 5 | 59 / 60 | 0 | 100 / 78 / 50 % | 100 / 71 / 0 % |
-| − 2σ uncertainty zones | 34 | 60 / 60 | 0 | 100 / 78 / 50 % | 100 / 71 / 0 % |
-| − two-tier range rule | 3 | 59 / 60 | 0 | 100 / 78 / 67 % | 100 / 71 / 0 % |
-| − temporal geometry prior | 17 | 60 / 61 | 5 | 90 / 67 / 0 % | 90 / 57 / 0 % |
-| straight corridor (curvature suppressed) | 436 | 57 / 59 | 0 | 80 / 67 / 17 % | 80 / 57 / 0 % |
+| полная система | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − обучаемый классификатор (только правила) | 36 | 59 / 60 | 3 | 100 / 89 / 50 % | 100 / 29 / 20 % |
+| − вето оболочки в ML-ветке | 12 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − тест крепления к оболочке | 14 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − тест вложенности в стены | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − тест гравитации | 3 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − тест формы (размер в лучах) | 6 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − подтверждение M из N (1 из 1) | 5 | 59 / 60 | 0 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| − временное сглаживание оценки | 5 | 59 / 60 | 0 | 100 / 78 / 50 % | 100 / 71 / 0 % |
+| − зоны неопределённости 2σ | 34 | 60 / 60 | 0 | 100 / 78 / 50 % | 100 / 71 / 0 % |
+| − двухъярусное правило дальности | 3 | 59 / 60 | 0 | 100 / 78 / 67 % | 100 / 71 / 0 % |
+| − временной априор геометрии | 17 | 60 / 61 | 5 | 90 / 67 / 0 % | 90 / 57 / 0 % |
+| прямой коридор (кривизна подавлена) | 436 | 57 / 59 | 0 | 80 / 67 / 17 % | 80 / 57 / 0 % |
 
-![ablation heatmap](figures/ablation/ablation_heatmap.png)
+![тепловая карта абляции](figures/ablation/ablation_heatmap.png)
 
-![false alarms per variant](figures/ablation/ablation_false_alarms.png)
+![ложные тревоги по вариантам](figures/ablation/ablation_false_alarms.png)
 
-![recall per variant](figures/ablation/ablation_recall.png)
+![полнота по вариантам](figures/ablation/ablation_recall.png)
 
-![trade-off](figures/ablation/ablation_tradeoff.png)
+![компромисс](figures/ablation/ablation_tradeoff.png)
 
-![held-out recording per variant](figures/ablation/ablation_holdout.png)
+![отложенная запись по вариантам](figures/ablation/ablation_holdout.png)
 
-![learned stage, leave-one-recording-out](figures/ablation/ablation_learned_stage.png)
+![обучаемый этап, «оставь одну запись»](figures/ablation/ablation_learned_stage.png)
 
-What the ablation shows:
-* **Track curvature is the foundation.** Suppressing curvature (a straight corridor) raises false STOP frames from 3 to
-  436 and loses 17–20 points of recall.
-* **The learned scorer removes 33 of 36 rule false alarms** and all 3 spurious STOPs on the real recording, but the rules
-  alone find a far person more often (89 / 50 % vs 78 / 33 % at 120 / 160 m): the v1 training set had only 17 positives
-  beyond 150 m (section 8). The unbiased leave-one-recording-out comparison of the learned stage is in the last panel.
-* **Uncertainty-aware (2σ) zones** prevent 31 false alarms; the **shell veto** 9 and the **shell-attachment test** 11.
-* **Temporal fusion of the geometry** matters for range: without it recall at 160 m drops to 0 and 5 spurious STOPs appear.
-* **Shape test, M-of-N confirmation and score smoothing** each prevent 2–3 false alarms.
-* **Wall containment and gravity tests are redundant** once the learned scorer is present (no change on any metric);
-  they remain the safety net of the rules-only mode (`scorer_model:=none`).
-* **Two-tier range rule:** removing it doubled person recall at 160 m (2 more of 6 cases) with no extra false alarm
-  in-sample; see the validation below before any change of the deployed default.
+Что показывает абляция:
+* **Кривизна пути — фундамент.** Подавление кривизны (прямой коридор) увеличивает число кадров с ложным СТОП с 3 до
+  436 и теряет 17–20 пунктов полноты.
+* **Обучаемый классификатор убирает 33 из 36 ложных тревог правил** и все 3 лишних СТОП на реальной записи, но одни
+  правила чаще находят дальнего человека (89 / 50 % против 78 / 33 % на 120 / 160 м): в обучающем наборе v1 было лишь
+  17 положительных примеров дальше 150 м (раздел 8). Несмещённое сравнение обучаемого этапа по «оставь одну запись» —
+  на последней панели.
+* **Зоны с учётом неопределённости (2σ)** предотвращают 31 ложную тревогу; **вето оболочки** — 9, **тест крепления к
+  оболочке** — 11.
+* **Временное слияние геометрии** важно для дальности: без него полнота на 160 м падает до 0 и появляются 5 лишних СТОП.
+* **Тест формы, подтверждение M из N и сглаживание оценки** предотвращают по 2–3 ложные тревоги.
+* **Тесты вложенности в стены и гравитации избыточны** при наличии обучаемого классификатора (ни одна метрика не
+  меняется); они остаются страховкой режима только правил (`scorer_model:=none`).
+* **Двухъярусное правило дальности:** его удаление удвоило полноту по человеку на 160 м (ещё 2 из 6 случаев) без лишних
+  ложных тревог на обучающей выборке; перед любым изменением значения по умолчанию см. валидацию ниже.
 
-## 10. Pandar128 documentation: what was used
+## 10. Документация Pandar128: что использовано
 
-`tools/pandar_calibration_check.py`, `src/tunnel_guard/config/pandar128_channels.csv` (extracted from the user manual),
-`tunnel_guard/core/pandar.py`.
+`tools/pandar_calibration_check.py`, `src/tunnel_guard/config/pandar128_channels.csv` (извлечено из руководства
+пользователя), `tunnel_guard/core/pandar.py`.
 
-| File | Finding | Use in the solution |
+| Файл | Находка | Использование в решении |
 |---|---|---|
-| Angle correction file | Matches the recorded lidar: elevation within 0.06° after a constant −0.064° mounting pitch, azimuth offsets within 0.08° (median 0.03°); channel 42 is the horizontal beam | validates the beam model fitted from the data; channel table in `core/pandar.py` |
-| User manual, Appendix A | Instrumented range 200 m (high-res channels); 200 m at 10 % only for channels 34–65 (−2.9° … +1.0°), 140 m for the other high-res channels, 100 m upper channels, 25–100 m ground channels; high-res channels 26–90 have 0.125° spacing (−6.1° … +2.0°) | ray-cast evaluation now uses per-channel reach and the instrumented-range cap; unit tests check that the far corridor (80–200 m) is covered by the 200 m channels and by the 0.125° band assumed in the shape test and features |
-| Firetime correction file + Appendix B.4 | Firing offsets inside a block ≤ 55 µs (unit ns) → < 1 mm at 10 m/s | no correction needed |
-| Recordings' column timing | Forward sweep: 2 400 columns in 33 ms (moving recordings), 7 200 columns in 100 ms (obstacle recording) → the ±5° sector around the track axis is scanned in ≈ 3–4 ms, ≈ 3–4 cm of motion at 10 m/s | motion de-skew not needed for detection; would matter only for a map accumulated over the whole sweep |
-| STEP model | Housing Ø 118 mm body, Ø 136 mm flange | no effect on detection (minimum range 1.5 m already clears the housing) |
+| Файл угловой коррекции | Совпадает с записанным лидаром: угол места в пределах 0.06° после постоянного тангажа монтажа −0.064°, смещения азимута в пределах 0.08° (медиана 0.03°); канал 42 — горизонтальный луч | подтверждает модель лучей, подобранную по данным; таблица каналов в `core/pandar.py` |
+| Руководство пользователя, приложение A | Инструментальная дальность 200 м (каналы высокого разрешения); 200 м при 10 % только у каналов 34–65 (−2.9° … +1.0°), 140 м у остальных каналов высокого разрешения, 100 м у верхних, 25–100 м у нижних (к земле); каналы высокого разрешения 26–90 имеют шаг 0.125° (−6.1° … +2.0°) | оценка лучевым моделированием теперь учитывает дальность по каналам и инструментальный предел; модульные тесты проверяют, что дальний коридор (80–200 м) покрыт 200-метровыми каналами и полосой 0.125°, заложенной в тест формы и признаки |
+| Файл коррекции времени выстрела + приложение B.4 | Смещения выстрелов внутри блока ≤ 55 мкс (единица — нс) → < 1 мм при 10 м/с | коррекция не нужна |
+| Тайминг столбцов в записях | Прямой проход: 2 400 столбцов за 33 мс (записи в движении), 7 200 столбцов за 100 мс (запись с препятствием) → сектор ±5° вокруг оси пути сканируется за ≈ 3–4 мс, ≈ 3–4 см движения при 10 м/с | компенсация движения (de-skew) для обнаружения не нужна; важна была бы только для карты, накопленной за весь оборот |
+| STEP-модель | Корпус Ø 118 мм, фланец Ø 136 мм | на обнаружение не влияет (минимальная дальность 1.5 м уже больше корпуса) |
 
-## 11. New 20-minute recording (dataset2, never seen before)
+## 11. Новая 20-минутная запись (датасет 2, ранее не виденная)
 
-> **Superseded by section 12.** The first-pass reading below ("consistent with staged obstacle scenarios") was wrong:
-> the traversal test (12.2) proves that the train later drove through the location of every one of these alarms, i.e.
-> all of them were false.  The table is kept as the record of the first, piece-wise evaluation.
+> **Заменено разделом 12.** Первоначальная трактовка ниже («согласуется с постановочными сценариями с препятствиями»)
+> была ошибочной: тест проезда (12.2) доказывает, что поезд затем проехал через место каждой из этих тревог, т.е. все
+> они ложные. Таблица сохранена как запись первой, покусочной оценки.
 
-`bags.zip` → `new_data.zst` → one rosbag2 recording, `/lidar_points`, 11 271 frames (1 200 s), split into 221 pieces of
-5 s stored in random order.  Evaluated with the deployed hybrid detector directly from the archive, without extracting
-it (`tools/stream_eval.py`, `tools/summarize_stream_eval.py`): each piece runs independently, its first 8 frames rebuild
-the geometry and are not scored → **9 503 frames evaluated**.  No annotations were provided with this recording.
+`bags.zip` → `new_data.zst` → одна запись rosbag2, `/lidar_points`, 11 271 кадр (1 200 с), разбитая на 221 кусок по
+5 с, сохранённых в случайном порядке. Оценено развёрнутым гибридным детектором прямо из архива, без распаковки
+(`tools/stream_eval.py`, `tools/summarize_stream_eval.py`): каждый кусок обрабатывается независимо, его первые 8 кадров
+восстанавливают геометрию и не оцениваются → **оценено 9 503 кадра**. Разметка к этой записи не прилагалась.
 
-| Decision | Frames | Share |
+| Решение | Кадров | Доля |
 |---|---|---|
-| CLEAR | 5 724 | 60.2 % |
-| CAUTION | 3 625 | 38.1 % |
-| STOP | 154 | 1.6 % |
+| СВОБОДНО | 5 724 | 60.2 % |
+| ВНИМАНИЕ | 3 625 | 38.1 % |
+| СТОП | 154 | 1.6 % |
 
-* STOP frames form **90 events** that cluster in about eight short episodes (timeline below), consistent with staged
-  obstacle scenarios; snapshots of the first STOP frame of 80 events are in the evaluation output.
-* Evidence classes: **10 strong** (≥ 20 points, ≥ 0.5 m high, ≥ 2 frames — e.g. a 1.5–1.7 m upright object approached
-  from 61 m to 46 m, confidence up to 0.96), **28 medium**, **52 weak** (≤ 10 points — likely false alarms).
-* Verified clear distance: median 154 m (10th percentile 88 m, 90th 210 m).
-* Latency: median 138 ms, 95th percentile 288 ms — measured while another heavy job ran on the same laptop; on an idle
-  machine the same frames run at ~70–90 ms.
+* Кадры СТОП образуют **90 событий**, группирующихся примерно в восемь коротких эпизодов (временная шкала ниже), что
+  согласуется с постановочными сценариями; снимки первого кадра СТОП для 80 событий — в выходных данных оценки.
+* Классы свидетельств: **10 сильных** (≥ 20 точек, ≥ 0.5 м высотой, ≥ 2 кадров — например, вертикальный объект
+  1.5–1.7 м, к которому приблизились с 61 до 46 м, уверенность до 0.96), **28 средних**, **52 слабых** (≤ 10 точек —
+  вероятно, ложные тревоги).
+* Проверенная свободная дистанция: медиана 154 м (10-й перцентиль 88 м, 90-й — 210 м).
+* Задержка: медиана 138 мс, 95-й перцентиль 288 мс — измерено, пока на том же ноутбуке шла другая тяжёлая задача; на
+  свободной машине те же кадры обрабатываются за ~70–90 мс.
 
-**Precision, recall and accuracy cannot be computed for this recording yet: there is no ground truth.**  With the
-positions of the staged obstacles (or a manual review of the 90 events) they follow directly from `frames.jsonl`.
+**Точность, полноту и accuracy для этой записи пока посчитать нельзя: нет эталона.** При наличии положений
+постановочных препятствий (или ручного просмотра 90 событий) они сразу следуют из `frames.jsonl`.
 
-![timeline](figures/dataset2/timeline.png)
+![временная шкала](figures/dataset2/timeline.png)
 
-![one snapshot per episode](figures/dataset2/clusters_sheet.png)
+![по одному снимку на эпизод](figures/dataset2/clusters_sheet.png)
 
 
-## 12. New line: self-labelling, domain-robust model, ego-motion test, sealed test
+## 12. Новая линия: саморазметка, устойчивая к домену модель, ЭГО-тест, запечатанный тест
 
-### 12.1 Datasets
-| | Original data | Dataset 2 |
+### 12.1 Наборы данных
+| | Исходные данные | Датасет 2 |
 |---|---|---|
-| Content | 6 short recordings, 5 tunnel types, 2 287 frames | one continuous 20-min drive, 11 271 frames, ~10 station stops |
-| Train | mostly standing / slow | up to ~12 m/s, 13.0 km by lidar odometry |
-| Obstacles | 5 recordings empty, 1 with people (held out) | none (no organiser labels; proven below) |
-| Measures | detection (real people, ray-cast objects) and false alarms | false alarms on an unseen line; detection only via ray-cast objects |
+| Содержание | 6 коротких записей, 5 типов тоннелей, 2 287 кадров | одна непрерывная 20-минутная поездка, 11 271 кадр, ~10 остановок на станциях |
+| Поезд | в основном стоит / медленно | до ~12 м/с, 13.0 км по лидарной одометрии |
+| Препятствия | 5 записей пустые, 1 с людьми (отложена) | нет (разметки организаторов нет; доказано ниже) |
+| Что измеряет | обнаружение (реальные люди, объекты лучевого моделирования) и ложные тревоги | ложные тревоги на невиданной линии; обнаружение только через объекты лучевого моделирования |
 
-### 12.2 Self-labelling by traversal ("the train is its own labeller")
-1. **Lidar odometry.** Wall features (brackets, lamps, ring joints) outside the envelope form an along-track signature
-   (0.1 m bins, detrended, Poisson-normalised); cross-correlation between consecutive frames gives the distance
-   travelled (parabolic refinement, weak speed prior).  Checks: 0.000 m/frame on the stationary recording, 1.69 m/frame
-   on a moving one, 13.0 km for the 20-min drive.
-2. Every alarm is stored at its tunnel coordinate X = x_train + s.
-3. When the train is ≥ 3 m past X, nothing solid can have been there → **proven false alarm**.  The label is physics,
-   independent of the detector being evaluated; real obstacles never enter it (the train stops before them).
+### 12.2 Саморазметка проездом («поезд сам себе разметчик»)
+1. **Лидарная одометрия.** Детали стен (кронштейны, светильники, стыки колец) вне габарита образуют сигнатуру вдоль
+   пути (корзины 0.1 м, без тренда, пуассоновская нормировка); взаимная корреляция соседних кадров даёт пройденное
+   расстояние (параболическое уточнение, слабый априор скорости). Проверки: 0.000 м/кадр на неподвижной записи,
+   1.69 м/кадр на движущейся, 13.0 км за 20-минутную поездку.
+2. Каждая тревога сохраняется в своей тоннельной координате X = x_поезда + s.
+3. Когда поезд прошёл X на ≥ 3 м, там не могло быть ничего твёрдого → **доказанно ложная тревога**. Метка — физика,
+   независимая от оцениваемого детектора; реальные препятствия в неё никогда не попадают (поезд останавливается перед
+   ними).
 
-Result: all **91** STOP events of the previously deployed model on the drive (250 frames, 2.2 %, ≈ 7 / km) were driven
-through → all false.  81 came from the learned path, 10 from the rules.
-Code: `tools/run_drive.py` (continuous run, odometry), `tools/selflabel.py`, online variant `core/adapt.py`.
+Результат: через все **91** СТОП-событие предыдущей развёрнутой модели в поездке (250 кадров, 2.2 %, ≈ 7 / км) поезд
+проехал → все ложные. 81 пришло из обучаемой ветки, 10 — из правил.
+Код: `tools/run_drive.py` (непрерывный прогон, одометрия), `tools/selflabel.py`, онлайн-вариант `core/adapt.py`.
 
-### 12.3 Domain-robust scorer: ½·LightGBM + ½·CatBoost (internal name v3)
-Negatives: proven-false candidates of the drive (t < 900 s only) + the original recordings.  Positives: ray-cast people
-and boxes in the real beams of both datasets (exact labels by construction).  Monotone LightGBM + CatBoost, threshold
-from out-of-fold scores under the false-STOP budget (`tools/gen_dataset_v3.py`, `train_scorer_v3.py`,
-`final_scorer_v3.py`).  The last 5 minutes of the drive (t ≥ 900 s, 2.8 km) are **sealed**: not used for training,
-threshold choice or any tuning.
+### 12.3 Устойчивый к домену классификатор: ½·LightGBM + ½·CatBoost (внутреннее имя v3)
+Отрицательные примеры: доказанно ложные кандидаты поездки (только t < 900 с) + исходные записи. Положительные: люди и
+коробки лучевого моделирования в реальных лучах обоих датасетов (точные метки по построению). Монотонный LightGBM +
+CatBoost, порог по оценкам вне фолда при бюджете ложных СТОП (`tools/gen_dataset_v3.py`, `train_scorer_v3.py`,
+`final_scorer_v3.py`). Последние 5 минут поездки (t ≥ 900 с, 2.8 км) **запечатаны**: не используются ни для обучения,
+ни для выбора порога, ни для какой-либо настройки.
 
-### 12.4 Ego-motion consistency test (physics, no training)
-A solid object on the track closes in exactly as fast as the train advances: d(distance)/d(travel) = −1.  Most
-remaining false alarms kept a constant distance (~25 m) while the train moved at 12 m/s — measurement artefacts that
-travel with the train (geometry error of the rail plane, a rail seen ~0.3 m high).  A confirmed STOP track is
-downgraded to CAUTION when its Theil–Sen slope against odometry travel is > −0.35 over ≥ 4 m of travel; young tracks
-(artefacts fragment into short tracks) use the same test on their neighbourhood (was something at the same distance
-ahead ≥ 5 m of travel ago, and nothing at distance + travel?).  A standing train never vetoes anything; a broken
-odometry chain resets the evidence.  `core/detector.py: _carried_along, _pooled_carried`; unit tests
+### 12.4 ЭГО-тест согласованности с движением (физика, без обучения)
+Твёрдый объект на пути приближается ровно с той скоростью, с которой едет поезд: d(дистанция)/d(пробег) = −1.
+Большинство оставшихся ложных тревог держали постоянную дистанцию (~25 м), пока поезд шёл 12 м/с, — артефакты
+измерения, едущие вместе с поездом (ошибка геометрии плоскости рельсов, рельс, увиденный на ~0.3 м выше). Подтверждённый
+трек СТОП понижается до ВНИМАНИЕ, если его наклон Тейла–Сена относительно пробега по одометрии > −0.35 на ≥ 4 м пробега;
+для молодых треков (артефакты дробятся на короткие треки) тот же тест применяется к окрестности (было ли что-то на той
+же дистанции впереди ≥ 5 м пробега назад и ничего на дистанции + пробег?). Стоящий поезд никогда ничего не вето;
+разрыв цепочки одометрии сбрасывает свидетельства. `core/detector.py: _carried_along, _pooled_carried`; модульные тесты
 `test_ego_motion_*`.
 
-### 12.5 Reproducibility fix found on the way
-The far-field alignment subsampled points with one shared random generator, so every decision depended on how many
-frames came before (the same model gave 30 or 6 sealed false-STOP frames depending on where the run started).  The
-subsample is now seeded by the frame content (`geometry.sample_seed` + frame hash): the same frame always gives the same
-result.  Because the subsample still matters, all numbers below are reported over **3 seeds** (mean, min…max).
+### 12.5 Попутно найденное исправление воспроизводимости
+Дальнее выравнивание прореживало точки одним общим генератором случайных чисел, поэтому каждое решение зависело от
+того, сколько кадров было до него (одна и та же модель давала 30 или 6 кадров ложного СТОП в запечатанном блоке в
+зависимости от места начала прогона). Теперь прореживание задаётся содержимым кадра (`geometry.sample_seed` + хэш
+кадра): один и тот же кадр всегда даёт один результат. Поскольку прореживание всё же влияет, все числа ниже приведены
+по **3 зёрнам** (среднее, мин…макс).
 
-### 12.6 Sealed test (t ≥ 900 s, 2.8 km, 2 397 frames; runs start at t = 870 s)
-| Configuration | False STOP events per seed | Mean | Per km | Mean STOP frames |
+### 12.6 Запечатанный тест (t ≥ 900 с, 2.8 км, 2 397 кадров; прогоны начинаются с t = 870 с)
+| Конфигурация | Ложных СТОП-событий по зёрнам | Среднее | На км | Среднее кадров СТОП |
 |---|---|---|---|---|
-| Previous deployed model (v1) | 39 / 28 / 20 | 29.0 | 10.3 | 49.3 (2.06 %) |
+| Предыдущая развёрнутая модель (v1) | 39 / 28 / 20 | 29.0 | 10.3 | 49.3 (2.06 %) |
 | ½·LightGBM + ½·CatBoost | 11 / 7 / 2 | 6.7 | 2.4 | 18.3 (0.76 %) |
-| **½·LightGBM + ½·CatBoost + ego-motion test (final)** | **8 / 5 / 1** | **4.7** | **1.7** | **10.3 (0.43 %)** |
+| **½·LightGBM + ½·CatBoost + ЭГО-тест** | **8 / 5 / 1** | **4.7** | **1.7** | **10.3 (0.43 %)** |
 
-Median latency on an idle machine: 56–70 ms per frame (single thread).
+Итоговый роутер (раздел 13): 11 / 2 / 2 события, 1.8 / км, 0.32 % кадров.
 
-![sealed test](figures/deck/ds2_sealed.png)
+Медианная задержка на свободной машине: 56–70 мс на кадр (один поток).
 
-### 12.7 Original data: nothing lost
-| Configuration (3 seeds) | False STOP frames (2 287) | Held-out people | person 80/120/160 m | box 0.5 m 80/120/160 m |
+![запечатанный тест](figures/deck/ds2_sealed.png)
+
+### 12.7 Исходные данные: ничего не потеряно
+| Конфигурация (3 зерна) | Кадров с ложным СТОП (2 287) | Отложенные люди | человек 80/120/160 м | коробка 0.5 м 80/120/160 м |
 |---|---|---|---|---|
-| v1 (before) | 3 | 59/60 | 100 / 78 / 33 % | 100 / 71 / 0 % |
+| v1 (до) | 3 | 59/60 | 100 / 78 / 33 % | 100 / 71 / 0 % |
 | ½·LightGBM + ½·CatBoost | 3 / 3 / 0 | 58/60 | 100 / 78 / 33 % | 90 / 71 / 0 % |
-| ½·LightGBM + ½·CatBoost + ego-motion | 3 / 3 / 0 | 58/60 | 100 / 78 / 33 % | 90 / 71 / 0 % |
+| ½·LightGBM + ½·CatBoost + ЭГО-тест | 3 / 3 / 0 | 58/60 | 100 / 78 / 33 % | 90 / 71 / 0 % |
 
-The ego-motion test changed **no** decision on the original data (every seed identical), i.e. it costs no recall.
-v1 row: previous random-subsample geometry.  Ray-cast cells have 6–10 trials each (≈ ±15 %).
+ЭГО-тест **не изменил ни одного** решения на исходных данных (все зёрна идентичны), т.е. не стоит полноты.
+Строка v1: прежняя геометрия со случайным прореживанием. В ячейках лучевого моделирования по 6–10 испытаний (≈ ±15 %).
 
-### 12.8 Tried and rejected
-* **STOP debounce** beyond 30 m (2 consecutive, or 2 of the last 3 STOP-eligible frames): sealed events 4.7 → 3.7, but
-  box recall at 120 m 71 → 43–57 %, person at 160 m 33 → 17 %, held-out 58 → 57.  Safety first: off
-  (`stop_debounce_frames = 1`).
-* **Online adaptive threshold** (`core/adapt.py`): no measurable effect on the sealed block (30 → 30 frames) — the
-  proven-clutter quantile stays below the trained threshold on this line.  Kept, disabled by default.
-* **Near-field burst at t ≈ 1022 s (seed 0):** a rail-like artefact appears suddenly at ~24 m with no earlier trace.
-  Indistinguishable, by motion, from a person stepping onto the track, so it is not vetoed (known limitation;
-  a vertical/cant transition of the track — future work: rail-continuity test).
+### 12.8 Испробовано и отвергнуто
+* **Антидребезг СТОП** дальше 30 м (2 подряд или 2 из последних 3 кадров, пригодных для СТОП): события в запечатанном
+  блоке 4.7 → 3.7, но полнота по коробке на 120 м 71 → 43–57 %, по человеку на 160 м 33 → 17 %, отложенная запись
+  58 → 57. Безопасность прежде всего: выключено (`stop_debounce_frames = 1`).
+* **Онлайн-адаптивный порог** (`core/adapt.py`): измеримого эффекта на запечатанном блоке нет (30 → 30 кадров) —
+  квантиль доказанных помех на этой линии остаётся ниже обученного порога. Сохранён, по умолчанию выключен.
+* **Всплеск в ближней зоне на t ≈ 1022 с (зерно 0):** рельсоподобный артефакт внезапно появляется на ~24 м без
+  предшествующего следа. По движению он неотличим от человека, шагнувшего на путь, поэтому не вето (известное
+  ограничение; переход профиля/возвышения пути — будущая работа: тест непрерывности рельсов).
 
-### 12.9 Ensemble weights: how they were chosen
-Final model logit = w₁·logit(LightGBM) + w₂·logit(CatBoost), w₂ = 1 − w₁.  Protocol (`tools/weight_sweep.py`): the same
-8 leave-one-group-out folds (5 original tunnels + 3 blocks of the new drive, sealed block excluded); for each w₁ in
-0, 0.1, …, 1 the threshold of every fold is chosen on its training groups only (false-STOP budget 0.3 %), then false STOP
-frames and object recall are measured on the held-out group.
+### 12.9 Веса ансамбля: как выбраны
+Логит итоговой модели = w₁·logit(LightGBM) + w₂·logit(CatBoost), w₂ = 1 − w₁. Протокол (`tools/weight_sweep.py`): те же
+8 фолдов «оставь одну группу» (5 исходных тоннелей + 3 блока новой поездки, запечатанный блок исключён); для каждого
+w₁ из 0, 0.1, …, 1 порог каждого фолда выбирается только на его обучающих группах (бюджет ложных СТОП 0.3 %), затем на
+отложенной группе измеряются кадры с ложным СТОП и полнота по объектам.
 
 | w₁ (LightGBM) | 0.0 | 0.1 | 0.2 | 0.3 | 0.4 | **0.5** | 0.6 | 0.7 | 0.8 | 0.9 | 1.0 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| false STOP frames / 11 159 | 35 | 34 | 37 | 36 | 36 | **35** | 34 | 36 | 37 | 36 | 37 |
-| object recall, % | 67.4 | 67.6 | 67.6 | 67.4 | 67.4 | **67.3** | 67.4 | 67.4 | 67.3 | 67.4 | 67.6 |
+| кадров с ложным СТОП / 11 159 | 35 | 34 | 37 | 36 | 36 | **35** | 34 | 36 | 37 | 36 | 37 |
+| полнота по объектам, % | 67.4 | 67.6 | 67.6 | 67.4 | 67.4 | **67.3** | 67.4 | 67.4 | 67.3 | 67.4 | 67.6 |
 
-The optimum is flat (differences are within one or two frames), so the weights were not tuned: equal weights were fixed
-in advance (lowest variance, nothing fitted to the validation folds).  The previous model v1 likewise used equal thirds
-for LightGBM, CatBoost and the physics-informed MLP; the MLP was dropped because it added nothing out of fold.
+Оптимум плоский (разница в пределах одного-двух кадров), поэтому веса не настраивались: равные веса были
+зафиксированы заранее (наименьшая дисперсия, ничего не подогнано под валидационные фолды). Предыдущая модель v1 так же
+использовала равные трети для LightGBM, CatBoost и физически информированной MLP; MLP исключили, потому что вне фолда
+она ничего не добавляла.
 
-### 12.10 How STOP, CAUTION and CLEAR are decided (per frame)
-* **STOP**: at least one object that (1) is confirmed by the tracker (≥ 3 detections in the last 5 frames), (2) has ≥ 2
-  points inside the envelope shrunk by 2σ of the track-geometry uncertainty, within the range measured in this frame,
-  (3) below 30 m passes the physics tests; beyond 30 m has a 5-frame-smoothed ensemble score ≥ 0.425 and is not attached
-  to the tunnel shell, (4) passes the ego-motion test (it closes in at the train's speed).
-* **CAUTION**: no STOP object, but a confirmed object touches the envelope boundary (within the 2σ margin), lies beyond
-  the measured geometry, was vetoed by the scorer or the ego-motion test, or an in-envelope track is not yet confirmed.
-* **CLEAR**: nothing of the above; the output still reports how far the path is verified clear (visibility horizon and
-  measured geometry, capped at the 200 m instrumented range of the Pandar128).
+### 12.10 Как принимаются решения СТОП, ВНИМАНИЕ и СВОБОДНО (в каждом кадре)
+* **СТОП**: хотя бы один объект, который (1) подтверждён трекером (≥ 3 обнаружений в последних 5 кадрах), (2) имеет ≥ 2
+  точек внутри габарита, сжатого на 2σ неопределённости геометрии пути, в пределах измеренной в этом кадре дальности,
+  (3) ближе 30 м проходит физические тесты; дальше 30 м имеет сглаженную по 5 кадрам оценку ансамбля ≥ 0.425 (эксперт
+  для висящих объектов — ≥ 0.45) и не прикреплён к оболочке тоннеля, (4) проходит ЭГО-тест (приближается со скоростью
+  поезда).
+* **ВНИМАНИЕ**: объекта для СТОП нет, но подтверждённый объект касается границы габарита (в пределах запаса 2σ),
+  находится за измеренной геометрией, был отклонён классификатором или ЭГО-тестом, либо трек в габарите ещё не
+  подтверждён.
+* **СВОБОДНО**: ничего из перечисленного; выход всё равно сообщает, на какое расстояние путь проверен свободным
+  (горизонт видимости и измеренная геометрия, ограничено 200 м инструментальной дальности Pandar128).
 
-## 13. Dataset 3: the organisers' synthetic obstacles, and the final model
+## 13. Датасет 3: синтетические препятствия организаторов и итоговая модель
 
-### 13.1 The data
-One bag (`cloud_with_fake_obj`, `/lidar_points`, 1 510 frames, 16-byte points x, y, z, intensity, unorganised clouds):
-a real tunnel recording with ten synthetic objects ~100 m apart (2×2 m and 0.3 m cubes in the centre and at the edge
-of the gauge, a 0.3 m cube on a rail, objects outside and above the gauge, a 2×0.2 m bar on the rails, a 0.05 m rod
-hanging from the roof).  Our copy of the archive is corrupted after 438 frames (zstd checksum error, single frame), so
-only obstacles 1-3 and 9 are in the readable part (`tools/peek_ds3.py`, `tools/stream_eval_ds3.py`).
+### 13.1 Данные
+Один бэг (`cloud_with_fake_obj`, `/lidar_points`, 1 510 кадров, 16-байтные точки x, y, z, intensity, неупорядоченные
+облака): реальная запись тоннеля с десятью синтетическими объектами через ~100 м (кубы 2×2 м и 0.3 м в центре и у края
+габарита, куб 0.3 м на рельсе, объекты за габаритом и «сверху габарита», брус 2×0.2 м на рельсах, стержень 0.05 м,
+свисающий с потолка). Наша копия архива повреждена после 438 кадров (ошибка контрольной суммы zstd, один кадр); в
+читаемой части находятся все десять объектов (см. 13.7; `tools/peek_ds3.py`, `tools/stream_eval_ds3.py`).
 
-### 13.2 What the data taught us
-* **The objects float.** The generator places them on a flat, straight plane in the lidar frame at rail-head level,
-  while the real track descends ~1.5 m over 100 m: the "2×2 m box on the track" is 1.4 m above the real rails at 98 m.
-  Our geometry was right (floor returns confirm it); our tests assumed hazards stand on the floor.
-* **The objects stall and jump** (a frame late, then catching up) and frames arrive with 0.1-0.8 s gaps.
+### 13.2 Чему нас научили данные
+* **Объекты парят.** Генератор ставит их на плоскую прямую плоскость в системе координат лидара на уровне головки
+  рельса, а реальный путь уходит вниз на ~1.5 м на 100 м: «куб 2×2 м на пути» на 98 м находится на 1.4 м выше
+  реальных рельсов. Наша геометрия была верной (это подтверждают отражения от пола); наши тесты предполагали, что
+  опасные объекты стоят на полу.
+* **Объекты замирают и прыгают** (на кадр позже, затем догоняют), а кадры приходят с промежутками 0.1–0.8 с.
 
-### 13.3 Changes (all general, none specific to this bag)
-| Change | Why |
+### 13.3 Изменения (все общие, ни одного специально под этот бэг)
+| Изменение | Почему |
 |---|---|
-| New tracks start with the train's closing speed from lidar odometry; the gate tolerates one frame of the train's travel | a static obstacle closes exactly at train speed; recorders drop, repeat and re-time frames |
-| Odometry bridges frame gaps up to 1 s (search range = 25 m/s × dt) | it froze at 381 m on this bag; now tracks the whole run |
-| Bit-identical repeated clouds re-issue the last decision | a repeat carries no new information |
-| Shell attachment needs continuity (roof starts within 3 beam spacings above the cluster top) | a floating object below the roof is not infrastructure |
-| Shell veto only for floor-reaching slices (h_min < 0.8 m) | real shell-attached negatives are floor-to-roof wall slices; hanging objects are hazards |
-| Scorer retrained on the full hazard space (`synth.random_hazard`: floor objects, floating cubes 0.25-2 m lifted 0.3-1.8 m, bars across the rails, rods 3-12 cm hanging from the roof), ray-cast into datasets 1 and 2 only | the original positives were floor-standing only |
-| **Router (mixture of experts by physical state):** floor-supported candidates → ½·LGBM + ½·CatBoost (v3), candidates with bottom ≥ 0.5 m → hazard-space ½·LGBM + ½·CatBoost (v4); each against its own out-of-fold threshold | v4 is best on floating objects, v3 on far floor objects |
+| Новые треки стартуют со скоростью сближения поезда из лидарной одометрии; строб допускает пробег поезда за один кадр | неподвижное препятствие приближается ровно со скоростью поезда; регистраторы теряют, повторяют и перетактируют кадры |
+| Одометрия перекрывает разрывы между кадрами до 1 с (диапазон поиска = 25 м/с × dt) | на этом бэге она замерзала на 381 м; теперь отслеживает весь прогон |
+| Побитово одинаковые повторные облака переиздают последнее решение | повтор не несёт новой информации |
+| Крепление к оболочке требует непрерывности (свод начинается не выше 3 шагов лучей над верхом кластера) | парящий под сводом объект — не инфраструктура |
+| Вето оболочки — только для срезов, доходящих до пола (h_min < 0.8 м) | реальные отрицательные примеры с креплением к оболочке — срезы стен от пола до свода; висящие объекты — опасность |
+| Классификатор переобучен на всём пространстве опасностей (`synth.random_hazard`: объекты на полу, парящие кубы 0.25–2 м, поднятые на 0.3–1.8 м, брусья поперёк рельсов, стержни 3–12 см, свисающие со свода), вставленных лучевым моделированием только в датасеты 1 и 2 | исходные положительные примеры стояли только на полу |
+| **Роутер (смесь экспертов по физическому состоянию):** кандидаты, опирающиеся на пол → ½·LGBM + ½·CatBoost (v3), кандидаты с низом ≥ 0.5 м → ½·LGBM + ½·CatBoost на пространстве опасностей (v4); каждый со своим порогом вне фолда | v4 лучше на парящих объектах, v3 — на дальних объектах на полу |
 
-A labelling bug was found and fixed on the way: the drive-data generator matched lateral offsets in a mirrored frame
-(3 664 correct positives instead of 1 783).  Two monotone constraints (shell attachment, floor support) that encoded
-the floor-standing assumption were removed for v4.
+Попутно найдена и исправлена ошибка разметки: генератор данных поездки сопоставлял поперечные смещения в зеркальной
+системе координат (3 664 верных положительных примера вместо 1 783). Для v4 убраны два ограничения монотонности
+(крепление к оболочке, опора на пол), кодировавшие предположение «объект стоит на полу».
 
-### 13.4 Dataset 3, readable part (first STOP distance, share of frames with STOP after the first)
-| Obstacle | Before | Detector fixes, v3 | Detector fixes, v4 | **Final: router** |
+### 13.4 Датасет 3, первые четыре подхода (дистанция первого СТОП, доля кадров со СТОП после первого)
+| Препятствие | До | Исправления детектора, v3 | Исправления детектора, v4 | **Итог: роутер** |
 |---|---|---|---|---|
-| 2×2 m, centre | 48 m, 71 % | 48 m, 91 % | 98 m, 96 % | **98 m, 94 %** |
-| 0.3 m, centre | 15 m, 33 % | 20 m, 89 % | 20 m, 89 % | **20 m, 89 %** |
-| 0.3 m on a rail | 18 m, 25 % | 23 m, 82 % | 23 m, 82 % | **23 m, 82 %** |
-| 2×0.2 m bar on the rails | 30 m, 27 % | 60 m, 43 % | 44 m, 53 % | **60 m, 52 %** |
+| 2×2 м, центр | 48 м, 71 % | 48 м, 91 % | 98 м, 96 % | **98 м, 94 %** |
+| 0.3 м, центр | 15 м, 33 % | 20 м, 89 % | 20 м, 89 % | **20 м, 89 %** |
+| 0.3 м на рельсе | 18 м, 25 % | 23 м, 82 % | 23 м, 82 % | **23 м, 82 %** |
+| брус 2×0.2 м на рельсах | 30 м, 27 % | 60 м, 43 % | 44 м, 53 % | **60 м, 52 %** |
 
-### 13.5 Full ten-object replica (`tools/replica_ds3.py`)
-The organisers' sequence rebuilt in the real beams of a moving train on the new line (50-60 km/h), placed as their
-generator does (flat and straight in the lidar frame).  Evaluation only.
+### 13.5 Полная реплика из десяти объектов (`tools/replica_ds3.py`)
+Последовательность организаторов, воссозданная в реальных лучах движущегося поезда на новой линии (50–60 км/ч) и
+размещённая так же, как это делает их генератор (плоско и прямо в системе координат лидара). Только для оценки.
 
-| Object | Expected | v3 | **Router** |
+| Объект | Ожидается | v3 | **Роутер** |
 |---|---|---|---|
-| 1 · 2×2 m centre | STOP | 32 m | **116 m** |
-| 2 · 0.3 m centre | STOP | 58 m | **99 m** |
-| 3 · 0.3 m on a rail | STOP | 8 m | 8 m |
-| 4 · 0.3 m at the gauge edge | STOP | — | — |
-| 5 · 0.3 m outside, close | no STOP | ✓ | ✓ |
-| 6 · 2×2 m at the edge, inside | STOP | 29 m | 29 m |
-| 7 · 2×2 m outside | no STOP | ✓ | ✓ |
-| 8 · 2×2 m above the gauge | no STOP | ✓ | one STOP frame at 164 m |
-| 9 · 2×0.2 m bar on the rails | STOP | 45 m | 45 m |
-| 10 · 0.05 m rod from the roof | STOP | 30 m | 30 m |
+| 1 · 2×2 м в центре | СТОП | 32 м | **116 м** |
+| 2 · 0.3 м в центре | СТОП | 58 м | **99 м** |
+| 3 · 0.3 м на рельсе | СТОП | 8 м | 8 м |
+| 4 · 0.3 м у края габарита | СТОП | — | — |
+| 5 · 0.3 м за габаритом, рядом | нет СТОП | верно | верно |
+| 6 · 2×2 м у края, в габарите | СТОП | 29 м | 29 м |
+| 7 · 2×2 м за габаритом | нет СТОП | верно | верно |
+| 8 · 2×2 м «сверху габарита» | нет СТОП | верно | один кадр СТОП на 164 м |
+| 9 · брус 2×0.2 м на рельсах | СТОП | 45 м | 45 м |
+| 10 · стержень 0.05 м со свода | СТОП | 30 м | 30 м |
 
-Caveats: on this stretch the track climbs, so flat-placed objects near rail level sink below the track bed and get no
-returns until close (objects 3, 9); object 4 sits exactly on our envelope boundary (1.25 m at that height) and its
-status depends on the organisers' gauge definition, which is not published.  The bar (0.2 m) is scored 0.83-0.87 by the
-model but stays below the confident envelope floor (0.15 m + 2σ ≈ 0.23 m), a deliberate margin against rail-plane
-errors, where earlier real false alarms lived.
+Оговорки: на этом участке путь поднимается, поэтому объекты, поставленные плоско у уровня рельсов, уходят ниже
+основания пути и не дают отражений до близкой дистанции (объекты 3, 9); объект 4 стоит ровно на границе нашего
+габарита (1.25 м на этой высоте), и его статус зависит от определения габарита организаторами, которое не
+опубликовано. Брус (0.2 м) модель оценивает в 0.83–0.87, но он остаётся ниже уверенного нижнего края габарита
+(0.15 м + 2σ ≈ 0.23 м) — осознанный запас против ошибок плоскости рельсов, где раньше и жили реальные ложные тревоги.
 
-### 13.6 False alarms and recall of the final model
-| | v3 | v4 | **Router (final)** |
+### 13.6 Ложные тревоги и полнота итоговой модели
+| | v3 | v4 | **Роутер (итог)** |
 |---|---|---|---|
-| Dataset 1: false STOP frames / 2 287 | 3 | 0 | **0** |
-| Dataset 1: held-out real people, STOP frames / 60 | 58 | 56 | **58** |
-| Dataset 1: person 80 / 120 / 160 m | 100 / 78 / 33 % | 100 / 67 / 0 % | **100 / 78 / 33 %** |
-| Dataset 2 sealed block: false STOP events per seed (3 seeds, 2.8 km) | 9 / 2 / 2 | 9 / 0 / 2 | 11 / 2 / 2 |
-| Dataset 2 sealed block: false STOP frames (sum of 3 seeds) | 26 | 17 | 23 |
+| Датасет 1: кадров с ложным СТОП / 2 287 | 3 | 0 | **0** |
+| Датасет 1: отложенные реальные люди, кадров СТОП / 60 | 58 | 56 | **58** |
+| Датасет 1: человек 80 / 120 / 160 м | 100 / 78 / 33 % | 100 / 67 / 0 % | **100 / 78 / 33 %** |
+| Датасет 2, запечатанный блок: ложных СТОП-событий по зёрнам (3 зерна, 2.8 км) | 9 / 2 / 2 | 9 / 0 / 2 | 11 / 2 / 2 |
+| Датасет 2, запечатанный блок: кадров с ложным СТОП (сумма 3 зёрен) | 26 | 17 | 23 |
 
-The router's sealed events are the union of one event from each expert's own domain (a floating blip at 108 m, a floor
-object at 42 m on seed 0); the differences between the three models are within the seed-to-seed spread.
+События роутера в запечатанном блоке — объединение одного события из собственной области каждого эксперта (парящий
+всплеск на 108 м и объект на полу на 42 м при зерне 0); разница между тремя моделями — в пределах разброса между
+зёрнами.
 
-### 13.7 Correction: the readable part contains all ten objects
-The first analysis of dataset 3 ran while odometry was still frozen, so only four approaches were identified.  With the
-gap-tolerant odometry the readable 438 frames cover ~1.8 km, i.e. all ten objects (tunnel positions ≈ 102, 307, 407, 507,
-607, 707, 808, 905, 1002, 1100 m).  Final model on the organisers' bag:
+### 13.7 Уточнение: читаемая часть содержит все десять объектов
+Первый анализ датасета 3 выполнялся, когда одометрия ещё замерзала, поэтому были найдены только четыре подхода. С
+одометрией, устойчивой к разрывам, читаемые 438 кадров покрывают ~1.8 км, т.е. все десять объектов (тоннельные
+координаты ≈ 102, 307, 407, 507, 607, 707, 808, 905, 1002, 1100 м). Итоговая модель на бэге организаторов:
 
-| Object | Organisers' label | Final model |
+| Объект | По описанию организаторов | Итоговая модель |
 |---|---|---|
-| 1 · 2×2 m centre | inside | STOP from 98 m |
-| 2 · 0.3 m centre | inside | STOP from 20 m |
-| 3 · 0.3 m on a rail | inside | STOP from 23 m |
-| 4 · 0.3 m at the edge | inside | STOP from 20 m |
-| 5 · 0.3 m outside, close | outside | STOP from 25 m (inside our envelope) |
-| 6 · 2×2 m at the edge | inside | STOP from 25 m |
-| 7 · 2×2 m outside | outside | STOP from 29 m (inside our envelope) |
-| 8 · 2×2 m "сверху габарита" | ambiguous (upper part of the gauge or above it) | STOP from 75 m |
-| 9 · 2×0.2 m bar on the rails | inside | STOP from 60 m |
-| 10 · 0.05 m rod from the roof | inside | missed: 4 returns at 12 m in one frame |
+| 1 · 2×2 м в центре | в габарите | СТОП с 98 м |
+| 2 · 0.3 м в центре | в габарите | СТОП с 20 м |
+| 3 · 0.3 м на рельсе | в габарите | СТОП с 23 м |
+| 4 · 0.3 м у края | в габарите | СТОП с 20 м |
+| 5 · 0.3 м за габаритом, рядом | за габаритом | СТОП с 25 м (внутри нашего габарита) |
+| 6 · 2×2 м у края | в габарите | СТОП с 25 м |
+| 7 · 2×2 м за габаритом | за габаритом | СТОП с 29 м (внутри нашего габарита) |
+| 8 · 2×2 м «сверху габарита» | неоднозначно (верхняя часть габарита или над ним) | СТОП с 75 м |
+| 9 · брус 2×0.2 м на рельсах | в габарите | СТОП с 60 м |
+| 10 · стержень 0.05 м со свода | в габарите | пропущен: 4 отражения на 12 м в одном кадре |
 
-False STOP on the empty tunnel: 1 event (5 frames), a 2.66 m wide, 2 cm thick horizontal roof slice 146 m ahead.
-Objects 4-8 lie on a straight section; converted to the lidar frame, the organisers' gauge boundary is ≈ ±1.15 m
-(objects 4, 6 inside at ≈ 0.98 / 1.08 m, objects 5, 7 outside at ≈ 1.30 / 1.32 m), narrower than our envelope derived
-from the tunnels' free space (a 2.7 m car).  With a ±1.15 m profile object 7 loses its STOP, object 5 keeps it and object
-6 is only confirmed at 11 m, so the gauge is not tuned blindly; the organisers are asked for their exact profile, which
-is a single configuration value (`gauge.profile`).
-
+Ложные СТОП на пустом тоннеле: 1 событие (5 кадров) — горизонтальный срез свода шириной 2.66 м и толщиной 2 см в
+146 м впереди. Объекты 4–8 лежат на прямом участке; в системе координат лидара граница габарита организаторов —
+≈ ±1.15 м (объекты 4, 6 внутри на ≈ 0.98 / 1.08 м, объекты 5, 7 снаружи на ≈ 1.30 / 1.32 м), что уже нашего
+габарита, выведенного из свободного пространства тоннелей (вагон 2.7 м). С профилем ±1.15 м объект 7 теряет СТОП,
+объект 5 его сохраняет, а объект 6 подтверждается только на 11 м, поэтому габарит не подгоняется вслепую; у
+организаторов запрошен их точный профиль — это одно значение конфигурации (`gauge.profile`).

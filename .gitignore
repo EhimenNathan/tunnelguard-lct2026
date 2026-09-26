@@ -1,4 +1,4 @@
-# Python / build artefacts
+# Python / артефакты сборки
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -6,18 +6,18 @@ build/
 install/
 log/
 
-# large binaries: the demo video and the editable deck are published on the cloud disk (links in README)
+# крупные файлы: демо-видео опубликовано в GitHub Release (ссылка в README)
 docs/*.mp4
 presentation/*.pptx
 !presentation/TunnelGuard_LCT2026.pptx
 presentation/TunnelGuard_LCT2026_final.pptx
 
-# local data and evaluation outputs (bags, range-image caches, results)
+# локальные данные и результаты оценки (бэги, кэши дальностных изображений, результаты)
 *.db3
 *.zst
 *.bin
 results/
 tools/cache/
 
-# interim deck builds (merged into presentation/ by the team)
+# промежуточные сборки презентации (команда переносит их в presentation/)
 presentation/updated/

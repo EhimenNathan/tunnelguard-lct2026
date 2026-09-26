@@ -1,5 +1,5 @@
-# TunnelGuard parameters (generated from the defaults in tunnel_guard/core/*.py by tools/gen_config.py).
-# Every value can be overridden here or on the command line, e.g.
+# Параметры TunnelGuard (сгенерированы из значений по умолчанию в tunnel_guard/core/*.py).
+# Любое значение можно переопределить здесь или в командной строке, например
 #   ros2 run tunnel_guard detector_node --ros-args -p gauge.h_min:=0.2
 
 tunnel_guard:

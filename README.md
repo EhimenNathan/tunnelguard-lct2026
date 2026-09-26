@@ -1,93 +1,95 @@
-# TunnelGuard — foreign-object detection for a driverless metro train (3D lidar, ROS 2 Humble)
+# TunnelGuard — обнаружение посторонних объектов для беспилотного поезда метро (3D-лидар, ROS 2 Humble)
 
-TunnelGuard looks down the tunnel with the train's 3D lidar and answers one question every frame:
+TunnelGuard смотрит вдоль тоннеля лидаром поезда и в каждом кадре отвечает на один вопрос:
 
-> **"Is anything inside the train's dynamic envelope ahead — and up to what distance is the path verified clear?"**
+> **«Есть ли что-то внутри габарита поезда впереди — и до какого расстояния путь проверен свободным?»**
 
-It does **not** try to recognise object classes. It learns *what the normal tunnel looks like* from the lidar
-itself (rails, cross-section, curvature, grade) and declares an obstacle when something occupies the space the
-train is about to sweep. Because of that it needs no labelled data and generalises to new tunnel sections,
-new obstacle types and even a different lidar mounting.
+Система **не** распознаёт классы объектов. Она по самому лидару строит модель *нормального тоннеля* (рельсы,
+поперечное сечение, кривизна, уклон) и объявляет препятствие, когда что-либо занимает пространство, которое поезд
+вот-вот пройдёт. Поэтому ей не нужны размеченные данные, и она обобщается на новые участки тоннеля, новые типы
+препятствий и даже на другой монтаж лидара.
 
-**Links:** [interactive website](https://EhimenNathan.github.io/tunnelguard-lct2026/) (live detector output on the recordings, 3D) ·
-[demo video](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest) (GitHub Release) · presentation: `presentation/TunnelGuard_LCT2026.pptx`
+**Ссылки:** [интерактивный сайт](https://EhimenNathan.github.io/tunnelguard-lct2026/) (живой вывод детектора на записях, 3D) ·
+[демо-видео](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest) (GitHub Release) · презентация: `presentation/TunnelGuard_LCT2026.pptx`
 
-| Output (per lidar frame) | Topic | Type |
+| Выход (на каждый кадр лидара) | Топик | Тип |
 |---|---|---|
-| Decision: CLEAR / CAUTION / STOP, nearest obstacle distance, time-to-collision, verified clear distance, all obstacles | `/tunnel_guard/status` | `tunnel_guard_msgs/ObstacleStatus` |
-| Obstacles as standard 3D detections | `/tunnel_guard/detections` | `vision_msgs/Detection3DArray` |
-| Alarm level (0/1/2) | `/tunnel_guard/alarm` | `std_msgs/UInt8` |
-| Along-track distance to nearest in-gauge obstacle (NaN = none) | `/tunnel_guard/nearest_distance` | `std_msgs/Float32` |
-| Envelope, track centreline, obstacle boxes + distance labels | `/tunnel_guard/markers` | `visualization_msgs/MarkerArray` |
-| Points of confirmed obstacles / all envelope points | `/tunnel_guard/obstacle_points`, `/tunnel_guard/envelope_points` | `sensor_msgs/PointCloud2` |
+| Решение: СВОБОДНО / ВНИМАНИЕ / СТОП, дистанция до ближайшего препятствия, время до столкновения, проверенная свободная дистанция, все препятствия | `/tunnel_guard/status` | `tunnel_guard_msgs/ObstacleStatus` |
+| Препятствия как стандартные 3D-детекции | `/tunnel_guard/detections` | `vision_msgs/Detection3DArray` |
+| Уровень тревоги (0/1/2) | `/tunnel_guard/alarm` | `std_msgs/UInt8` |
+| Расстояние вдоль пути до ближайшего препятствия в габарите (NaN — нет) | `/tunnel_guard/nearest_distance` | `std_msgs/Float32` |
+| Габарит, ось пути, рамки препятствий и подписи дистанций | `/tunnel_guard/markers` | `visualization_msgs/MarkerArray` |
+| Точки подтверждённых препятствий / все точки в габарите | `/tunnel_guard/obstacle_points`, `/tunnel_guard/envelope_points` | `sensor_msgs/PointCloud2` |
 
 ---
 
-## 1. Quick start (docker build → docker run → ros2 bag play → see result)
+## 1. Быстрый старт (docker build → docker run → ros2 bag play → результат)
 
 ```bash
-# 1. build (Ubuntu 22.04 + ROS 2 Humble inside, all dependencies installed automatically)
+# 1. сборка (внутри Ubuntu 22.04 + ROS 2 Humble, все зависимости ставятся автоматически)
 docker build -t tunnel_guard .
 
-# 2. run the detector + RViz2 and play a bag in one command (bags mounted at /data)
-xhost +local:root   # allow the container to open RViz on the host display
+# 2. детектор + RViz2 и проигрывание бэга одной командой (бэги смонтированы в /data)
+xhost +local:root   # разрешить контейнеру открыть RViz на дисплее хоста
 docker run --rm -it --net=host -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /path/to/for_hackathon:/data tunnel_guard \
     ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=true bag:=/data/doubleT_obstacle
 ```
 
-Other ways to run:
+Другие способы запуска:
 
 ```bash
-# detector only (subscribes to the first PointCloud2 topic it finds; the bag is played from anywhere on the network)
+# только детектор (подписывается на первый найденный топик PointCloud2; бэг можно проигрывать с любой машины в сети)
 docker run --rm -it --net=host tunnel_guard
-ros2 bag play /path/to/for_hackathon/doubleT_obstacle          # in another shell / container
-ros2 topic echo /tunnel_guard/status                            # decisions
+ros2 bag play /path/to/for_hackathon/doubleT_obstacle          # в другом терминале / контейнере
+ros2 topic echo /tunnel_guard/status                            # решения
 
-# offline, faster than real time: per-frame CSV + JSON summary
+# офлайн, быстрее реального времени: CSV по кадрам + JSON-сводка
 docker run --rm -v /path/to/for_hackathon:/data tunnel_guard \
     ros2 run tunnel_guard evaluate_bag --bag /data/doubleT_obstacle --out /data/results/doubleT_obstacle
 
-# unit + end-to-end tests (synthetic curved tunnel with ground truth)
+# модульные и сквозные тесты (синтетический криволинейный тоннель с эталоном)
 docker run --rm tunnel_guard python3 -m pytest -q /ws/src/tunnel_guard/test
 ```
 
-With `bag:=...` the launch file reads the PointCloud2 topic from the bag's `metadata.yaml`, starts playback only after
-the detector reports it is ready, and replays the bag with reliable QoS on both ends: large clouds (9–24 MB) sent
-best-effort over DDS lose fragments, which would silently drop frames. A live lidar keeps sensor-data (best-effort) QoS.
+С `bag:=...` launch-файл берёт топик PointCloud2 из `metadata.yaml` бэга, запускает проигрывание только после того,
+как детектор сообщил о готовности, и проигрывает бэг с надёжным (reliable) QoS с обеих сторон: крупные облака
+(9–24 МБ), отправленные в режиме best-effort через DDS, теряют фрагменты, и кадры молча пропадают. Для живого лидара
+сохраняется QoS sensor-data (best-effort).
 
-Verified end to end on Ubuntu 22.04 + ROS 2 Humble (WSL2): `colcon build`, 14 pytest tests,
-`ros2 launch tunnel_guard tunnel_guard.launch.py bag:=<real frames of doubleT_obstacle>` → `/tunnel_guard/status` reports
-STOP, and `evaluate_bag` on the exported test bag → first STOP at 55.5 m with the deployed model. The Docker image installs OpenBLAS (Ubuntu's default reference BLAS made the geometry solver 4× slower)
-and pre-compiles the numba kernels at build time.
+Проверено от начала до конца на Ubuntu 22.04 + ROS 2 Humble (WSL2): `colcon build`, 15 тестов pytest,
+`ros2 launch tunnel_guard tunnel_guard.launch.py bag:=<реальные кадры doubleT_obstacle>` → `/tunnel_guard/status` выдаёт
+СТОП, а `evaluate_bag` на экспортированном тестовом бэге → первый СТОП на 55.5 м с итоговой моделью. Docker-образ
+ставит OpenBLAS (штатная эталонная BLAS Ubuntu замедляла решатель геометрии в 4 раза) и заранее компилирует
+ядра numba при сборке.
 
-The input topic is discovered automatically (`input_topic:=auto`), so both recorded topic names
-(`/lidar_points`, `/sensing/lidar/hesai128/pointcloud`) work without configuration. The forward axis of the lidar is
-also detected automatically (`forward_axis:=auto`: the horizontal axis with the most far returns).
+Входной топик определяется автоматически (`input_topic:=auto`), поэтому оба записанных имени
+(`/lidar_points`, `/sensing/lidar/hesai128/pointcloud`) работают без настройки. Ось лидара «вперёд» также определяется
+автоматически (`forward_axis:=auto`: горизонтальная ось с наибольшим числом дальних отражений).
 
 ---
 
-### Offline machine (no internet, e.g. the test server)
+### Машина без интернета (например, тестовый сервер)
 
-Nothing in the detector needs a network at run time: both scorers are tree ensembles stored as JSON and evaluated in
-numpy, all parameters come from `config/`. Only `docker build` downloads packages (base image, apt), so build the image
-once on any machine with internet and carry it over as a file:
+Детектору не нужна сеть во время работы: оба классификатора — ансамбли деревьев, сохранённые в JSON и вычисляемые
+в numpy, все параметры берутся из `config/`. Пакеты скачивает только `docker build` (базовый образ, apt), поэтому
+образ собирается один раз на любой машине с интернетом и переносится файлом:
 
 ```bash
-docker build -t tunnel_guard .                               # machine with internet
-docker save tunnel_guard | gzip > tunnel_guard_image.tar.gz  # ~1.3 GB file -> copy to the test server
-docker load -i tunnel_guard_image.tar.gz                     # test server: creates tunnel_guard:latest (~5 GB on disk)
+docker build -t tunnel_guard .                               # машина с интернетом
+docker save tunnel_guard | gzip > tunnel_guard_image.tar.gz  # файл ~1.3 ГБ -> скопировать на тестовый сервер
+docker load -i tunnel_guard_image.tar.gz                     # тестовый сервер: создаёт tunnel_guard:latest (~5 ГБ на диске)
 docker run --rm --network none -v /path/to/bags:/data tunnel_guard \
     ros2 run tunnel_guard evaluate_bag --bag /data/<bag> --out /data/results/<bag>
 ```
 
-Verified with `--network none`: 15 tests pass, the exported obstacle bag gives 58 STOP frames with the first STOP at 55.5 m.
-Point clouds with 16-byte (x, y, z, intensity) and 26-byte (… + ring + timestamp) points are both read, because fields
-are decoded by name from the `PointCloud2` header.
+Проверено с `--network none`: 15 тестов проходят, экспортированный бэг с препятствием даёт 58 кадров СТОП, первый
+СТОП на 55.5 м. Читаются облака и с 16-байтными точками (x, y, z, intensity), и с 26-байтными (… + ring + timestamp),
+потому что поля декодируются по имени из заголовка `PointCloud2`.
 
-### Windows (Docker Desktop, WSL2 engine)
+### Windows (Docker Desktop, движок WSL2)
 
-Run in PowerShell from the solution folder (no Docker account is needed; ~6 GB free disk for the image):
+Запуск в PowerShell из папки решения (учётная запись Docker не нужна; для образа ~6 ГБ свободного места):
 
 ```powershell
 docker build -t tunnel_guard .
@@ -96,253 +98,273 @@ docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 launch tunnel_guard
 docker run --rm -v "C:\path\to\bags:/data" tunnel_guard ros2 run tunnel_guard evaluate_bag --bag /data/doubleT_obstacle_7s --out /data/results
 ```
 
-`copy_bag:=true` matters on Docker Desktop (Windows/macOS): `ros2 bag play` reads the bag's SQLite file through the
-host-folder mount far slower than real time, so most frames never reach the detector. The option copies the bag into
-the container first. On a Linux host the mount is native and the option is not needed.
+`copy_bag:=true` важен для Docker Desktop (Windows/macOS): `ros2 bag play` читает SQLite-файл бэга через смонтированную
+папку хоста намного медленнее реального времени, и большинство кадров не доходит до детектора. Опция сначала копирует
+бэг внутрь контейнера. На Linux-хосте монтирование нативное, и опция не нужна.
 
-Verified with Docker Desktop 4.91 (WSL2 engine) on the exported test bag: 15 tests pass; `ros2 launch ... copy_bag:=true`
-→ 66 frames processed, `/tunnel_guard/status` CLEAR → CAUTION → STOP, 58 STOP frames, first STOP at 55.5 m, ~100 ms per
-frame on a 15 W laptop CPU (921 600-ray clouds of the obstacle recording; 56–70 ms on the 307 200-ray recordings).
+Проверено на Docker Desktop 4.91 (движок WSL2) на экспортированном тестовом бэге: 15 тестов проходят;
+`ros2 launch ... copy_bag:=true` → обработано 66 кадров, `/tunnel_guard/status` СВОБОДНО → ВНИМАНИЕ → СТОП, 58 кадров
+СТОП, первый СТОП на 55.5 м, ~100 мс на кадр на 15-ваттном процессоре ноутбука (облака по 921 600 лучей в записи с
+препятствием; 56–70 мс на записях по 307 200 лучей).
 
-RViz needs a display: run the Linux command of step 2 above from a WSL (Ubuntu) terminal, where WSLg provides it.
+RViz нужен дисплей: запускайте Linux-команду шага 2 выше из терминала WSL (Ubuntu), где его предоставляет WSLg.
 
-**Test bag without the original archive.** `tools/export_bag.py` writes a standard ROS 2 Humble bag (sqlite3, CDR
-`sensor_msgs/PointCloud2`, fields x, y, z, intensity) from the range-image cache, with no ROS installation needed:
+**Тестовый бэг без исходного архива.** `tools/export_bag.py` записывает стандартный бэг ROS 2 Humble (sqlite3, CDR
+`sensor_msgs/PointCloud2`, поля x, y, z, intensity) из кэша дальностных изображений, без установки ROS:
 
 ```bash
 python tools/export_bag.py doubleT_obstacle test_bags/doubleT_obstacle_7s 0 69 --topic /sensing/lidar/hesai128/pointcloud --frame lidar_livox
 ```
 
-Checked with ROS 2 Humble: `ros2 bag info` reads 70 messages; `evaluate_bag` gives the first STOP at frame 10, 55.5 m,
-73 ms per frame.  (Range is quantised to 1 cm in the cache; invalid returns are dropped.)
+Проверено в ROS 2 Humble: `ros2 bag info` читает 70 сообщений; `evaluate_bag` даёт первый СТОП на кадре 10, 55.5 м,
+73 мс на кадр. (В кэше дальность квантована до 1 см; невалидные отражения отброшены.)
 
-## 2. Architecture
+## 2. Архитектура
 
 ```
- ROS 2 bag / live lidar
-        │  sensor_msgs/PointCloud2 (any field layout, any topic)
+ бэг ROS 2 / живой лидар
+        │  sensor_msgs/PointCloud2 (любая раскладка полей, любой топик)
         ▼
  ┌───────────────────────── tunnel_guard/detector_node (rclpy) ──────────────────────────┐
- │  decode (zero-copy numpy) → axis detection → FOV crop / near-field decimation        │
+ │  декодирование (numpy без копий) → определение оси → обрезка FOV / прорежение вблизи │
  │        │                                                                            │
- │        ▼                        core (pure numpy/scipy, ROS-independent)            │
+ │        ▼                        ядро (чистый numpy/scipy, не зависит от ROS)        │
  │  ┌──────────────┐   ┌───────────────────────┐   ┌──────────────┐   ┌─────────────┐  │
- │  │ Track        │ → │ Envelope test with     │ → │ Range-adaptive│ → │ Multi-frame │  │
- │  │ geometry     │   │ uncertainty (IN / NEAR)│   │ clustering +  │   │ confirmation│  │
- │  │ estimator    │   │ + sight horizon        │   │ containment   │   │ + TTC       │  │
+ │  │ Оценка       │ → │ Проверка габарита с    │ → │ Кластеризация│ → │ Подтвержд.  │  │
+ │  │ геометрии    │   │ неопределённостью      │   │ по дальности │   │ по кадрам   │  │
+ │  │ пути         │   │ (ВНУТРИ / РЯДОМ)       │   │ + вложенность│   │ + TTC       │  │
  │  └──────────────┘   └───────────────────────┘   └──────────────┘   └─────────────┘  │
  │        │                                                                   │        │
  └────────┼───────────────────────────────────────────────────────────────────┼────────┘
           ▼                                                                   ▼
-   markers (RViz2)                         ObstacleStatus · Detection3DArray · alarm · distance
+   маркеры (RViz2)                         ObstacleStatus · Detection3DArray · alarm · distance
 ```
 
-Source layout:
+Структура исходников:
 
 ```
 src/tunnel_guard_msgs/            Obstacle.msg, ObstacleStatus.msg
 src/tunnel_guard/
-  tunnel_guard/core/cloud.py      PointCloud2 decoding, forward-axis detection
-  tunnel_guard/core/geometry.py   rails DP, cross-section template, global DP + dense Gauss-Newton alignment, uncertainty
-  tunnel_guard/core/gauge.py      envelope profile, uncertainty-aware zone classification
-  tunnel_guard/core/cluster.py    track-aligned range-adaptive clustering
-  tunnel_guard/core/tracker.py    M-of-N confirmation, closing speed
-  tunnel_guard/core/detector.py   pipeline orchestration, sight horizon, containment check, decision
-  tunnel_guard/core/adapt.py      lidar odometry (wall signature) and online self-calibration (off by default)
-  tunnel_guard/core/synth.py      ray-cast synthetic obstacles (evaluation only)
-  tunnel_guard/detector_node.py   ROS 2 node
-  tunnel_guard/evaluate_bag.py    offline bag evaluation
-  config/tunnel_guard.yaml        all parameters (generated from the code defaults)
+  tunnel_guard/core/cloud.py      декодирование PointCloud2, определение оси «вперёд»
+  tunnel_guard/core/geometry.py   ДП по рельсам, шаблон сечения, глобальное ДП + плотное выравнивание Гаусса–Ньютона, неопределённость
+  tunnel_guard/core/gauge.py      профиль габарита, классификация зон с учётом неопределённости
+  tunnel_guard/core/cluster.py    кластеризация в координатах пути с ячейкой, растущей с дальностью
+  tunnel_guard/core/tracker.py    подтверждение M из N, скорость сближения
+  tunnel_guard/core/detector.py   оркестрация конвейера, горизонт видимости, проверка вложенности, решение
+  tunnel_guard/core/adapt.py      лидарная одометрия (сигнатура стен) и онлайн-самокалибровка (по умолчанию выключена)
+  tunnel_guard/core/synth.py      синтетические препятствия лучевым моделированием (только для оценки)
+  tunnel_guard/detector_node.py   узел ROS 2
+  tunnel_guard/evaluate_bag.py    офлайн-оценка бэга
+  config/tunnel_guard.yaml        все параметры (сгенерированы из значений по умолчанию в коде)
   launch/, rviz/, test/
 ```
 
 ---
 
-## 3. Algorithm
+## 3. Алгоритм
 
-### 3.1 Why geometry first
-In a metro tunnel "obstacle" has no appearance — it is *anything inside the space the train will sweep*.
-That space is defined by the track, which curves (R ≈ 300–1000 m), climbs and falls (station humps, ±30‰),
-is superelevated, and is seen by a lidar whose mounting differs between trains (the obstacle recording has a
-rolled lidar mounted 0.5 m higher). A straight "box in front of the train" either floods with false alarms from
-walls in curves or misses objects on the actual track. TunnelGuard therefore reconstructs the track geometry
-**every frame, from the lidar alone**, out to the lidar horizon.
+### 3.1 Почему сначала геометрия
+В тоннеле метро у «препятствия» нет внешнего вида — это *всё, что находится в пространстве, которое пройдёт поезд*.
+Это пространство задаётся путём, который изгибается (R ≈ 300–1000 м), поднимается и опускается (горбы у станций,
+±30‰), имеет возвышение наружного рельса и виден лидаром, монтаж которого отличается от поезда к поезду (в записи с
+препятствием лидар наклонён по крену и установлен на 0.5 м выше). Прямой «ящик перед поездом» либо тонет в ложных
+тревогах от стен на кривых, либо пропускает объекты на реальном пути. Поэтому TunnelGuard восстанавливает геометрию
+пути **в каждом кадре и только по лидару** — до горизонта лидара.
 
-### 3.2 Track geometry estimator (`geometry.py`)
-1. **Rails (3–45 m).** BEV max-height map (0.5–1 m × 3 cm cells) → lateral white top-hat keeps narrow ridges
-   6–30 cm high (rail heads) → gauge-pair evidence `S(x,c) = min(R(x,c−0.80), R(x,c+0.80))` for 1520 mm gauge →
-   **Viterbi dynamic programming** finds the globally best smooth centre path. Gives centreline, rail-head height and
-   cross-level (roll) with cm precision, independent of the scan pattern. Far rail detections are gated by temporal
-   consistency (gate guide rails and switches cannot hijack the track).
-2. **Cross-section template.** A tunnel keeps its cross-section along the track. Near-field points in track
-   coordinates `(l, h)` are accumulated (temporal memory) into an occupancy image = *the model of the normal tunnel*;
-   its truncated distance transforms are the alignment targets.
-3. **Global coarse search.** For 3–5 m slabs out to 300 m, DP over lateral-offset hypotheses with template-distance cost
-   and a stiff continuity cost (a track cannot detour metres sideways). Globally optimal — resolves "only the outer wall
-   is visible" in curves and never lets a compact object bend the track.
-4. **Dense direct alignment.** Centreline `y_c(x)` and rail height `z_r(x)` (1 m grid) are refined by **Gauss–Newton**:
-   every lidar point should lie on a template surface; each point constrains the profile at its own distance (oblique
-   walls in curves included). Banded Jacobian → one banded solve per iteration; coarse-to-fine truncation; Tukey weights.
-   Priors: rails and a **clothoid prior** penalising curvature *change* (railway transition curves).
-5. **Obstacle invariance.** Points inside the envelope space never influence the geometry used to judge them
-   (lateral: corridor core excluded; vertical: only track-bed level or structure outside the envelope footprint).
-   Validated with ray-cast obstacles: a person at 160 m no longer moves the estimated track (error < 10 cm).
-6. **Temporal Kalman fusion.** The previous profile is a prior weighted by its own uncertainty + process noise;
-   uncertainty σ(x) fuses only *measured* information (an extrapolation is not a measurement), grows linearly beyond
-   the last measured node, and keeps a distance-growing systematic term that fusion never reduces.
-7. **Sight distance.** Through a curved tunnel the corridor beyond the chord that clears the tunnel wall
-   (≈√(8RW)) is physically invisible; evaluation stops there.
+### 3.2 Оценка геометрии пути (`geometry.py`)
+1. **Рельсы (3–45 м).** Карта максимальных высот сверху (ячейки 0.5–1 м × 3 см) → поперечный «белый цилиндр»
+   (top-hat) оставляет узкие гребни высотой 6–30 см (головки рельсов) → свидетельство пары рельсов
+   `S(x,c) = min(R(x,c−0.80), R(x,c+0.80))` для колеи 1520 мм → **динамическое программирование Витерби** находит
+   глобально лучшую гладкую траекторию оси. Даёт ось пути, высоту головки рельса и поперечный уровень (крен) с
+   сантиметровой точностью, независимо от схемы сканирования. Дальние детекции рельсов проходят проверку временной
+   согласованности (контррельсы и стрелки не могут «увести» путь).
+2. **Шаблон поперечного сечения.** Тоннель сохраняет сечение вдоль пути. Ближние точки в координатах пути `(l, h)`
+   накапливаются (с временной памятью) в изображение занятости = *модель нормального тоннеля*; его усечённые
+   дистанционные преобразования — цели выравнивания.
+3. **Глобальный грубый поиск.** Для слоёв по 3–5 м до 300 м — ДП по гипотезам поперечного смещения со стоимостью
+   расстояния до шаблона и жёсткой стоимостью непрерывности (путь не может уйти на метры вбок). Глобальный оптимум
+   решает ситуацию «видна только наружная стена» на кривых и никогда не даёт компактному объекту изогнуть путь.
+4. **Плотное прямое выравнивание.** Ось `y_c(x)` и высота рельса `z_r(x)` (сетка 1 м) уточняются методом
+   **Гаусса–Ньютона**: каждая точка лидара должна лежать на поверхности шаблона; каждая точка ограничивает профиль на
+   своей дальности (включая наклонные стены на кривых). Ленточный якобиан → одно ленточное решение на итерацию;
+   усечение от грубого к точному; веса Тьюки. Априорные члены: рельсы и **априор клотоиды**, штрафующий *изменение*
+   кривизны (переходные кривые железной дороги).
+5. **Инвариантность к препятствиям.** Точки внутри габарита никогда не влияют на геометрию, по которой их оценивают
+   (поперёк: ядро коридора исключено; по вертикали: только уровень основания пути или конструкции вне следа габарита).
+   Проверено на препятствиях, созданных лучевым моделированием: человек на 160 м больше не сдвигает оценку пути
+   (ошибка < 10 см).
+6. **Временное слияние (Калман).** Предыдущий профиль — априор, взвешенный собственной неопределённостью и шумом
+   процесса; неопределённость σ(x) сливает только *измеренную* информацию (экстраполяция — не измерение), линейно
+   растёт за последним измеренным узлом и содержит растущую с дальностью систематическую составляющую, которую слияние
+   никогда не уменьшает.
+7. **Дальность видимости.** В криволинейном тоннеле коридор за хордой, касающейся стены (≈√(8RW)), физически не виден;
+   оценка на этом заканчивается.
 
-### 3.3 Envelope, decision and confirmation
-* **Envelope profile** `w(h)` measured from the data (free space of all recordings in track coordinates):
-  contact rails at |l| = 1.22 m (h 0.2–0.45 m), platform edges ≥ 1.37 m, walls ≥ 1.48 m, round-tunnel crown 1.18 m
-  at 3.43 m, square-tunnel ceiling 3.8 m (fixtures below it → roof tapered to 3.25 m). Objects lower than 0.15 m above
-  the rail head are ignored.
-* **Uncertainty-aware zones.** `IN_GAUGE` requires the point to be inside the envelope shrunk by 2σ;
-  points inside the nominal envelope only are `NEAR_GAUGE` (contact within the measurement error → CAUTION).
-* **Two-tier range.** STOP only where this frame measured the track geometry; beyond it (temporally trusted geometry)
-  an in-envelope object is an early warning (CAUTION) that upgrades to STOP as measurement reaches it.
-* **3D clustering** on a track-aligned grid (along-track cell grows with range), split at vertical gaps larger than
-  the lidar's vertical beam spacing (Pandar128: 0.125°).
-* **Physical plausibility tests** (each is a statement about the world, not a tuned threshold):
-  - *containment* — a foreign object can never be the outermost structure on its side; required only where a wall
-    displacement into the cluster's position is statistically plausible (within 3σ);
-  - *shell attachment* — tall clusters that continue upward into the tunnel shell are infrastructure (columns, masts);
-  - *gravity* — beyond 60 m only floor-supported objects can trigger STOP (suspended fixtures → CAUTION);
-  - *shape* — a physical object spans at least ~1.2 vertical beam spacings at its range (or has ≥ 15 points).
-* **Confirmation** in track coordinates: 3 detections within 5 frames (≈0.2–0.3 s), gating by the maximum
-  closing speed; α-β filter gives closing speed and time-to-collision.
-* **Decision:** STOP if a confirmed object is confidently inside; CAUTION if one touches the envelope or is only
-  early-warned; CLEAR otherwise. `clear_distance` = distance up to which the envelope was actually verified.
+### 3.3 Габарит, решение и подтверждение
+* **Профиль габарита** `w(h)` измерен по данным (свободное пространство всех записей в координатах пути): контактные
+  рельсы на |l| = 1.22 м (h 0.2–0.45 м), края платформ ≥ 1.37 м, стены ≥ 1.48 м, свод круглого тоннеля 1.18 м на
+  высоте 3.43 м, потолок прямоугольного тоннеля 3.8 м (под ним арматура → крыша габарита сужена к 3.25 м). Объекты
+  ниже 0.15 м над головкой рельса игнорируются.
+* **Зоны с учётом неопределённости.** `IN_GAUGE` требует, чтобы точка была внутри габарита, сжатого на 2σ; точки
+  только внутри номинального габарита — `NEAR_GAUGE` (касание в пределах ошибки измерения → ВНИМАНИЕ).
+* **Два яруса дальности.** СТОП — только там, где геометрия пути измерена в этом кадре; дальше (геометрия, которой
+  можно доверять по времени) объект в габарите даёт раннее предупреждение (ВНИМАНИЕ), которое становится СТОП, когда
+  измерение до него дотягивается.
+* **3D-кластеризация** на сетке в координатах пути (ячейка вдоль пути растёт с дальностью), разрыв по вертикальным
+  промежуткам больше вертикального шага лучей лидара (Pandar128: 0.125°).
+* **Тесты физической правдоподобности** (каждый — утверждение о мире, а не подобранный порог):
+  - *вложенность* — посторонний объект никогда не может быть самой внешней конструкцией со своей стороны; требуется
+    только там, где смещение стены в позицию кластера статистически правдоподобно (в пределах 3σ);
+  - *крепление к оболочке* — высокие кластеры, продолжающиеся вверх в оболочку тоннеля, — это инфраструктура
+    (колонны, мачты);
+  - *гравитация* — дальше 60 м СТОП могут вызвать только объекты, опирающиеся на пол (подвесная арматура → ВНИМАНИЕ);
+  - *форма* — физический объект занимает на своей дальности не меньше ~1.2 вертикальных шагов лучей (или ≥ 15 точек).
+* **Подтверждение** в координатах пути: 3 обнаружения в 5 кадрах (≈0.2–0.3 с), стробирование по максимальной скорости
+  сближения; α-β-фильтр даёт скорость сближения и время до столкновения.
+* **Решение:** СТОП, если подтверждённый объект уверенно внутри габарита; ВНИМАНИЕ, если объект касается габарита или
+  есть только раннее предупреждение; иначе СВОБОДНО. `clear_distance` — расстояние, до которого габарит действительно
+  проверен.
 
-### 3.4 Learned plausibility scorer (physics-first hybrid)
-The geometry and the envelope stay analytic; a small learned model only answers *"is this in-envelope cluster a real
-object or a piece of tunnel?"* for clusters beyond 30 m, where the rule tests are least certain.
-* **Features (38, `core/features.py`)** — only physical, sensor-invariant quantities: extent in beam spacings, points per
-  vertical beam, depth inside the envelope, margins to the measured/trusted/sight range, σ of the geometry, wall
-  evidence on both sides, shell attachment, lateral stability of the track. Intensity, ring index, track age and recording
-  identity are deliberately **excluded** (they would learn the recording, not the physics).
-* **Data without leakage** — negatives: every candidate cluster of the 5 obstacle-free recordings (5 864 rows);
-  positives: ray-cast obstacles of random shape, size, reflectivity, lateral position, range and speed inserted into the
-  real beams. The real obstacle recording is never seen.
-* **Validation = leave-one-recording-out** (train on 4 tunnels, test on the 5th) at the *decision* level: false-STOP
-  frames on clean frames and object recall, threshold chosen by nested CV under a false-alarm budget.
-* **Models compared** (LORO average precision): logistic regression 0.877, LightGBM 0.888, monotone LightGBM 0.887,
-  XGBoost 0.884, CatBoost 0.890, MLP 0.864, physics-informed MLP (monotonicity penalty on the gradient w.r.t. physical
-  evidence) 0.858; Optuna tuning: monotone LGB 0.893, CatBoost 0.894, PI-MLP 0.867.
-* **Deployed:** mean of logits of *monotone LightGBM + CatBoost + physics-informed MLP* (diversity beats the best single
-  AP at the decision level), 5-frame score smoothing along each track, threshold 0.37. Hard physical veto: a cluster
-  attached to the tunnel shell can never be promoted. Within 30 m the rule decision is kept unchanged.
-* **Inference without ML libraries** — models are exported to JSON (`config/obstacle_scorer.json`, 0.4 MB) and evaluated by
-  a packed numpy traversal (`core/scorer.py`), bit-exact to LightGBM/CatBoost. Physics rules only: `-p scorer_model:=none`
-  or `evaluate_bag --no-scorer`.
+### 3.4 Обучаемый классификатор правдоподобности (гибрид «сначала физика»)
+Геометрия и габарит остаются аналитическими; небольшая обучаемая модель отвечает только на вопрос *«этот кластер в
+габарите — реальный объект или часть тоннеля?»* для кластеров дальше 30 м, где тесты-правила наименее уверены.
+* **Признаки (38, `core/features.py`)** — только физические величины, не зависящие от сенсора: размер в шагах лучей,
+  точек на вертикальный луч, глубина внутри габарита, запасы до измеренной/доверенной/видимой дальности, σ геометрии,
+  свидетельства стен с обеих сторон, крепление к оболочке, поперечная устойчивость пути. Интенсивность, номер кольца,
+  возраст трека и идентичность записи намеренно **исключены** (иначе модель выучила бы запись, а не физику).
+* **Данные без утечки** — отрицательные примеры: все кластеры-кандидаты 5 записей без препятствий (5 864 строки);
+  положительные: препятствия случайной формы, размера, отражательной способности, поперечного положения, дальности и
+  скорости, вставленные лучевым моделированием в реальные лучи. Реальная запись с препятствием в обучении не
+  используется.
+* **Валидация — «оставь одну запись»** (обучение на 4 тоннелях, тест на 5-м) на уровне *решения*: ложные кадры СТОП на
+  чистых кадрах и полнота по объектам; порог выбирается вложенной кросс-валидацией при бюджете ложных тревог.
+* **Сравнённые модели** (средняя точность при LORO): логистическая регрессия 0.877, LightGBM 0.888, монотонный LightGBM
+  0.887, XGBoost 0.884, CatBoost 0.890, MLP 0.864, физически информированная MLP (штраф за монотонность градиента по
+  физическим свидетельствам) 0.858; с настройкой Optuna: монотонный LGB 0.893, CatBoost 0.894, PI-MLP 0.867.
+* **Итоговая модель — роутер двух экспертов** (средние логиты ½·монотонный LightGBM + ½·CatBoost в каждом):
+  кандидаты, опирающиеся на пол, оценивает эксперт, обученный на людях и коробках (`config/obstacle_scorer.json`,
+  порог 0.425); парящие и висящие кандидаты (низ ≥ 0.5 м над рельсами) — эксперт, обученный на всём пространстве
+  опасностей (`config/obstacle_scorer_hang.json`, порог 0.45). Оценки сглаживаются вдоль трека как запас над порогом.
+  Предыдущая модель v1 — ⅓·LightGBM + ⅓·CatBoost + ⅓·PI-MLP, порог 0.37. Жёсткое физическое вето: кластер,
+  прикреплённый к оболочке тоннеля, никогда не повышается до СТОП. В пределах 30 м решение правил сохраняется без
+  изменений. Дополнительно — ЭГО-тест: подтверждённый объект обязан приближаться со скоростью поезда (по лидарной
+  одометрии).
+* **Вывод без ML-библиотек** — модели экспортированы в JSON и вычисляются упакованным обходом деревьев на numpy
+  (`core/scorer.py`), побитово совпадающим с LightGBM/CatBoost. Только правила физики: `-p scorer_model:=none` или
+  `evaluate_bag --no-scorer`.
 
-### 3.5 Speed
-Vectorised coarse DP cost (bincount, exactly equal to the loop), numba kernels for the rail DP, coarse DP and the
-Gauss–Newton normal equations (numpy fallback, identical results), column-selected rotation, a distance-bucketed
-neighbourhood index and a 2 m sight grid: **268 → ~70 ms** per frame on the laptop (921 600-point clouds 552 → 89 ms),
-i.e. faster than the 10 Hz lidar on a 15 W CPU, single thread. Kernels are JIT-compiled at node start-up.
+### 3.5 Скорость
+Векторизованная стоимость грубого ДП (bincount, точно равная циклу), ядра numba для ДП по рельсам, грубого ДП и
+нормальных уравнений Гаусса–Ньютона (запасной путь на numpy с идентичными результатами), поворот только нужных
+столбцов, индекс соседства по корзинам дальности и сетка видимости с шагом 2 м: **268 → ~70 мс** на кадр на ноутбуке
+(облака по 921 600 точек: 552 → 89 мс), т.е. быстрее 10-герцового лидара на 15-ваттном процессоре в один поток. Ядра
+компилируются JIT при старте узла.
 
 ---
 
-## 4. Parameters (`config/tunnel_guard.yaml`)
+## 4. Параметры (`config/tunnel_guard.yaml`)
 
-All parameters are ROS parameters (`--ros-args -p group.name:=value`), generated from the dataclass defaults.
+Все параметры — параметры ROS (`--ros-args -p group.name:=value`), сгенерированные из значений по умолчанию в dataclass.
 
-| Parameter | Default | Meaning |
+| Параметр | По умолчанию | Смысл |
 |---|---|---|
-| `input_topic` | `auto` | PointCloud2 topic; `auto` = taken from the bag, else first one found |
-| `input_reliability` | `best_effort` | subscription QoS; the launch file sets `reliable` for bag playback |
-| launch `play_delay`, `rate` | 1.0 s, 1.0 | bag playback starts `play_delay` after the detector is ready |
-| `forward_axis` | `auto` | `x`, `-x`, `y`, `-y` or auto-detection |
-| `min_range`, `min_distance` | 1.5 m, 3 m | ignore own-train returns |
-| `half_fov_deg` | 70 | forward field of view used |
-| `gauge.profile` | see file | envelope half-width vs height above rail head (flat list h, w, h, w …) |
-| `gauge.h_min` | 0.15 m | minimum object height above the rail head |
-| `gauge.sigma_k` | 2.0 | confidence multiplier for STOP decisions |
-| `geometry.smooth_lat / smooth_vert` | (1e3, 1e8) | curvature / curvature-change penalties |
-| `geometry.sigma_sys_l / sigma_sys_v` | (0.04, 0.10) / (0.03, 0.05) | systematic geometry error model |
-| `tracker.confirm_hits / window` | 3 / 5 | M-of-N confirmation |
-| `sight_clearance` | 1.8 m | line-of-sight room inside the tunnel |
-| `containment_check` | true | lateral containment test |
-| `scorer_model` | package `config/obstacle_scorer.json` | learned plausibility scorer (empty = rules only) |
-| `scorer_near_override_s` | 30 m | below this distance the rule decision is kept |
+| `input_topic` | `auto` | топик PointCloud2; `auto` — берётся из бэга, иначе первый найденный |
+| `input_reliability` | `best_effort` | QoS подписки; launch-файл ставит `reliable` для проигрывания бэга |
+| launch `play_delay`, `rate` | 1.0 с, 1.0 | проигрывание бэга начинается через `play_delay` после готовности детектора |
+| `forward_axis` | `auto` | `x`, `-x`, `y`, `-y` или автоопределение |
+| `min_range`, `min_distance` | 1.5 м, 3 м | игнорировать отражения от собственного поезда |
+| `half_fov_deg` | 70 | используемое поле зрения вперёд |
+| `gauge.profile` | см. файл | полуширина габарита в зависимости от высоты над головкой рельса (плоский список h, w, h, w …) |
+| `gauge.h_min` | 0.15 м | минимальная высота объекта над головкой рельса |
+| `gauge.sigma_k` | 2.0 | множитель уверенности для решений СТОП |
+| `geometry.smooth_lat / smooth_vert` | (1e3, 1e8) | штрафы за кривизну / изменение кривизны |
+| `geometry.sigma_sys_l / sigma_sys_v` | (0.04, 0.10) / (0.03, 0.05) | модель систематической ошибки геометрии |
+| `tracker.confirm_hits / window` | 3 / 5 | подтверждение M из N |
+| `sight_clearance` | 1.8 м | запас прямой видимости внутри тоннеля |
+| `containment_check` | true | тест поперечной вложенности |
+| `scorer_model` | `config/obstacle_scorer.json` пакета | обучаемый классификатор (пусто — только правила) |
+| `scorer_model_hang` | `auto` | эксперт для парящих/висящих объектов (`auto` — файл рядом с основным) |
+| `scorer_near_override_s` | 30 м | ближе этого расстояния сохраняется решение правил |
 
 ---
 
-## 5. Results (details and reproduction: `docs/EXPERIMENTS.md`, `tools/`)
+## 5. Результаты (подробности и воспроизведение: `docs/EXPERIMENTS.md`, `tools/`)
 
-Final model: physics layer + **router of two ½·LightGBM (monotone) + ½·CatBoost ensembles + ego-motion test**.
-Floor-supported candidates are judged by the ensemble trained on people and boxes (`config/obstacle_scorer.json`),
-floating and hanging candidates (bottom ≥ 0.5 m above the rails) by the ensemble trained on the full hazard space
-(`config/obstacle_scorer_hang.json`), each against its own out-of-fold threshold.  The previous model v1 was
-⅓·LightGBM + ⅓·CatBoost + ⅓·physics-informed MLP.  Ensemble weights: fixed equal (mean of logits); a grouped
-out-of-fold sweep of w over 0…1 changes recall only 67.3–67.6 % and false STOP 0.30–0.33 % (`tools/weight_sweep.py`).
-The data sets are always reported separately.
+Итоговая модель: физический слой + **роутер двух ансамблей ½·LightGBM (монотонный) + ½·CatBoost + ЭГО-тест**.
+Кандидатов, опирающихся на пол, оценивает ансамбль, обученный на людях и коробках (`config/obstacle_scorer.json`),
+парящих и висящих (низ ≥ 0.5 м над рельсами) — ансамбль, обученный на всём пространстве опасностей
+(`config/obstacle_scorer_hang.json`), каждый со своим порогом, выбранным вне фолда. Предыдущая модель v1 —
+⅓·LightGBM + ⅓·CatBoost + ⅓·физически информированная MLP. Веса ансамбля фиксированы и равны (среднее логитов);
+сгруппированный перебор веса w от 0 до 1 вне фолда меняет полноту лишь в пределах 67.3–67.6 %, а ложные СТОП —
+0.30–0.33 % (`tools/weight_sweep.py`). Результаты по наборам данных всегда приводятся раздельно.
 
-**Dataset 1: original recordings (5 obstacle-free tunnels + 1 held-out recording with people)**
+**Датасет 1: исходные записи (5 тоннелей без препятствий + 1 отложенная запись с людьми)**
 
-| What | Result |
+| Что | Результат |
 |---|---|
-| Held-out real recording (never used for development, training or tuning): person inside the gauge | STOP in **58 / 60** frames, first STOP at **55.5 m**; **0** spurious STOP (precision 100 %, recall 96.7 %, accuracy 99.0 %) |
-| False STOP on all 2 287 frames of the 5 obstacle-free tunnels | **0** frames |
-| Ray-cast person / 0.5 m box in real beams, first second of approach | person **100 / 78 / 33 %** at 80 / 120 / 160 m; box 90 / 71 / 0 % |
+| Отложенная реальная запись (не использовалась ни для разработки, ни для обучения, ни для настройки): человек в габарите | СТОП в **58 из 60** кадров, первый СТОП на **55.5 м**; **0** ложных СТОП (точность 100 %, полнота 96.7 %, accuracy 99.0 %) |
+| Ложные СТОП на всех 2 287 кадрах 5 тоннелей без препятствий | **0** кадров |
+| Человек / коробка 0.5 м лучевым моделированием в реальных лучах, первая секунда приближения | человек **100 / 78 / 33 %** на 80 / 120 / 160 м; коробка 90 / 71 / 0 % |
 
-**Dataset 2: new line, 20-min drive, 13 km, no obstacles (not used to develop the detector)**
+**Датасет 2: новая линия, поездка 20 минут, 13 км, без препятствий (не использовался при разработке детектора)**
 
-| What | Result |
+| Что | Результат |
 |---|---|
-| Self-labelling by traversal | all 91 alarms of the previous model proven false (the train later drove through each place) |
-| Sealed final test (last 5 min, 2.8 km, never used for training or tuning), mean of 3 seeds | **1.8 false STOP events / km** (previous model 10.3), **0.32 %** of frames (was 2.06 %) |
-| Ray-cast person standing on the line, train at its real speed (60 km/h) | first STOP at **142 m** (demo video) |
+| Саморазметка проездом | все 91 тревога предыдущей модели доказанно ложные (поезд затем проехал через каждое место) |
+| Запечатанный итоговый тест (последние 5 минут, 2.8 км, не использовались ни для обучения, ни для настройки), среднее по 3 зёрнам | **1.8 ложных СТОП-события на км** (предыдущая модель 10.3), **0.32 %** кадров (было 2.06 %) |
+| Человек на пути (лучевое моделирование), поезд на реальной скорости (60 км/ч) | первый СТОП на **142 м** (демо-видео) |
 
-**Dataset 3: the organisers' synthetic obstacles (readable 29 % of the bag) and a full ten-object replica**
+**Датасет 3: синтетические объекты организаторов (читаются 29 % бэга)**
 
-| What | Result |
+| Что | Результат |
 |---|---|
-| Readable part of the organisers' bag (438 frames, ~1.8 km) contains all ten objects | STOP on **7 of 8** objects inside the gauge; the 5 cm hanging rod is missed (4 returns at 12 m) |
-| 2×2 m cube in the centre of the gauge (floating 1.4 m above the descending track) | first STOP at **98 m**, STOP held in 94 % of frames |
-| 0.3 m cube centre / on a rail / at the edge; 2×2 m at the edge; 2×0.2 m bar on the rails | first STOP at 20 / 23 / 20 / 25 / 60 m |
-| False STOP on the empty tunnel, including curves of radius 243-390 m | **1 event** (5 frames, a horizontal roof slice at 146 m) |
-| Objects the organisers label "outside the gauge" (0.3 m close, 2×2 m) | STOP at 25 / 29 m: our envelope is a 2.7 m car, theirs is ≈ ±1.15 m from the lidar axis (inferred from their objects; `gauge.profile`) |
+| Читаемая часть бэга организаторов (438 кадров, ~1.8 км) содержит все десять объектов | СТОП на **7 из 8** объектов в габарите; висящий стержень 5 см пропущен (4 отражения на 12 м) |
+| Куб 2×2 м в центре габарита (парит на 1.4 м над уходящим вниз путём) | первый СТОП на **98 м**, СТОП удерживается в 94 % кадров |
+| Куб 0.3 м в центре / на рельсе / у края; 2×2 м у края; брус 2×0.2 м на рельсах | первый СТОП на 20 / 23 / 20 / 25 / 60 м |
+| Ложные СТОП на пустом тоннеле, включая кривые радиусом 243–390 м | **1 событие** (5 кадров, горизонтальный срез свода на 146 м) |
+| Объекты, которые организаторы относят к «за габаритом» (0.3 м рядом, 2×2 м) | СТОП на 25 / 29 м: наш габарит — вагон 2.7 м, их — ≈ ±1.15 м от оси лидара (выведено по их объектам; `gauge.profile`) |
 
-Median latency: **56–70 ms** per frame on one CPU core (laptop i5-8250U), below the 100 ms of the 10 Hz lidar.
+Медианная задержка: **56–70 мс** на кадр на одном ядре CPU (ноутбук, i5-8250U) — меньше 100 мс периода 10-герцового
+лидара.
 
-Further analysis in `docs/EXPERIMENTS.md`: precision / recall / accuracy (§6), leakage controls and generalization (§7),
-long-range study (§8), ablation study (§9), Pandar128 files (§10), the new line: self-labelling, domain-robust scorer,
-ego-motion test, sealed test (§12); dataset 3, the hazard-space retraining and the router (§13).
+Дальнейший анализ в `docs/EXPERIMENTS.md`: точность / полнота / accuracy (§6), контроль утечек и обобщение (§7),
+исследование дальности (§8), абляция (§9), файлы Pandar128 (§10), новая линия: саморазметка, устойчивый к домену
+классификатор, ЭГО-тест, запечатанный тест (§12); датасет 3, переобучение на пространстве опасностей и роутер (§13).
 
-Demo video (144 s, Russian captions; download from the [release](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest), locally `docs/demo_tunnelguard.mp4`):
-- dataset 1: held-out real people (STOP at 55.5 m), and a ray-cast person approaching from 200 m (first STOP at 150 m);
-- dataset 2: the train at line speed with lidar odometry, a ray-cast person standing on the new line (STOP at 142 m),
-  and the same seconds with the previous model (12 false STOP frames) and the deployed one (0);
-- dataset 3: the organisers' own bag with their synthetic objects (2×2 m cube: first STOP at 98 m; objects 3–7).
+Демо-видео (144 с, русские подписи; скачать из [релиза](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest), локально `docs/demo_tunnelguard.mp4`):
+- датасет 1: отложенная запись с реальными людьми (СТОП на 55.5 м) и человек, созданный лучевым моделированием,
+  приближающийся с 200 м (первый СТОП на 150 м);
+- датасет 2: поезд на линейной скорости с лидарной одометрией, человек на новой линии (СТОП на 142 м), и те же секунды
+  с предыдущей моделью (12 ложных кадров СТОП) и итоговой (0);
+- датасет 3: бэг организаторов с их синтетическими объектами (куб 2×2 м: первый СТОП на 98 м; объекты 3–7).
 
-Every frame is the live output of the detector on real recorded lidar frames. Synthetic objects are marked
-«СИНТЕТИКА». Presentation: `presentation/TunnelGuard_LCT2026.pptx` (figures: `tools/make_deck_figures.py`,
-`tools/make_ds2_figures.py`; video: `tools/make_video.py`).
+Каждый кадр — живой вывод детектора на реально записанных кадрах лидара. Синтетические объекты помечены
+«СИНТЕТИКА». Презентация: `presentation/TunnelGuard_LCT2026.pptx` (рисунки: `tools/make_deck_figures.py`,
+`tools/make_ds2_figures.py`; видео: `tools/make_video.py`).
 
-## 6. Limitations (honest)
-* **Latency.** ≈ 70 ms median on a 15 W laptop CPU (single thread, numba) — within the 100 ms lidar period with little
-  margin on p95 frames; the node always processes the newest cloud (QoS depth 2, best effort), so it never falls behind.
-  A C++ port of `geometry.py` (≈ 45 % of the time) is the next step for a hard real-time guarantee.
-* **The learned scorer is trained on ray-cast positives.** Real obstacles in real tunnels are needed to calibrate it
-  further; the physics rules remain in force within 30 m and the shell veto is absolute.
-* **Range is limited by physics.** The Pandar128 returns ≈ 200 m at 10 % reflectivity; at 160 m a person yields ≈ 10
-  points and the vertical beam spacing is 0.35 m. In curves the corridor is only visible up to ≈ √(8RW).
-* **Small objects.** A 0.3 m box is reliably confirmed only within ≈ 40–60 m; beyond that it yields CAUTION at most
-  (shape plausibility rule). This is a deliberate trade-off against false stops.
-* Objects lower than 0.15 m above the rail head are ignored; suspended objects beyond 60 m raise CAUTION, not STOP.
-* CAUTION is frequent near infrastructure that touches the envelope within the measurement error (switches,
-  platforms): it is informational and never commands braking.
-* Only one real obstacle recording was available; range figures rely on physically ray-cast obstacles.
-* **No network at run time.** The node needs no internet: both scorers are tree ensembles exported to JSON and evaluated
-  in numpy (no LightGBM/CatBoost at run time), all parameters come from `config/`. Only `docker build` downloads
-  packages; for an offline machine ship the built image (`docker save tunnel_guard | gzip > tunnel_guard.tar.gz`,
-  then `docker load -i tunnel_guard.tar.gz`).
-* **Glass and other transparent or mirror-like surfaces.** A lidar sees such objects only through their frames, edges,
-  dirt or near-normal reflections, so a clean glass pane yields few returns — like the 5 cm rod of dataset 3 it may
-  not be confirmed. Its frame or any opaque part is detected like any other object.
-* **Gauge.** The envelope is the free space measured in all recordings (car profile, `gauge.profile`); if the
-  operator's gauge is narrower, objects just outside it (dataset 3, objects 5 and 7) still trigger STOP until the
-  profile is set to the official one.
+## 6. Ограничения (честно)
+* **Задержка.** ≈ 70 мс медиана на 15-ваттном процессоре ноутбука (один поток, numba) — укладывается в 100 мс периода
+  лидара с небольшим запасом на p95; узел всегда обрабатывает самое свежее облако (глубина QoS 2, best effort), поэтому
+  никогда не отстаёт. Перенос `geometry.py` (≈ 45 % времени) на C++ — следующий шаг для жёсткой гарантии реального
+  времени.
+* **Классификатор обучен на положительных примерах из лучевого моделирования.** Для дальнейшей калибровки нужны
+  реальные препятствия в реальных тоннелях; в пределах 30 м действуют правила физики, а вето оболочки абсолютно.
+* **Дальность ограничена физикой.** Pandar128 даёт отражения до ≈ 200 м при отражательной способности 10 %; на 160 м
+  человек даёт ≈ 10 точек, а вертикальный шаг лучей — 0.35 м. На кривых коридор виден только до ≈ √(8RW).
+* **Мелкие объекты.** Коробка 0.3 м надёжно подтверждается только в пределах ≈ 40–60 м; дальше — самое большее
+  ВНИМАНИЕ (правило правдоподобности формы). Это осознанный компромисс против ложных остановок.
+* Объекты ниже 0.15 м над головкой рельса игнорируются; подвешенные объекты дальше 60 м дают ВНИМАНИЕ, а не СТОП.
+* ВНИМАНИЕ часто возникает у инфраструктуры, касающейся габарита в пределах ошибки измерения (стрелки, платформы):
+  это информационный сигнал, он никогда не командует торможением.
+* Была доступна только одна реальная запись с препятствием; цифры по дальности опираются на физическое лучевое
+  моделирование препятствий.
+* **Сеть во время работы не нужна.** Узлу не нужен интернет: оба классификатора — ансамбли деревьев, экспортированные
+  в JSON и вычисляемые в numpy (LightGBM/CatBoost во время работы не нужны), все параметры берутся из `config/`.
+  Пакеты скачивает только `docker build`; для машины без сети переносите собранный образ
+  (`docker save tunnel_guard | gzip > tunnel_guard.tar.gz`, затем `docker load -i tunnel_guard.tar.gz`).
+* **Стекло и другие прозрачные или зеркальные поверхности.** Лидар видит такие объекты только по рамам, краям,
+  загрязнениям или отражениям почти по нормали, поэтому чистое стекло даёт мало отражений — как и стержень 5 см из
+  датасета 3, оно может не подтвердиться. Рама или любая непрозрачная часть обнаруживается как любой другой объект.
+* **Габарит.** Габарит — это свободное пространство, измеренное во всех записях (профиль вагона, `gauge.profile`); если
+  габарит эксплуатанта уже, объекты сразу за ним (датасет 3, объекты 5 и 7) дают СТОП, пока профиль не задан
+  официальным.

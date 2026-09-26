@@ -1,4 +1,4 @@
-# TunnelGuard — metro tunnel obstacle detector (ROS 2 Humble)
+# TunnelGuard — детектор препятствий в тоннеле метро (ROS 2 Humble)
 # docker build -t tunnel_guard .
 FROM osrf/ros:humble-desktop
 
@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-sensor-msgs-py \
     && rm -rf /var/lib/apt/lists/*
 
-# numba accelerates the geometry kernels ~2x (needed for 10 Hz on one core); Ubuntu's package matches the system numpy.
-# If it cannot be installed, pip is tried, and failing that the verified (slower) numpy path is used.
+# numba ускоряет ядра геометрии ~в 2 раза (нужно для 10 Гц на одном ядре); пакет Ubuntu совместим с системным numpy.
+# Если он не ставится, пробуется pip, а если и это не удалось — используется проверенный (более медленный) путь на numpy.
 RUN (apt-get update && apt-get install -y --no-install-recommends python3-numba && rm -rf /var/lib/apt/lists/* \
         && python3 -c "import numba") \
     || (apt-get update && apt-get install -y --no-install-recommends python3-pip && rm -rf /var/lib/apt/lists/* \
@@ -34,7 +34,7 @@ RUN source /opt/ros/humble/setup.bash \
     && colcon build --event-handlers console_direct+ \
     && rm -rf build log
 
-# compile the numba kernels once into the on-disk cache, so the node is ready ~1 s after start
+# один раз компилируем ядра numba в дисковый кэш, чтобы узел был готов через ~1 с после старта
 RUN source /ws/install/setup.bash \
     && python3 -c "from tunnel_guard.core.geometry import warmup; print('numba kernels cached:', warmup())"
 

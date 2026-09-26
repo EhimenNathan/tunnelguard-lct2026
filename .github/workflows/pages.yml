@@ -1,5 +1,5 @@
-# Publishes the interactive website (web/) to GitHub Pages on every push to main.
-# One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
+# Публикует интерактивный сайт (web/) на GitHub Pages при каждом push в main.
+# Однократная настройка: Settings -> Pages -> Source: "GitHub Actions".
 name: website
 
 on:
