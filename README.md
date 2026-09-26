@@ -12,6 +12,9 @@ TunnelGuard смотрит вдоль тоннеля лидаром поезда
 **Ссылки:** [интерактивный сайт](https://EhimenNathan.github.io/tunnelguard-lct2026/) (живой вывод детектора на записях, 3D) ·
 [демо-видео](https://github.com/EhimenNathan/tunnelguard-lct2026/releases/latest) (GitHub Release) · презентация: `presentation/TunnelGuard_LCT2026.pptx`
 
+**Команда Sakhalin AI** (Sakhalin AI Center, Сахалинская область): Каменев Александр Павлович — капитан, Data Scientist,
+администрирование; Полина Витковская — Data Scientist; Марат Галиулин — Data Scientist.
+
 | Выход (на каждый кадр лидара) | Топик | Тип |
 |---|---|---|
 | Решение: СВОБОДНО / ВНИМАНИЕ / СТОП, дистанция до ближайшего препятствия, время до столкновения, проверенная свободная дистанция, все препятствия | `/tunnel_guard/status` | `tunnel_guard_msgs/ObstacleStatus` |

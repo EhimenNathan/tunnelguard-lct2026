@@ -26,3 +26,5 @@
    `make_video.py` (docs/demo_tunnelguard.mp4 + ключевые кадры), `build_deck.py` (презентация по официальному
    шаблону), `preview_deck.py deck.pptx out_dir` (рендерит слайды в PNG и сообщает о вылезающем тексте — проверка без
    PowerPoint), `export_web.py`, `export_web_ds3.py` (данные для сайта `web/`).
+10. `fill_team.py deck.pptx team_dir [out.pptx]` — заполняет слайды команды (1–4) из `team.json` и фотографий
+    участников: название, капитан, карточки (лишние карточки шаблона удаляются), история и мотивация.
