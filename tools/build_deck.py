@@ -4,7 +4,7 @@ Mandatory slides 7-11 are filled in place (exact template design kept). Solution
 own visual language (purple background with partner logos, pink title pill, white rounded cards with blush outline,
 template palette) and follow the pitch structure requested in the case: problem -> idea -> algorithm -> demo ->
 results -> what worked / what did not. Numbers come from report_numbers.json (make_report.py) and the figures from
-make_deck_figures.py / make_video.py. Run from the scratchpad directory that holds report_numbers.json and logos/.
+make_deck_figures.py / make_video.py. Run from tools/results (report_numbers.json, logos/ and the other result summaries are kept there).
 """
 import copy
 import json

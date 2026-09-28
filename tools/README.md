@@ -28,3 +28,5 @@
    PowerPoint), `export_web.py`, `export_web_ds3.py` (данные для сайта `web/`).
 10. `fill_team.py deck.pptx team_dir [out.pptx]` — заполняет слайды команды (1–4) из `team.json` и фотографий
     участников: название, капитан, карточки (лишние карточки шаблона удаляются), история и мотивация.
+11. `results/` — сводки результатов (JSON) и логотипы, из которых собираются рисунки и презентация:
+    `cd tools/results && python ../build_deck.py`, затем `python ../fill_team.py <deck.pptx> <папка команды>`.
