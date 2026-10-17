@@ -27,10 +27,10 @@ jobs:
       - name: Замороженная версия — 4443 кадра и 68 условий
         run: |
           mkdir -p results/baseline results/candidate
-          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$BASE" python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/baseline --ladder
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$BASE" python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/baseline --ladder --source-label frozen-32357fa
       - name: Новая версия — те же кадры, инъекции и seeds
         run: |
-          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --ladder
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --ladder --source-label "${{ github.sha }}"
       - name: Пороги качества перед публикацией
         run: python3 tools/finals_compare_gate.py results/baseline results/candidate results/quality_gates.json
       - uses: actions/upload-artifact@v4

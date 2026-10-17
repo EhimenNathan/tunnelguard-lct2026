@@ -149,7 +149,7 @@ class FarField:
         ssum = nb(self.ssum, 'sum').sum(0)
         # Inspect a wider context than the evidence neighbourhood. A long rail
         # must not become two compact objects at its truncated endpoints.
-        span = nb(nb(self.smax, 'max'), 'max').max(0) - nb(nb(self.smin, 'min'), 'min').min(0) if cfg.span_max > 0 else None
+        span = nb(nb(nb(self.smax, 'max'), 'max'), 'max').max(0) - nb(nb(nb(self.smin, 'min'), 'min'), 'min').min(0) if cfg.span_max > 0 else None
         out, used = [], np.zeros(self.nc, bool)
         order = cand[np.lexsort((-npts[cand], -fh[cand]))]
         keep_ids = np.zeros(self.nc, np.int64)
