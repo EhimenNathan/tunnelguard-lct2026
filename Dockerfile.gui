@@ -2,7 +2,7 @@
 ARG TG_BASE=ghcr.io/ehimennathan/tunnel_guard:latest
 FROM ${TG_BASE}
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb x11vnc novnc websockify openbox xterm fonts-dejavu-core imagemagick \
+    xvfb x11-utils x11vnc novnc websockify openbox xterm fonts-dejavu-core imagemagick \
     && rm -rf /var/lib/apt/lists/*
 COPY docker/gui.sh /usr/local/bin/tg-gui
 RUN chmod +x /usr/local/bin/tg-gui

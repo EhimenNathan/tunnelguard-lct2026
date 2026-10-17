@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 source /opt/ros/humble/setup.bash
 source /ws/install/setup.bash
 export DISPLAY=${DISPLAY:-:99}
@@ -21,7 +21,13 @@ x11vnc -storepasswd "$TG_VNC_PASSWORD" /tmp/tg-vnc.pass >/dev/null
 x11vnc -display "$DISPLAY" -rfbauth /tmp/tg-vnc.pass -forever -shared -localhost -rfbport 5900 >/tmp/x11vnc.log 2>&1 &
 websockify --web=/usr/share/novnc 6080 localhost:5900 >/tmp/novnc.log 2>&1 &
 if [ "${TG_GUI_AUTOSTART:-1}" = 1 ]; then tg start true; fi
+cat > /tmp/tg-bashrc <<'EOF'
+source /opt/ros/humble/setup.bash
+source /ws/install/setup.bash
+export TG_DATA=/data
+echo 'tg bags; tg play /data/ИМЯ_БЭГА 1.0'
+EOF
 xterm -geometry 100x18+20+600 -fa 'DejaVu Sans Mono' -fs 11 -title 'TunnelGuard — tg play /data/бэг 1.0' \
-    -e bash --rcfile <(printf 'source /opt/ros/humble/setup.bash\nsource /ws/install/setup.bash\nexport TG_DATA=/data\necho "tg bags; tg play /data/ИМЯ_БЭГА 1.0"\n') &
+    -e bash --rcfile /tmp/tg-bashrc &
 echo 'TunnelGuard GUI: http://localhost:6080/vnc.html (пароль из TG_VNC_PASSWORD)'
 wait -n
