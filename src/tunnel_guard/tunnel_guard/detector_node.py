@@ -127,7 +127,7 @@ class TunnelGuardNode(Node):
         self.detector = ObstacleDetector(self.cfg)
         self.get_logger().info(f'scorer: {self.cfg.scorer_model or "physics rules only"}; numba kernels: {jit}')
         reliable = str(self.get_parameter('input_reliability').value).lower() == 'reliable'
-        self.qos_in = QoSProfile(reliability=ReliabilityPolicy.RELIABLE if reliable else ReliabilityPolicy.BEST_EFFORT, history=HistoryPolicy.KEEP_LAST, depth=2,
+        self.qos_in = QoSProfile(reliability=ReliabilityPolicy.RELIABLE if reliable else ReliabilityPolicy.BEST_EFFORT, history=HistoryPolicy.KEEP_LAST, depth=10 if reliable else 2,
                                  durability=DurabilityPolicy.VOLATILE)
         qos_out = QoSProfile(depth=10)
         if HAVE_MSGS:

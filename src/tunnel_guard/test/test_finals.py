@@ -6,6 +6,25 @@ from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
 from tunnel_guard.core.geometry import _track_dp, GAUGE_CC
 
 
+def test_ros_yaml_and_offline_defaults_are_identical():
+    import yaml
+    from pathlib import Path
+    from tunnel_guard import params as P
+    doc = yaml.safe_load((Path(__file__).parents[1]/'config/tunnel_guard.yaml').read_text(encoding='utf-8'))
+    cfg = P.default_config()
+    def flatten(d, prefix=''):
+        result = {}
+        for key, value in d.items():
+            name = prefix + key
+            if isinstance(value, dict): result.update(flatten(value, name+'.'))
+            else: result[name] = value
+        return result
+    actual = flatten(doc['tunnel_guard']['ros__parameters'])
+    expected = P.flatten(cfg)
+    for name, value in expected.items():
+        assert name in actual and actual[name] == value, name
+
+
 def test_native_falcon_axes_and_already_converted_ros_axes():
     from tunnel_guard.core.cloud import AxisDetector, forward_rotation
     rng = np.random.default_rng(4)

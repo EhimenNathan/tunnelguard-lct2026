@@ -52,7 +52,8 @@ def main():
                     break
         finally:
             import os
-            os.killpg(proc.pid, signal.SIGINT) if proc.poll() is None else None
+            # launch forwards SIGINT to its children. Signalling the entire group would deliver it twice.
+            proc.send_signal(signal.SIGINT) if proc.poll() is None else None
             try:
                 proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
@@ -67,7 +68,7 @@ def main():
     log_text = (out / 'launch.log').read_text()
     checks = dict(no_crash='Traceback' not in log_text and 'process has died' not in log_text,
                   messages=len(arrivals) >= 0.95 * args.expected,
-                  rate=hz >= 9.0, stop=2 in levels, rviz=screenshot,
+                  rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))
     report = dict(expected=args.expected, received=len(arrivals), output_hz=hz,
                   processing_ms_p50=float(np.median(processing)) if processing else None,

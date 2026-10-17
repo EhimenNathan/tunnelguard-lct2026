@@ -1,5 +1,5 @@
-# Параметры TunnelGuard (сгенерированы из значений по умолчанию в tunnel_guard/core/*.py).
-# Любое значение можно переопределить здесь или в командной строке, например
+# Параметры TunnelGuard: единый источник — dataclass в core/*.py, генератор tools/gen_config.py.
+# Любое значение можно переопределить в командной строке, например:
 #   ros2 run tunnel_guard detector_node --ros-args -p gauge.h_min:=0.2
 
 tunnel_guard:
@@ -8,9 +8,10 @@ tunnel_guard:
     publish_envelope_points: true
     marker_step: 2.0
     forward_axis: 'auto'
+    mount_calibration: true
     min_range: 1.5
-    max_range: 300.0
-    report_range_cap: 210.0
+    max_range: 500.0
+    report_range_cap: 0.0
     half_fov_deg: 70.0
     min_distance: 3.0
     horizon_slack: 5.0
@@ -45,6 +46,15 @@ tunnel_guard:
     shell_hanging_h: 0.8
     shell_touch_min: 0.25
     shell_touch_beams: 3.0
+    shell_edge_l: 0.75
+    scatter_check: true
+    scatter_cell_deg: 0.3
+    scatter_depth: 0.5
+    scatter_frac: 0.5
+    scatter_depth_max: 5.0
+    scatter_min_cells: 3
+    sensor_adaptive: true
+    hold_frames: 10
     ego_check: true
     ego_min_travel: 4.0
     ego_max_slope: -0.35
@@ -56,8 +66,10 @@ tunnel_guard:
     stop_debounce_window: 3
     stop_debounce_s: 30.0
     skip_duplicates: true
+    settle_frames: 10
+    settle_tol: 0.15
     geometry:
-      x_max: 300.0
+      x_max: 500.0
       grid_step: 1.0
       rail_x_max: 45.0
       rail_dy: 0.03
@@ -80,6 +92,7 @@ tunnel_guard:
       vertical_ref_max_h: 0.8
       vertical_ref_min_l: 1.2
       vertical_bed_h: 0.3
+      vertical_roof_h: 3.75
       core_half_width: 1.1
       core_h: [0.3, 3.2]
       core_penalty: 0.0
@@ -102,13 +115,17 @@ tunnel_guard:
       sigma_sys_v: [0.03, 0.05]
       sigma_unmeasured_per_m: 0.02
       trusted_sigma: 0.45
+      rail_history: 8
+      rail_sparse_rows: 0.8
+      geo_history: 6
+      geo_history_points: 8000
     gauge:
       profile: [0.0, 1.1, 0.5, 1.1, 0.55, 1.25, 1.6, 1.25, 1.7, 1.35, 2.9, 1.35, 3.1, 1.05, 3.25, 0.7]
       h_min: 0.15
       sigma_k: 2.0
       near_margin: 0.08
     cluster:
-      s_max: 300.0
+      s_max: 500.0
       s_cell_min: 0.4
       s_cell_rel: 0.012
       l_range: 2.2
@@ -121,7 +138,7 @@ tunnel_guard:
       window: 5
       confirm_hits: 3
       max_misses_tentative: 2
-      max_misses_confirmed: 5
+      max_misses_confirmed: 10
       gate_s_base: 1.2
       gate_s_rel: 0.02
       gate_l: 0.8
@@ -129,6 +146,21 @@ tunnel_guard:
       alpha: 0.5
       motion_slack: 1.0
       beta: 0.2
+    farfield:
+      enabled: true
+      s_min: 60.0
+      s_max: 520.0
+      half_width: 1.0
+      centre_half_width: 0.9
+      h_lo: 0.3
+      h_hi: 2.6
+      cell: 1.0
+      window: 15
+      min_frames: 6
+      min_points: 8
+      stop_frames: 9
+      floor_support: 1.1
+      sigma_l_max: 0.6
     adapt:
       enabled: false
       quantile: 0.995
