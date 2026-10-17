@@ -21,7 +21,7 @@ from .gauge import IN_GAUGE, NEAR_GAUGE
 @dataclass
 class FarFieldConfig:
     enabled: bool = True
-    s_min: float = 60.0             # never below this distance (the frame-by-frame pipeline owns the near field)
+    s_min: float = 30.0             # overlapping temporal support prevents unconfirmed gaps at 30-60 m
     s_max: float = 520.0            # evidence grid length [m]
     half_width: float = 1.0         # lateral core |l| [m] (envelope half width 1.1-1.35 m minus margin)
     centre_half_width: float = 0.9  # an object's mean lateral offset must be inside this
