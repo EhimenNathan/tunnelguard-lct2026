@@ -11,7 +11,7 @@ from scipy.ndimage import label as cc_label
 
 @dataclass
 class ClusterConfig:
-    s_max: float = 300.0
+    s_max: float = 500.0
     s_cell_min: float = 0.4
     s_cell_rel: float = 0.012        # along-track cell = max(s_cell_min, s_cell_rel * s)
     l_range: float = 2.2

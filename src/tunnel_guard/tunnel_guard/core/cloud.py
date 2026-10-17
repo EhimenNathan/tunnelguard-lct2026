@@ -51,3 +51,62 @@ class AxisDetector:
         if self.seen >= self.frames:
             self.axis = max(self.votes, key=self.votes.get)
         return max(self.votes, key=self.votes.get)
+
+
+class MountCalibrator:
+    """Self-calibration of the lidar mounting: pitch and roll of the sensor relative to the track bed.
+
+    The track bed (floor, sleepers, rails) is the lowest extended surface ahead of the train.  Over the first frames the
+    lower envelope of the near field (5-40 m ahead, +-3 m lateral, per 1 m x 0.5 m cell) is fitted with a plane by
+    iteratively reweighted least squares; the rotation that makes this plane level is applied to every later frame.
+    A tilted or rolled lidar (e.g. the finals' Falcon is pitched ~2.4 deg up) then looks like a level one to the rest of
+    the pipeline; track grade and cant are still measured by the geometry estimator relative to this frame.
+    """
+
+    def __init__(self, frames=8, max_tilt_deg=15.0):
+        self.frames = frames
+        self.max_tilt = np.radians(max_tilt_deg)
+        self.cells = []
+        self.R = None
+
+    def update(self, p):
+        """p: points in the forward frame (x ahead, y left, z up). Returns the 3x3 levelling rotation or None."""
+        if self.R is not None:
+            return self.R
+        m = (p[:, 0] > 5) & (p[:, 0] < 40) & (np.abs(p[:, 1]) < 3.0)
+        q = p[m]
+        if len(q) > 200:
+            key = np.floor(q[:, 0]).astype(np.int64) * 64 + np.floor((q[:, 1] + 3.0) / 0.5).astype(np.int64)
+            o = np.argsort(key, kind='stable')
+            ks, qs = key[o], q[o]
+            starts = np.r_[0, np.nonzero(np.diff(ks))[0] + 1]
+            ends = np.r_[starts[1:], len(ks)]
+            for a, b in zip(starts, ends):
+                if b - a >= 3:
+                    zc = qs[a:b, 2]
+                    i = a + int(np.argsort(zc)[max(0, (b - a) // 10)])
+                    self.cells.append(qs[i])
+        self.frames -= 1
+        if self.frames > 0:
+            return None
+        c = np.array(self.cells, float) if self.cells else np.zeros((0, 3))
+        self.R = np.eye(3)
+        if len(c) >= 30:
+            A = np.column_stack([np.ones(len(c)), c[:, 0], c[:, 1]])
+            w = np.ones(len(c))
+            for _ in range(8):
+                coef = np.linalg.lstsq(A * w[:, None], c[:, 2] * w, rcond=None)[0]
+                r = c[:, 2] - A @ coef
+                s = 1.4826 * np.median(np.abs(r)) + 1e-3
+                w = 1.0 / np.maximum(1.0, np.abs(r) / (1.5 * s))      # Huber weights
+                w[r > 3 * s] = 0.0                                     # objects / walls above the bed do not count
+            n = np.array([-coef[1], -coef[2], 1.0])
+            n /= np.linalg.norm(n)
+            ang = np.arccos(np.clip(n[2], -1, 1))
+            if 1e-4 < ang < self.max_tilt:
+                ax = np.cross(n, [0.0, 0.0, 1.0])
+                ax /= np.linalg.norm(ax)
+                K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+                self.R = np.eye(3) + np.sin(ang) * K + (1 - np.cos(ang)) * (K @ K)    # Rodrigues: n -> z
+        self.cells = []
+        return self.R

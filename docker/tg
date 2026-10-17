@@ -1,0 +1,122 @@
+#!/bin/bash
+# tg - TunnelGuard console inside the container.
+#   tg                 start detector + RViz (if a display is available), then an interactive shell
+#   tg play <bag> [rate] [extra ros2 bag play args]   play a bag in the foreground (keyboard: SPACE pause/resume,
+#                      UP/DOWN speed, RIGHT one frame while paused, Ctrl+C stop); switch bags by playing another one
+#   tg bags            list bags under /data
+#   tg unpack <file.zst|file.tar> [dest]   extract a zstd/tar archived bag (default dest /data)
+#   tg status          print one decision message
+#   tg reset           reset the detector state
+#   tg restart [rviz]  restart detector (and RViz)
+#   tg stop            stop detector and RViz
+set -e
+source /opt/ros/humble/setup.bash
+source /ws/install/setup.bash
+DATA=${TG_DATA:-/data}
+LOG=/tmp/tunnel_guard.log
+
+have_display() { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; }
+
+running() { pgrep -f "detector_node" >/dev/null 2>&1; }
+
+start() {
+    local rviz=${1:-auto}
+    if running; then echo "detector already running (log: $LOG)"; return; fi
+    if [ "$rviz" = auto ]; then have_display && rviz=true || rviz=false; fi
+    echo "starting TunnelGuard detector (rviz=$rviz), log: $LOG"
+    nohup ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=$rviz > "$LOG" 2>&1 &
+    for i in $(seq 1 60); do
+        grep -q "TunnelGuard started" "$LOG" 2>/dev/null && { echo "detector ready"; return; }
+        sleep 0.5
+    done
+    echo "detector did not report ready yet - see $LOG"
+}
+
+stop() {
+    pkill -f "tunnel_guard.launch.py" 2>/dev/null || true
+    pkill -f "detector_node" 2>/dev/null || true
+    pkill -f "rviz2" 2>/dev/null || true
+    echo "stopped"
+}
+
+resolve_bag() {
+    local b=$1
+    if [ -f "$b/metadata.yaml" ]; then echo "$b"; return; fi
+    if [ -f "$DATA/$b/metadata.yaml" ]; then echo "$DATA/$b"; return; fi
+    local hit
+    hit=$(find "$DATA" -maxdepth 4 -name metadata.yaml -path "*$b*" 2>/dev/null | head -1)
+    [ -n "$hit" ] && { dirname "$hit"; return; }
+    return 1
+}
+
+cloud_topic() {
+    python3 - "$1" <<'EOF'
+import sys, yaml
+info = yaml.safe_load(open(sys.argv[1] + '/metadata.yaml'))['rosbag2_bagfile_information']
+for t in info['topics_with_message_count']:
+    m = t['topic_metadata']
+    if m['type'] == 'sensor_msgs/msg/PointCloud2' and t.get('message_count', 1):
+        print(m['name']); break
+EOF
+}
+
+play() {
+    [ -n "$1" ] || { echo "usage: tg play <bag> [rate] [ros2 bag play args]"; exit 1; }
+    local bag rate topic
+    bag=$(resolve_bag "$1") || { echo "bag '$1' not found (tg bags lists them)"; exit 1; }
+    rate=${2:-1.0}
+    if [ $# -ge 2 ]; then shift 2; else shift; fi
+    running || start
+    topic=$(cloud_topic "$bag")
+    local qos=/tmp/tg_qos.yaml
+    printf '%s:\n  reliability: reliable\n  history: keep_last\n  depth: 10\n' "$topic" > "$qos"
+    ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger >/dev/null 2>&1 || true
+    echo "playing $bag  (topic $topic, rate $rate)"
+    echo "keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop"
+    ros2 bag play "$bag" --rate "$rate" --qos-profile-overrides-path "$qos" "$@" || true
+}
+
+bags() {
+    echo "bags under $DATA:"
+    find "$DATA" -maxdepth 4 -name metadata.yaml 2>/dev/null | while read -r m; do
+        d=$(dirname "$m"); n=$(grep -m1 "message_count:" "$m" | awk '{print $2}')
+        printf '  %-50s %s messages\n' "${d#$DATA/}" "$n"
+    done
+    find "$DATA" -maxdepth 2 \( -name "*.zst" -o -name "*.tar" \) 2>/dev/null | sed 's/^/  archive (tg unpack): /'
+}
+
+unpack() {
+    local f=$1 dest=${2:-$DATA}
+    case "$f" in
+        *.zst) zstd -dc "$f" | tar -x -C "$dest" ;;
+        *.tar) tar -xf "$f" -C "$dest" ;;
+        *) echo "unsupported archive: $f"; exit 1 ;;
+    esac
+    echo "extracted to $dest"
+}
+
+case "${1:-shell}" in
+    shell)
+        start
+        cat <<'EOF'
+
+  TunnelGuard is running.  Commands:
+    tg bags                      list bags in /data
+    tg play <bag> [rate]         play (SPACE pause, UP/DOWN speed, RIGHT step, Ctrl+C stop)
+    tg status | tg reset | tg restart | tg stop
+  Play another bag at any time - the detector follows the new topic and resets itself.
+
+EOF
+        exec bash
+        ;;
+    start) start "${2:-auto}" ;;
+    stop) stop ;;
+    restart) stop; sleep 1; start "${2:-auto}" ;;
+    play) shift; play "$@" ;;
+    bags) bags ;;
+    unpack) shift; unpack "$@" ;;
+    status) ros2 topic echo --once /tunnel_guard/status ;;
+    reset) ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger ;;
+    help|-h|--help) sed -n '2,13p' "$0" ;;
+    *) exec "$@" ;;
+esac

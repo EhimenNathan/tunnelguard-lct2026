@@ -10,8 +10,9 @@ from dataclasses import dataclass, field
 import numpy as np
 from .adapt import AdaptConfig, ClutterCalibrator
 
-from .cloud import AxisDetector, forward_rotation
+from .cloud import AxisDetector, MountCalibrator, forward_rotation
 from .cluster import ClusterConfig, Clusterer
+from .farfield import FarField, FarFieldConfig
 from .features import FEATURE_NAMES, candidate_features
 from .gauge import IN_GAUGE, NEAR_GAUGE, GaugeConfig, classify
 from .geometry import GeometryConfig, GeometryEstimator
@@ -23,10 +24,11 @@ LEVEL_CLEAR, LEVEL_CAUTION, LEVEL_STOP = 0, 1, 2
 @dataclass
 class DetectorConfig:
     forward_axis: str = 'auto'          # 'auto' | 'x' | '-x' | 'y' | '-y'
+    mount_calibration: bool = True      # estimate lidar pitch/roll from the track bed and level the cloud (cloud.py)
     min_range: float = 1.5              # ignore returns from the own train body
-    max_range: float = 300.0
-    report_range_cap: float = 210.0     # Pandar128E3X instrumented range 200 m (recordings: max 209 m): the reported clear
-                                        # distance never exceeds what the lidar can actually measure
+    max_range: float = 500.0            # longest range processed (Falcon Prime: 500 m; Pandar128: 200 m instrumented)
+    report_range_cap: float = 0.0       # cap of the reported clear distance; 0 = automatic: the reach the lidar actually
+                                        # demonstrates (running max of the 99.9th percentile of forward returns)
     half_fov_deg: float = 70.0
     min_distance: float = 3.0           # along-track distance below which returns are ignored (own train, spray)
     horizon_slack: float = 5.0          # evaluate the envelope this far beyond the verified geometry
@@ -67,6 +69,7 @@ class DetectorConfig:
     gauge: GaugeConfig = field(default_factory=GaugeConfig)
     cluster: ClusterConfig = field(default_factory=ClusterConfig)
     tracker: TrackerConfig = field(default_factory=TrackerConfig)
+    farfield: FarFieldConfig = field(default_factory=FarFieldConfig)
     adapt: AdaptConfig = field(default_factory=lambda: AdaptConfig(enabled=False))   # online self-calibration (adapt.py)
     ego_check: bool = True              # ego-motion consistency: a STOP object must close in as the train advances
     ego_min_travel: float = 4.0         # train travel (lidar odometry) over the track history needed to test [m]
@@ -81,6 +84,8 @@ class DetectorConfig:
                                         # per 2.8 km but cost far-field recall (box@120 m 71 -> 57 %) - not worth it
     stop_debounce_s: float = 30.0
     skip_duplicates: bool = True        # re-issue the last decision for a bit-identical repeated cloud
+    settle_frames: int = 10             # start-up: the track estimate must change < settle_tol over 20-150 m on this many
+    settle_tol: float = 0.15            # consecutive frames before STOP is allowed beyond the directly measured rails [m]
 
 
 @dataclass
@@ -100,6 +105,7 @@ class FrameResult:
     rotation: np.ndarray = None
     all_candidates: list = None
     features: np.ndarray = None
+    envelope_range: float = 0.0     # how far the envelope is evaluated (frame pipeline + far-field evidence)
 
 
 class ObstacleDetector:
@@ -124,21 +130,41 @@ class ObstacleDetector:
             from .scorer import ObstacleScorer
             self.scorer_hang = ObstacleScorer(hang)
         self.axis = AxisDetector()
+        self.mount = MountCalibrator()
+        self.far = FarField(self.cfg.farfield)
+        self._settled, self._geo_ref = 0, None
         self.calib = ClutterCalibrator(self.cfg.adapt)
         self.recent = deque(maxlen=self.cfg.ego_history)   # per frame: (odometry segment, x, s, l) of candidates
         self._last, self._last_fp = None, None
+        self._last_stamp = None
+        self._reach = 0.0
 
     def reset(self):
         self.recent.clear()
         self._last, self._last_fp = None, None
+        self._last_stamp = None
+        self._reach = 0.0
         self.geo.reset()
         self.tracker.reset()
         self.calib.reset()
         self.axis = AxisDetector()
+        self.mount = MountCalibrator()
+        self.far = FarField(self.cfg.farfield)
+        self._settled, self._geo_ref = 0, None
+
+    def _range_cap(self, p):
+        """Reported clear distance never exceeds what the lidar demonstrably measures."""
+        if self.cfg.report_range_cap > 0:
+            return self.cfg.report_range_cap
+        if len(p) > 20:
+            # demonstrated reach: the 10th farthest return ahead (robust to single spurious points)
+            self._reach = max(self._reach, float(np.partition(p[:, 0], len(p) - 10)[len(p) - 10]))
+        return min(self._reach + 1.0, self.cfg.max_range)
 
     def _near(self, lo, hi):
-        a = self._nb_starts[int(np.clip(np.floor(lo), 0, 400))]
-        b = self._nb_starts[int(np.clip(np.floor(hi) + 1, 0, 400))]
+        nmax = len(self._nb_starts) - 1
+        a = self._nb_starts[int(np.clip(np.floor(lo), 0, nmax))]
+        b = self._nb_starts[int(np.clip(np.floor(hi) + 1, 0, nmax))]
         return self._nb_order[a:b]
 
     def _wall_counts(self, c, s, l, h):
@@ -222,6 +248,18 @@ class ObstacleDetector:
             j = int(np.argmax(np.abs(Rm[k])))
             cols.append(xyz[:, j] if Rm[k, j] > 0 else -xyz[:, j])
         X, Y, Z = cols
+        if cfg.mount_calibration:
+            Rl = self.mount.R
+            if Rl is None:
+                Rl = self.mount.update(np.stack([X[valid], Y[valid], Z[valid]], 1))
+                if Rl is not None:
+                    self.geo.reset()                       # geometry restarts in the levelled frame
+            if Rl is not None and not np.allclose(Rl, np.eye(3)):
+                Rl32 = Rl.astype(np.float32)
+                X, Y, Z = (Rl32[0, 0] * X + Rl32[0, 1] * Y + Rl32[0, 2] * Z,
+                           Rl32[1, 0] * X + Rl32[1, 1] * Y + Rl32[1, 2] * Z,
+                           Rl32[2, 0] * X + Rl32[2, 1] * Y + Rl32[2, 2] * Z)
+                Rm = (Rl32 @ Rm).astype(np.float32)
         fov = valid & (X > 1.0) & (np.abs(Y) < np.tan(np.radians(cfg.half_fov_deg)) * X + 3.0) & (np.abs(Z) < 12)
         sel = np.flatnonzero(fov)
         if cfg.near_decimate > 1:
@@ -233,7 +271,20 @@ class ObstacleDetector:
         tm['prep'] = time.perf_counter() - t0
 
         t1 = time.perf_counter()
-        g = self.geo.estimate(p)
+        v = self.calib.ego_speed() if (cfg.adapt.enabled or cfg.ego_check) else None
+        dt = 0.0 if self._last_stamp is None else float(np.clip(stamp - self._last_stamp, 0.0, 1.0))
+        self._last_stamp = stamp
+        travel = (v or 0.0) * dt
+        g = self.geo.estimate(p, travel=travel)
+        if g.ok:
+            xq = np.arange(20.0, 151.0, 10.0)
+            prof = np.r_[g.centre(xq), g.rail_z(xq)]
+            stable = self._geo_ref is not None and np.max(np.abs(prof - self._geo_ref)) < cfg.settle_tol
+            self._settled = self._settled + 1 if stable else 0
+            self._geo_ref = prof
+        else:
+            self._settled, self._geo_ref = 0, None
+        settled = self._settled >= cfg.settle_frames
         tm['geometry'] = time.perf_counter() - t1
 
         t2 = time.perf_counter()
@@ -244,9 +295,10 @@ class ObstacleDetector:
         if cfg.adapt.enabled or cfg.ego_check:
             self.calib.update_motion(s, l, h, stamp)
         # 1 m distance buckets: evidence queries per candidate touch only nearby points
-        sb = np.clip(s.astype(np.int64), 0, 399)
+        nbk = int(cfg.max_range) + 1
+        sb = np.clip(s.astype(np.int64), 0, nbk - 1)
         self._nb_order = np.argsort(sb.astype(np.int16), kind='stable')
-        self._nb_starts = np.r_[0, np.cumsum(np.bincount(sb, minlength=400))]
+        self._nb_starts = np.r_[0, np.cumsum(np.bincount(sb, minlength=nbk))]
         top = max(v[0] for v in cfg.gauge.profile)
         pre = (h > cfg.gauge.h_min) & (h < top) & (np.abs(l) < max(v[1] for v in cfg.gauge.profile) + cfg.gauge.near_margin)
         zone_sub = np.zeros(len(s), np.uint8)
@@ -373,8 +425,40 @@ class ObstacleDetector:
                                   size=(c['s_max'] - c['s_min'], c['l_max'] - c['l_min'], c['h_max'] - c['h_min']),
                                   lateral=c['l_mean'], height=c['h_max'], n=c['n'], confidence=conf,
                                   closing_speed=v, ttc=ttc, age=tr.age, idx=c['idx'], ego_veto=ego_veto))
+        # far field: temporal evidence beyond the range this frame can confirm on its own
+        env_range = horizon
+        if cfg.farfield.enabled and g.ok and settled:
+            far_to = min(self._range_cap(p), float(g.xs[-1]))
+            far_from = cfg.farfield.s_min
+            if far_to > far_from:
+                env_range = max(env_range, far_to)
+                for f in self.far.update(p, g, far_from, far_to, travel):
+                    dup = [o for o in obstacles if abs(f['distance'] - o['distance']) < 6.0]
+                    if dup:
+                        # the same object seen by the frame pipeline: temporal evidence can only raise its zone
+                        if f['zone'] == IN_GAUGE:
+                            for o in dup:
+                                o['zone'] = IN_GAUGE
+                                o['confidence'] = max(o['confidence'], f['confidence'])
+                        continue
+                    sx = np.array([f['distance']])
+                    hm = 0.5 * (f['h_min'] + f['height'])
+                    c_fwd = np.array([f['distance'], float(g.centre(sx)[0]) + f['lateral'],
+                                      float(g.rail_z(sx)[0]) + hm], np.float32)
+                    vv = ego_v or 0.0
+                    obstacles.append(dict(id=f['id'], zone=f['zone'], distance=f['distance'], range=f['distance'],
+                                          centroid=c_fwd @ Rm, nearest=c_fwd @ Rm, centroid_fwd=c_fwd,
+                                          size=(3 * cfg.farfield.cell, 0.6, f['height'] - f['h_min']),
+                                          lateral=f['lateral'], height=f['height'], n=f['n'],
+                                          confidence=f['confidence'], closing_speed=vv,
+                                          ttc=f['distance'] / vv if vv > 0.3 else float('inf'), age=f['frames'],
+                                          idx=f['idx'], ego_veto=False, far=True))
         self.recent.append((self.calib.segment, self.calib.x, np.array([c['s_min'] for c in cands_all], float),
                             np.array([c['l_mean'] for c in cands_all], float)))
+        if not settled:
+            for o in obstacles:
+                if o['zone'] == IN_GAUGE and o['distance'] > g.rail_range + cfg.horizon_slack:
+                    o['zone'] = NEAR_GAUGE        # geometry still converging: early warning only
         in_g = [o for o in obstacles if o['zone'] == IN_GAUGE]
         if in_g:
             level = LEVEL_STOP
@@ -385,11 +469,11 @@ class ObstacleDetector:
             level = LEVEL_CLEAR
         nearest = min((o['distance'] for o in in_g), default=float('nan'))
         ttc = min((o['ttc'] for o in in_g), default=float('inf'))
-        clear = min(float(np.nanmin([horizon, nearest])) if in_g else float(horizon), cfg.report_range_cap)
+        clear = min(float(np.nanmin([horizon, nearest])) if in_g else float(horizon), self._range_cap(p))
         tm['tracking'] = time.perf_counter() - t3
         tm['total'] = time.perf_counter() - t0
         self._last = FrameResult(stamp=stamp, level=level, obstacles=obstacles, nearest_distance=nearest, nearest_ttc=ttc,
                            clear_distance=clear, curvature=g.curvature(20.0) if g.ok else 0.0, geometry=g,
                            timings=tm, candidates=cands, forward_points=p, zone=zone, rotation=Rm,
-                           all_candidates=cands_all, features=feats)
+                           all_candidates=cands_all, features=feats, envelope_range=float(env_range))
         return self._last

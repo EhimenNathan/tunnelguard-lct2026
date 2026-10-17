@@ -31,7 +31,7 @@ GAUGE_CC = 1.595          # rail-head centre-to-centre distance for 1520 mm gaug
 
 @dataclass
 class GeometryConfig:
-    x_max: float = 300.0
+    x_max: float = 500.0
     grid_step: float = 1.0
     rail_x_max: float = 45.0
     rail_dy: float = 0.03
@@ -54,6 +54,8 @@ class GeometryConfig:
     vertical_ref_max_h: float = 0.8  # only structure below this height above the rail plane constrains the grade
     vertical_ref_min_l: float = 1.2  # ... outside the envelope footprint (obstacles cannot pull the rail plane)
     vertical_bed_h: float = 0.3      # ... or at track-bed level anywhere (only the feet of an obstacle are this low)
+    vertical_roof_h: float = 3.75    # sparse sensors (no floor returns far away): the tunnel roof, above any envelope
+                                     # (top 3.25 m), also references the grade
     core_half_width: float = 1.1
     core_h: tuple = (0.3, 3.2)
     core_penalty: float = 0.0        # DP free-space term. 0: observed points must never steer the track away (obstacles!)
@@ -76,6 +78,14 @@ class GeometryConfig:
     sigma_sys_v: tuple = (0.03, 0.05)   # systematic vertical error: (at 0 m, per 100 m)
     sigma_unmeasured_per_m: float = 0.02  # error growth per metre beyond the measured range
     trusted_sigma: float = 0.45      # detection horizon: lateral 1-sigma must stay below this
+    rail_history: int = 8            # sparse sensors: track-bed points of up to this many past frames, shifted by the
+                                     # train's travel, are merged for rail detection (0 = off)
+    rail_sparse_rows: float = 0.8    # ... used only when fewer than this fraction of 3-30 m rail rows is well sampled
+                                     # (median of the first frames; Falcon Prime 0.50-0.70, Pandar128 ~1)
+    geo_history: int = 6             # sparse sensors: the geometry is fitted to this many recent frames (shifted by the
+                                     # train's travel); points inside the envelope core never steer it, so obstacles
+                                     # cannot smear into the track estimate
+    geo_history_points: int = 8000   # points kept per past frame
 
 
 @dataclass
@@ -154,6 +164,26 @@ class TrackGeometry:
 
 
 # ----------------------------------------------------------------------------------------------- rails
+def bed_level(pts, x0=3.0, x1=25.0, half=1.5, q=0.10, min_n=8):
+    """Track-bed level: median over 1 m slices (x0..x1, |y| < half) of each slice's lower envelope (q-quantile).
+    Robust whether the near field is dominated by floor returns (Pandar) or by walls and roof (narrow vertical FOV,
+    e.g. Falcon).  Returns None when fewer than 3 slices are sampled."""
+    m = (pts[:, 0] > x0) & (pts[:, 0] < x1) & (np.abs(pts[:, 1]) < half)
+    if np.count_nonzero(m) < 50:
+        return None
+    sl = np.floor(pts[m, 0]).astype(np.int64)
+    z = pts[m, 2]
+    o = np.lexsort((z, sl))
+    sl, z = sl[o], z[o]
+    starts = np.r_[0, np.nonzero(np.diff(sl))[0] + 1]
+    counts = np.diff(np.r_[starts, len(sl)])
+    ok = counts >= min_n
+    if np.count_nonzero(ok) < 3:
+        return None
+    pick = starts[ok] + (q * (counts[ok] - 1)).astype(np.int64)
+    return float(np.median(z[pick]))
+
+
 def _ridge_map(pts, x_edges, z_ref, dy, y_lim=4.0):
     nb = int(round(2 * y_lim / dy))
     x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
@@ -263,7 +293,7 @@ try:
         return acc, back
     @njit(cache=True)
     def _gn_kernel(px, py, pz, k, f, sw, y, z, head, roll, F, trunc, l0, h0, res, core_w, core_h0, core_h1,
-                   vmax_h, vmin_l, vbed_h, n):
+                   vmax_h, vmin_l, vbed_h, vroof_h, n):
         nl, nh = F.shape
         jy0 = np.zeros(n); jy1 = np.zeros(n); ry = np.zeros(n)
         jz0 = np.zeros(n); jz1 = np.zeros(n); rz = np.zeros(n)
@@ -296,7 +326,7 @@ try:
                 w = 0.0
             r = w * val
             gy = w * (-cos) * (du - roll * dv)
-            vm = h < vmax_h and (al > vmin_l or h < vbed_h)
+            vm = (h < vmax_h and (al > vmin_l or h < vbed_h)) or h > vroof_h
             gz = w * (-dv) if vm else 0.0
             J0 = gy * gg; J1 = gy * ff
             jy0[kk] += J0 * J0; jy0[kk + 1] += J1 * J1; jy1[kk] += J0 * J1
@@ -322,7 +352,7 @@ def warmup():
     _coarse_dp_kernel(np.zeros((3, 4)), z1, np.arange(3.0), 0.06, 0.25, 50.0)
     f4 = np.zeros(4)
     _gn_kernel(f4, f4, f4, i1, f4, f4, np.zeros(8), np.zeros(8), np.zeros(8), 0.0, np.zeros((6, 6)), 0.5,
-               -8.0, -2.5, 0.05, 1.1, 0.3, 3.2, 0.8, 1.2, 0.3, 8)
+               -8.0, -2.5, 0.05, 1.1, 0.3, 3.2, 0.8, 1.2, 0.3, 1e9, 8)
     return True
 
 
@@ -364,14 +394,23 @@ def _track_dp(R, dy, y_lim, prior_c=None, lam=40.0, max_step=0.10):
     return ys[path], S[np.arange(nr), path], path
 
 
-def extract_rails(pts, cfg: GeometryConfig, prior=None):
+def extract_rails(pts, cfg: GeometryConfig, prior=None, z_bed=None):
     """Returns dict with row centres xc, centre yc, evidence ev, rail heights zl, zr (NaN when unseen)."""
     y_lim = 3.0
     if prior is not None and prior.ok:
         z_ref = float(prior.rail_z(10.0))
+    elif z_bed is not None:
+        z_ref = z_bed
     else:
-        near = pts[(pts[:, 0] > 3) & (pts[:, 0] < 15) & (np.abs(pts[:, 1]) < 1.5)]
-        z_ref = float(np.percentile(near[:, 2], 40)) if len(near) > 50 else -1.3
+        # track-bed level = median over 1 m slices of the slice's lower envelope (10th percentile): robust whether the
+        # near field is dominated by floor returns (Pandar) or by walls and roof (narrow vertical FOV, e.g. Falcon)
+        near = pts[(pts[:, 0] > 3) & (pts[:, 0] < 25) & (np.abs(pts[:, 1]) < 1.5)]
+        z_ref = -1.3
+        if len(near) > 50:
+            sl = np.floor(near[:, 0]).astype(np.int64)
+            lows = [np.percentile(near[sl == v, 2], 10) for v in np.unique(sl) if np.count_nonzero(sl == v) >= 8]
+            if len(lows) >= 3:
+                z_ref = float(np.median(lows))
     x_edges = np.r_[np.arange(2.5, 20, 0.5), np.arange(20, cfg.rail_x_max + 1e-6, 1.0)]
     xc = 0.5 * (x_edges[:-1] + x_edges[1:])
     R, H = _ridge_map(pts, x_edges, z_ref, cfg.rail_dy, y_lim)
@@ -510,6 +549,10 @@ class GeometryEstimator:
         self.prev = None
         self.roll = 0.0
         self.frame_count = 0
+        self.bed_hist = []               # [(x, y, z) arrays] track-bed points of recent frames (sparse sensors)
+        self.geo_hist = []               # decimated full frames for the geometry fit (sparse sensors)
+        self.sparse = None               # decided on the first frames: does one frame sample the track bed densely?
+        self._density = []
 
     def reset(self):
         self.__init__(self.cfg)
@@ -601,6 +644,7 @@ class GeometryEstimator:
         w_pt = (1.0 / cfg.align_sigma ** 2) / np.maximum(1.0, cnt[k] / cfg.align_node_points)
         sw = np.sqrt(w_pt)
         ri, ry, rw = rails_y
+        roof_h = float(cfg.vertical_roof_h) if self.sparse else 1e9    # roof reference only for sparse sensors
         zi, zv, zw = rails_z
         pwy, pwz = _temporal_weights(prior, cfg)
         info = np.zeros(n)
@@ -613,7 +657,8 @@ class GeometryEstimator:
                         y, z, head, float(self.roll), self.template.fields[trunc].astype(np.float64), float(trunc),
                         float(cfg.template_l[0]), float(cfg.template_h[0]), float(cfg.template_res),
                         float(cfg.core_half_width), float(cfg.core_h[0]), float(cfg.core_h[1]),
-                        float(cfg.vertical_ref_max_h), float(cfg.vertical_ref_min_l), float(cfg.vertical_bed_h), n)
+                        float(cfg.vertical_ref_max_h), float(cfg.vertical_ref_min_l), float(cfg.vertical_bed_h),
+                        roof_h, n)
                     if trunc < cfg.lateral_max_trunc:
                         y = _solve_profile(n, cfg.smooth_lat, ri, ry, rw, None if prior is None else prior.yc, pwy,
                                            (jy0, jy1[:n - 1]), ryv, y)
@@ -636,7 +681,7 @@ class GeometryEstimator:
                 # d r / d y_node = w * (dl * dl/dy + dh * dh/dy), dl/dy = -cos*wgt, dh/dy = +roll*cos*wgt
                 gy = rw_pt * (-cos) * (dl - self.roll * dh)
                 # the rail plane is referenced to floor-level structure only (ceiling height varies with tunnel type)
-                vmask = (h < cfg.vertical_ref_max_h) & ((al > cfg.vertical_ref_min_l) | (h < cfg.vertical_bed_h))
+                vmask = ((h < cfg.vertical_ref_max_h) & ((al > cfg.vertical_ref_min_l) | (h < cfg.vertical_bed_h))) | (h > roof_h)
                 gz = rw_pt * (-dh) * vmask
                 J0y, J1y = gy * (1 - f), gy * f
                 J0z, J1z = gz * (1 - f), gz * f
@@ -657,8 +702,8 @@ class GeometryEstimator:
         on = (val < 0.1).astype(float)
         nl2, nh2 = self.template.normals2(l, h)
         info = np.bincount(k, w_pt * on * nl2, n)
-        info_v = np.bincount(k, w_pt * on * nh2 * (h < cfg.vertical_ref_max_h) *
-                             ((np.abs(l) > cfg.vertical_ref_min_l) | (h < cfg.vertical_bed_h)), n)
+        info_v = np.bincount(k, w_pt * on * nh2 * (((h < cfg.vertical_ref_max_h) &
+                             ((np.abs(l) > cfg.vertical_ref_min_l) | (h < cfg.vertical_bed_h))) | (h > roof_h)), n)
         # left/right consistency: signed lateral residuals of wall points on each side, per 5 m bin.  A centreline
         # bias shifts both sides equally; a cross-section that does not match the template (junctions, openings)
         # makes the sides disagree -> measured systematic lateral uncertainty.
@@ -679,19 +724,69 @@ class GeometryEstimator:
         side_sigma = np.repeat(dis, 5)[:n]
         return y, z, (info, info_v, side_sigma)
 
-    def estimate(self, pts):
+    def _bed_points(self, pts, travel):
+        """Rail-detection input: this frame's points, plus (sparse sensors) track-bed points of recent frames moved
+        by the train's travel since they were taken.  A standing train simply integrates its own frames."""
+        cfg = self.cfg
+        self.z_bed = None
+        if cfg.rail_history <= 0:
+            return pts
+        bed = pts[(pts[:, 0] > 2.5) & (pts[:, 0] < cfg.rail_x_max + 5) & (np.abs(pts[:, 1]) < 3.2)]
+        zb = bed_level(bed)
+        self.z_bed = zb
+        if zb is not None:
+            bed = bed[np.abs(bed[:, 2] - zb) < 0.7]          # track-bed band only (rails, sleepers, floor)
+        if self.sparse is None and len(bed) > 0:
+            b = bed[(bed[:, 0] > 3) & (bed[:, 0] < 30)]
+            cells = np.unique(np.floor(b[:, 0] * 2).astype(np.int64) * 1000
+                              + np.floor((b[:, 1] + 3.2) / cfg.rail_dy).astype(np.int64))
+            per_row = np.bincount(cells // 1000 - 6, minlength=54)[:54]
+            self._density.append(float(np.mean(per_row >= 15)))
+            if len(self._density) >= 5:
+                self.sparse = bool(np.median(self._density) < cfg.rail_sparse_rows)
+        if not self.sparse:
+            return pts
+        self.bed_hist = [(h - np.array([travel, 0.0, 0.0], np.float32)) for h in self.bed_hist]
+        self.bed_hist = [h[h[:, 0] > 2.5] for h in self.bed_hist][-cfg.rail_history:]
+        merged = np.concatenate([pts] + self.bed_hist) if self.bed_hist else pts
+        self.bed_hist.append(bed.astype(np.float32))
+        return merged
+
+    def estimate(self, pts, travel=0.0):
         cfg = self.cfg
         xs = self.xs
         n = len(xs)
         prior = self.prev if (self.prev is not None and self.prev.ok) else None
-        rails = extract_rails(pts, cfg, prior)
+        bed_pts = self._bed_points(pts, travel)
+        if self.sparse and cfg.geo_history > 0:
+            # multi-frame densification: a sparse lidar sees the far tunnel structure only a few points per frame
+            sh = np.array([travel, 0.0, 0.0], np.float32)
+            self.geo_hist = [h - sh for h in self.geo_hist][-cfg.geo_history:]
+            far_pts = pts[pts[:, 0] >= cfg.align_x_min]             # the near field is dense in every frame
+            cur = far_pts if len(far_pts) <= cfg.geo_history_points else \
+                far_pts[np.linspace(0, len(far_pts) - 1, cfg.geo_history_points).astype(np.int64)]
+            merged = np.concatenate([pts] + self.geo_hist) if self.geo_hist else pts
+            self.geo_hist.append(cur.astype(np.float32))
+            pts = merged
+        rails = extract_rails(bed_pts, cfg, prior, z_bed=getattr(self, 'z_bed', None))
         good = rails['ev'] > cfg.rail_min_evidence
+        pseudo = False
         if good.sum() < 5:
-            # rails not visible (occlusion, glitch frame): keep the previous geometry
-            if self.prev is not None:
+            if self.sparse and prior is not None:
+                # sparse sensor, rails not resolved in this frame: anchor on the previous near-field track (soft) and
+                # still refine the far profile from walls and roof instead of freezing the old estimate
+                pseudo = True
+            elif self.prev is not None:
+                # rails not visible (occlusion, glitch frame): keep the previous geometry
                 self.prev.meas = dict(rails=rails)
                 return self.prev
-            return TrackGeometry(xs, np.zeros(n), np.full(n, -1.2), ok=False, meas=dict(rails=rails))
+            else:
+                return TrackGeometry(xs, np.zeros(n), np.full(n, -1.2), ok=False, meas=dict(rails=rails))
+        if pseudo:
+            xq = np.arange(5.0, min(25.0, max(prior.rail_range, 10.0)) + 1e-6, 2.0)
+            rails = dict(rails, xc=xq, yc=prior.centre(xq), ev=np.full(len(xq), 1.0),
+                         zl=prior.rail_z(xq) + prior.roll * GAUGE_CC / 2, zr=prior.rail_z(xq) - prior.roll * GAUGE_CC / 2)
+            good = np.ones(len(xq), bool)
         xr, yr = rails['xc'][good], rails['yc'][good]
         zl, zrr = rails['zl'][good], rails['zr'][good]
         both = np.isfinite(zl) & np.isfinite(zrr)
@@ -702,7 +797,7 @@ class GeometryEstimator:
         rail_range = float(xr.max())
         ri = np.clip(np.round(xr / cfg.grid_step).astype(int), 0, n - 1)
         zf = np.isfinite(zmean)
-        rw = 1.0 / cfg.rail_sigma ** 2
+        rw = 1.0 / cfg.rail_sigma ** 2 * (0.25 if pseudo else 1.0)
         rwy = np.full(len(ri), rw)
         if prior is not None:
             # far rail detections must agree with the previous geometry (junction/gate guide rails can mislead DP)
@@ -766,6 +861,17 @@ class GeometryEstimator:
                 gap += 1
                 if gap > 12:
                     break
+        if self.sparse and valid_range < xs[-1] - 1:
+            # beyond the measured range a sparse sensor gives only stray points: the track continues with the heading
+            # and grade measured over its last 40 m (uncertainty keeps growing from the last measured node, below)
+            i1 = int(valid_range / cfg.grid_step)
+            i0 = max(int((valid_range - 40.0) / cfg.grid_step), 0)
+            if i1 - i0 >= 5:
+                ky = np.polyfit(xs[i0:i1 + 1], y[i0:i1 + 1], 1)
+                kz = np.polyfit(xs[i0:i1 + 1], z[i0:i1 + 1], 1)
+                y = y.copy(); z = z.copy()
+                y[i1 + 1:] = y[i1] + ky[0] * (xs[i1 + 1:] - xs[i1])
+                z[i1 + 1:] = z[i1] + kz[0] * (xs[i1 + 1:] - xs[i1])
         # ---- uncertainty.  Random part: information from on-surface points (+ rails); only MEASURED nodes carry
         #      information and fuse (Kalman-style) with the previous frame; extrapolation adds no information and
         #      grows linearly from the last measured node.  Systematic part (distance-growing, side disagreement)

@@ -21,6 +21,13 @@ from sensor_msgs.msg import PointCloud2, PointField
 from std_msgs.msg import Float32, UInt8, Header
 from geometry_msgs.msg import Point, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
+from std_srvs.srv import Trigger
+from geometry_msgs.msg import TransformStamped
+try:
+    from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+    HAVE_TF = True
+except ImportError:  # pragma: no cover
+    HAVE_TF = False
 
 from .core.cloud import cloud_to_arrays
 from .core.detector import ObstacleDetector, LEVEL_STOP, LEVEL_CAUTION
@@ -39,6 +46,43 @@ except ImportError:  # pragma: no cover
     HAVE_MSGS = False
 
 LEVEL_NAMES = {0: 'CLEAR', 1: 'CAUTION', 2: 'STOP'}
+LEVEL_RGB = {0: (0.1, 0.9, 0.2), 1: (1.0, 0.7, 0.0), 2: (1.0, 0.1, 0.1)}
+FRAME = 'tunnel_guard'      # display frame: x forward along the track, y left, z up - the same for every lidar mounting
+
+
+def rot_to_quat(R):
+    """Rotation matrix -> quaternion (x, y, z, w)."""
+    t = np.trace(R)
+    if t > 0:
+        s = 0.5 / math.sqrt(t + 1.0)
+        return ((R[2, 1] - R[1, 2]) * s, (R[0, 2] - R[2, 0]) * s, (R[1, 0] - R[0, 1]) * s, 0.25 / s)
+    i = int(np.argmax(np.diag(R)))
+    j, k = (i + 1) % 3, (i + 2) % 3
+    s = 2.0 * math.sqrt(1.0 + R[i, i] - R[j, j] - R[k, k])
+    q = [0.0, 0.0, 0.0, 0.0]
+    q[i] = 0.25 * s
+    q[j] = (R[j, i] + R[i, j]) / s
+    q[k] = (R[k, i] + R[i, k]) / s
+    q[3] = (R[k, j] - R[j, k]) / s
+    return tuple(q)
+
+
+def make_rgb_cloud(header, xyz, rgb):
+    """PointCloud2 with x, y, z and packed rgb (RViz colour transformer 'RGB8')."""
+    n = len(xyz)
+    rec = np.zeros(n, dtype=[('x', '<f4'), ('y', '<f4'), ('z', '<f4'), ('rgb', '<u4')])
+    rec['x'], rec['y'], rec['z'] = xyz[:, 0], xyz[:, 1], xyz[:, 2]
+    rec['rgb'] = rgb
+    msg = PointCloud2()
+    msg.header = header
+    msg.height, msg.width = 1, n
+    msg.fields = [PointField(name=k, offset=4 * i, datatype=PointField.FLOAT32 if k != 'rgb' else PointField.UINT32,
+                             count=1) for i, k in enumerate(('x', 'y', 'z', 'rgb'))]
+    msg.is_bigendian, msg.point_step, msg.row_step, msg.is_dense = False, 16, 16 * n, True
+    buf = array.array('B')
+    buf.frombytes(rec.tobytes())
+    msg.data = buf
+    return msg
 
 
 def make_cloud(header, xyz):
@@ -95,31 +139,62 @@ class TunnelGuardNode(Node):
         self.pub_markers = self.create_publisher(MarkerArray, '~/markers', qos_out)
         self.pub_obst_pts = self.create_publisher(PointCloud2, '~/obstacle_points', qos_out)
         self.pub_env_pts = self.create_publisher(PointCloud2, '~/envelope_points', qos_out)
+        self.pub_cloud = self.create_publisher(PointCloud2, '~/cloud', QoSProfile(depth=2))
+        self.declare_parameter('display_max_points', 150000)
+        self.tf_static = StaticTransformBroadcaster(self) if HAVE_TF else None
+        self.tf_key = None
         self.sub = None
+        self.sub_topic = None
+        self.silent_since = None
         self.frames = 0
         self.proc_sum = 0.0
         self.last_stamp = None
-        topic = self.get_parameter('input_topic').value
-        if topic != 'auto':
-            self._subscribe(topic)
-        else:
-            self.discovery = self.create_timer(0.5, self._discover)
+        self.fixed_topic = self.get_parameter('input_topic').value
+        if self.fixed_topic != 'auto':
+            self._subscribe(self.fixed_topic)
+        # 'auto': follow whichever PointCloud2 topic is being published, so bags with different lidar topics can be played
+        # one after another without restarting (the detector resets when the source changes)
+        self.discovery = self.create_timer(0.5, self._discover)
+        self.create_service(Trigger, '~/reset', self._on_reset)
         self.create_timer(5.0, self._report)
         self.get_logger().info(f'TunnelGuard started (input_topic={topic}, reliability={self.qos_in.reliability.name.lower()}, custom msgs={HAVE_MSGS}, vision_msgs={HAVE_VISION})')
 
     # ------------------------------------------------------------------ plumbing
     def _discover(self):
-        if self.sub is not None:
+        if self.fixed_topic != 'auto':
             return
+        if self.sub is not None:
+            if self.count_publishers(self.sub_topic) > 0:
+                self.silent_since = None
+                return
+            now = time.monotonic()
+            self.silent_since = self.silent_since or now
+            if now - self.silent_since < 2.0:
+                return
+        own = self.get_fully_qualified_name()
         for name, types in self.get_topic_names_and_types():
-            if 'sensor_msgs/msg/PointCloud2' in types and not name.startswith(self.get_fully_qualified_name()):
+            if ('sensor_msgs/msg/PointCloud2' in types and not name.startswith(own) and name != self.sub_topic
+                    and self.count_publishers(name) > 0):
                 self._subscribe(name)
-                self.discovery.cancel()
                 return
 
     def _subscribe(self, topic):
+        if self.sub is not None:
+            self.destroy_subscription(self.sub)
+            self.detector.reset()
+            self.last_stamp = None
         self.sub = self.create_subscription(PointCloud2, topic, self._on_cloud, self.qos_in)
+        self.sub_topic = topic
+        self.silent_since = None
         self.get_logger().info(f'subscribed to {topic}')
+
+    def _on_reset(self, request, response):
+        self.detector.reset()
+        self.last_stamp = None
+        response.success = True
+        response.message = 'detector state reset'
+        self.get_logger().info('reset requested')
+        return response
 
     def _report(self):
         if self.frames:
@@ -129,8 +204,8 @@ class TunnelGuardNode(Node):
     def _on_cloud(self, msg: PointCloud2):
         t_in = time.perf_counter()
         stamp = msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec
-        if self.last_stamp is not None and stamp < self.last_stamp - 1.0:
-            self.get_logger().warn('time jumped backwards (bag restarted?) - resetting state')
+        if self.last_stamp is not None and (stamp < self.last_stamp - 1.0 or stamp > self.last_stamp + 30.0):
+            self.get_logger().warn('time jumped (bag restarted or a different bag) - resetting state')
             self.detector.reset()
         self.last_stamp = stamp
         fields = [(f.name, f.offset, f.datatype, f.count) for f in msg.fields]
@@ -197,52 +272,122 @@ class TunnelGuardNode(Node):
             self.pub_obst_pts.publish(make_cloud(header, np.zeros((0, 3), np.float32)))
         if self.get_parameter('publish_envelope_points').value:
             self.pub_env_pts.publish(make_cloud(header, res.forward_points[res.zone > 0] @ Rm))
+        self._publish_display(header, res)
         self.pub_markers.publish(self._markers(header, res))
 
+    def _publish_display(self, header, res):
+        """Display frame TF (lidar frame -> tunnel_guard) and a colour-coded cloud in the display frame."""
+        if res.rotation is None or res.forward_points is None:
+            return
+        key = (header.frame_id, res.rotation.tobytes())
+        if self.tf_static is not None and key != self.tf_key and header.frame_id:
+            t = TransformStamped()
+            t.header.stamp = header.stamp
+            t.header.frame_id = FRAME
+            t.child_frame_id = header.frame_id
+            q = rot_to_quat(np.asarray(res.rotation, float))
+            t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w = q
+            self.tf_static.sendTransform(t)
+            self.tf_key = key
+        if self.pub_cloud.get_subscription_count() == 0:
+            return
+        p = res.forward_points
+        zone = res.zone if res.zone is not None else np.zeros(len(p), np.uint8)
+        nmax = int(self.get_parameter('display_max_points').value)
+        sel = np.arange(len(p))
+        if len(p) > nmax:
+            sel = np.unique(np.concatenate([np.nonzero(zone > 0)[0], np.linspace(0, len(p) - 1, nmax).astype(int)]))
+        q, z = p[sel], zone[sel]
+        r = np.clip(np.log(np.maximum(q[:, 0], 3.0)) / np.log(400.0), 0, 1)
+        g = (200 - 140 * r).astype(np.uint32)
+        rgb = (g << 16) | (g << 8) | np.minimum(g + 30, 255)
+        rgb = np.where(z == 1, np.uint32((255 << 16) | (190 << 8)), rgb)
+        rgb = np.where(z == 2, np.uint32((255 << 16) | (40 << 8) | 40), rgb)
+        if res.obstacles:
+            mark = np.zeros(len(p), bool)
+            mark[np.concatenate([o['idx'] for o in res.obstacles])] = True
+            rgb = np.where(mark[sel], np.uint32((255 << 16) | 255), rgb)
+        self.pub_cloud.publish(make_rgb_cloud(Header(stamp=header.stamp, frame_id=FRAME), q, rgb.astype(np.uint32)))
+
     def _markers(self, header, res):
+        """Envelope tube (translucent walls and roof along the reconstructed track), edges, 50 m distance marks,
+        obstacle boxes with distance / TTC labels and a status line - all in the display frame."""
         ma = MarkerArray()
-        Rm = res.rotation
-        g = res.geometry
-        clear = Marker(); clear.header = header; clear.action = Marker.DELETEALL
+        h = Header(stamp=header.stamp, frame_id=FRAME)
+        clear = Marker(); clear.header = h; clear.action = Marker.DELETEALL
         ma.markers.append(clear)
-        if g is not None and g.ok:
+        g = res.geometry
+        col = LEVEL_RGB[res.level]
+
+        def mk(ns, mid, typ):
+            m = Marker(); m.header = h; m.ns = ns; m.id = mid; m.type = typ; m.pose.orientation.w = 1.0
+            return m
+
+        def pt(q):
+            return Point(x=float(q[0]), y=float(q[1]), z=float(q[2]))
+
+        if g is not None and g.ok and res.clear_distance > 2.0:
             step = float(self.get_parameter('marker_step').value)
-            xs = np.arange(1.0, max(res.clear_distance, 2.0), step)
-            hw = max(v[1] for v in self.cfg.gauge.profile)
-            htop = max(v[0] for v in self.cfg.gauge.profile)
-            yc = g.centre(xs); zr = g.rail_z(xs)
-            col = {0: (0.1, 0.9, 0.2), 1: (1.0, 0.7, 0.0), 2: (1.0, 0.1, 0.1)}[res.level]
-            for k, (off, hgt) in enumerate([(hw, 0.0), (-hw, 0.0), (hw, htop), (-hw, htop), (0.0, 0.0)]):
-                m = Marker(); m.header = header; m.ns = 'envelope'; m.id = k; m.type = Marker.LINE_STRIP
-                m.scale.x = 0.06 if off else 0.04
-                m.color.r, m.color.g, m.color.b = col; m.color.a = 0.9 if off else 0.5
-                m.pose.orientation.w = 1.0
-                pts = np.stack([xs, yc + off, zr + hgt + g.roll * off], 1) @ Rm
-                m.points = [Point(x=float(p[0]), y=float(p[1]), z=float(p[2])) for p in pts]
-                ma.markers.append(m)
+            xs = np.arange(1.0, res.clear_distance + 1e-6, step)
+            if xs[-1] < res.clear_distance:
+                xs = np.append(xs, res.clear_distance)
+            yc, zr = g.centre(xs), g.rail_z(xs)
+            prof = np.array(self.cfg.gauge.profile, float)       # (h, half-width) bottom -> top
+            ring = np.concatenate([np.stack([prof[:, 1], prof[:, 0]], 1),
+                                   np.stack([-prof[::-1, 1], prof[::-1, 0]], 1)])
+            P = np.stack([np.repeat(xs[:, None], len(ring), 1),
+                          yc[:, None] + ring[None, :, 0],
+                          zr[:, None] + ring[None, :, 1] + g.roll * ring[None, :, 0]], 2)       # (nx, nr, 3)
+            tube = mk('envelope', 0, Marker.TRIANGLE_LIST)
+            tube.scale.x = tube.scale.y = tube.scale.z = 1.0
+            tube.color.r, tube.color.g, tube.color.b = col
+            tube.color.a = 0.16
+            a, b = P[:-1, :-1].reshape(-1, 3), P[:-1, 1:].reshape(-1, 3)
+            c, d = P[1:, :-1].reshape(-1, 3), P[1:, 1:].reshape(-1, 3)
+            tri = np.stack([a, b, c, b, d, c], 1).reshape(-1, 3)
+            tube.points = [pt(q) for q in tri]
+            ma.markers.append(tube)
+            for k, j in enumerate((0, len(prof) - 1, len(prof), len(ring) - 1)):
+                e = mk('envelope_edges', k, Marker.LINE_STRIP)
+                e.scale.x = 0.06
+                e.color.r, e.color.g, e.color.b = col
+                e.color.a = 0.95
+                e.points = [pt(q) for q in P[:, j]]
+                ma.markers.append(e)
+            for k, dist in enumerate(range(50, int(res.clear_distance) + 1, 50)):
+                t = mk('distance_marks', k, Marker.TEXT_VIEW_FACING)
+                t.pose.position = Point(x=float(dist), y=float(g.centre(np.array([dist]))[0] - 2.2),
+                                        z=float(g.rail_z(np.array([dist]))[0]))
+                t.scale.z = 0.6 + 0.012 * dist
+                t.color.r = t.color.g = t.color.b = 0.85
+                t.color.a = 0.9
+                t.text = f'{dist} m'
+                ma.markers.append(t)
+        p = res.forward_points
         for o in res.obstacles:
-            c = o['centroid']
-            m = Marker(); m.header = header; m.ns = 'obstacles'; m.id = int(o['id']); m.type = Marker.CUBE
-            m.pose.position = Point(x=float(c[0]), y=float(c[1]), z=float(c[2])); m.pose.orientation.w = 1.0
-            m.scale.x, m.scale.y, m.scale.z = (float(max(v, 0.3)) for v in o['size'])
-            m.color.r, m.color.g, m.color.b, m.color.a = (1.0, 0.1, 0.1, 0.6) if o['zone'] == IN_GAUGE else (1.0, 0.7, 0.0, 0.6)
+            q = p[o['idx']] if p is not None and len(o['idx']) else None
+            c = q.mean(0) if q is not None else np.zeros(3)
+            ext = (q.max(0) - q.min(0)) if q is not None else np.zeros(3)
+            m = mk('obstacles', int(o['id']), Marker.CUBE)
+            m.pose.position = pt(c)
+            m.scale.x, m.scale.y, m.scale.z = (float(max(v, 0.3)) for v in ext)
+            m.color.r, m.color.g, m.color.b, m.color.a = (1.0, 0.1, 0.1, 0.7) if o['zone'] == IN_GAUGE else (1.0, 0.7, 0.0, 0.7)
             ma.markers.append(m)
-            t = Marker(); t.header = header; t.ns = 'labels'; t.id = int(o['id']); t.type = Marker.TEXT_VIEW_FACING
-            t.pose.position = Point(x=float(c[0]), y=float(c[1]), z=float(c[2]) + 1.5); t.pose.orientation.w = 1.0
-            t.scale.z = 0.8 + 0.01 * o['distance']
+            t = mk('labels', int(o['id']), Marker.TEXT_VIEW_FACING)
+            t.pose.position = Point(x=float(c[0]), y=float(c[1]), z=float(c[2] + ext[2] / 2 + 1.0 + 0.01 * o['distance']))
+            t.scale.z = 0.8 + 0.012 * o['distance']
             t.color.r = t.color.g = t.color.b = t.color.a = 1.0
             ttc = '' if not math.isfinite(o['ttc']) else f"  TTC {o['ttc']:.1f}s"
             t.text = f"{o['distance']:.1f} m{ttc}"
             ma.markers.append(t)
-        s = Marker(); s.header = header; s.ns = 'status'; s.id = 0; s.type = Marker.TEXT_VIEW_FACING
-        s.pose.position = Point(x=0.0, y=0.0, z=4.0) if Rm is None else Point(**dict(zip('xyz', (float(v) for v in np.array([8.0, 0.0, 3.5]) @ Rm))))
-        s.pose.orientation.w = 1.0
-        s.scale.z = 0.7
-        s.color.r, s.color.g, s.color.b = {0: (0.1, 0.9, 0.2), 1: (1.0, 0.7, 0.0), 2: (1.0, 0.1, 0.1)}[res.level]
-        s.color.a = 1.0
+        st = mk('status', 0, Marker.TEXT_VIEW_FACING)
+        st.pose.position = Point(x=8.0, y=0.0, z=4.0)
+        st.scale.z = 0.7
+        st.color.r, st.color.g, st.color.b = col
+        st.color.a = 1.0
         nd = '' if math.isnan(res.nearest_distance) else f' | obstacle {res.nearest_distance:.1f} m'
-        s.text = f'{LEVEL_NAMES[res.level]}{nd} | clear {res.clear_distance:.0f} m | {1e3 * res.timings["total"]:.0f} ms'
-        ma.markers.append(s)
+        st.text = f'{LEVEL_NAMES[res.level]}{nd} | clear {res.clear_distance:.0f} m | {1e3 * res.timings["total"]:.0f} ms'
+        ma.markers.append(st)
         return ma
 
 

@@ -18,6 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-vision-msgs \
         ros-humble-rosbag2-storage-default-plugins \
         ros-humble-sensor-msgs-py \
+        ros-humble-std-srvs \
+        ros-humble-tf2-ros \
+        zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # numba ускоряет ядра геометрии ~в 2 раза (нужно для 10 Гц на одном ядре); пакет Ubuntu совместим с системным numpy.
@@ -39,7 +42,11 @@ RUN source /ws/install/setup.bash \
     && python3 -c "from tunnel_guard.core.geometry import warmup; print('numba kernels cached:', warmup())"
 
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY docker/tg /usr/local/bin/tg
+RUN chmod +x /entrypoint.sh /usr/local/bin/tg
 
+# Qt/RViz inside a container on an X11 or WSLg display
+ENV QT_X11_NO_MITSHM=1
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["ros2", "launch", "tunnel_guard", "tunnel_guard.launch.py"]
+# default: detector + RViz (when a display is passed) and an interactive console - see `tg help`
+CMD ["tg"]
