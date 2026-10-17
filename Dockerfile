@@ -4,12 +4,16 @@ FROM osrf/ros:humble-desktop
 
 SHELL ["/bin/bash", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive \
+    TG_NATIVE=1 \
     PYTHONUNBUFFERED=1 \
     OMP_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-numpy \
+        python3-dev \
+        python3-pybind11 \
+        g++ \
         libopenblas0-pthread \
         python3-scipy \
         python3-pytest \

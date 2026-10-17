@@ -341,6 +341,17 @@ except Exception:  # pragma: no cover - numba is optional
     HAVE_NUMBA = False
 
 
+HAVE_NATIVE = False
+if HAVE_NUMBA:
+    try:
+        from ._geometry_native import gn as _native_gn
+        _gn_numba = _gn_kernel
+        _gn_kernel = _native_gn
+        HAVE_NATIVE = True
+    except ImportError:
+        pass
+
+
 def warmup():
     """Compile the numba kernels once (called at node start so the first lidar frame is not delayed)."""
     if not HAVE_NUMBA:

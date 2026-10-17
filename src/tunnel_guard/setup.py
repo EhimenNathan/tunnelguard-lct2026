@@ -4,10 +4,18 @@ from setuptools import setup, find_packages
 
 package_name = 'tunnel_guard'
 
+ext_modules = []
+if os.environ.get('TG_NATIVE') == '1':
+    from pybind11.setup_helpers import Pybind11Extension
+    ext_modules = [Pybind11Extension('tunnel_guard.core._geometry_native',
+                                   ['native/geometry.cpp'], cxx_std=17,
+                                   extra_compile_args=['-O3'])]
+
 setup(
     name=package_name,
     version='1.0.0',
     packages=find_packages(exclude=['test']),
+    ext_modules=ext_modules,
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
