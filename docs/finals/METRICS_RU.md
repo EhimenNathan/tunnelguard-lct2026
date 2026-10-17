@@ -132,7 +132,7 @@ C++/Numba: [native_benchmark.json](native_benchmark.json), максимальн�
 
 [summary.json](summary.json) содержит SHA-256 моделей, индекса кеша и эталона и пояснение provenance. [rows.json](rows.json), [geometry.json](geometry.json) позволяют пересчитать результаты. Эталон автоматический: 4 411 доступных кадров, 624 интерполированных, 32 неизвестных; 153 кадра переходной боковой полосы исключены из on-track/beside.
 
-[wire.json](wire.json) — текущая абляция удержания. [ablation_historical.png](ablation_historical.png) — исторический Pandar, не финальный Falcon. [diagnostics](diagnostics) — промежуточные изображения Claude.
+[wire.json](wire.json) — текущая абляция удержания. [ablation_historical.png](ablation_historical.png) — исторический Pandar, не финальный Falcon. [diagnostics](diagnostics) — промежуточные диагностические изображения.
 
 
 ## Новые архивы и GUI

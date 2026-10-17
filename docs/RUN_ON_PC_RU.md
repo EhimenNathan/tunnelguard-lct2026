@@ -2,6 +2,8 @@
 
 Два варианта: готовый Docker с рабочим столом в браузере либо сборка из исходников. Для пользователя с заполненным Windows-диском рекомендуется [облачный Codespaces](FINAL_HANDOFF_RU.md#10-запуск-в-браузере-без-docker-desktop-и-wsl-на-windows): Docker и WSL на его ПК не нужны.
 
+Для передачи организаторам используйте **compose.repro.yaml**: он фиксирует проверенный образ по SHA-256 digest и платформу linux/amd64. `compose.gui.yaml` оставлен для обновляемого `latest`. [Фиксация версии](reproduction_lock.json). Linux x86-64 и Windows x86-64 с Linux containers — целевая конфигурация. На ARM/Mac Apple Silicon требуется amd64-эмуляция; скорость и запуск там отдельно не проверены.
+
 ## 1. Готовый контейнер с RViz и графическим интерфейсом
 
 Нужны уже установленный и запущенный Docker Engine + Compose v2 (Linux) либо Docker Desktop в режиме Linux containers (Windows/macOS), интернет для загрузки образа, браузер и каталог стандартных ROS 2 бэгов. Запрашивайте не менее 4 CPU и 8 ГБ RAM. Частота зависит от CPU, облака, размеров кадров и программного OpenGL; приведённый облачный тест не гарантирует ту же скорость на любом ноутбуке.
@@ -23,10 +25,10 @@ docker compose version
 Set-Location 'C:\путь\к\tunnelguard-lct2026'
 $env:TG_BAGS_DIR='D:\данные\бэги'
 Test-Path -LiteralPath $env:TG_BAGS_DIR
-docker compose -f compose.gui.yaml config
-docker compose -f compose.gui.yaml pull
-docker compose -f compose.gui.yaml up -d
-docker compose -f compose.gui.yaml ps
+docker compose -f compose.repro.yaml config
+docker compose -f compose.repro.yaml pull
+docker compose -f compose.repro.yaml up -d
+docker compose -f compose.repro.yaml ps
 ```
 
 `Test-Path` должен вернуть `True`. Если данных мало места для распаковки, используйте облако или короткий бэг, созданный потоковым инструментом. Не переносите пример `D:` буквально, если такого диска нет.
@@ -37,10 +39,10 @@ docker compose -f compose.gui.yaml ps
 cd /путь/к/tunnelguard-lct2026
 export TG_BAGS_DIR=/абсолютный/путь/к/бэгам
 test -d "$TG_BAGS_DIR"
-docker compose -f compose.gui.yaml config
-docker compose -f compose.gui.yaml pull
-docker compose -f compose.gui.yaml up -d
-docker compose -f compose.gui.yaml ps
+docker compose -f compose.repro.yaml config
+docker compose -f compose.repro.yaml pull
+docker compose -f compose.repro.yaml up -d
+docker compose -f compose.repro.yaml ps
 ```
 
 Откройте **[http://localhost:6080/vnc.html](http://localhost:6080/vnc.html)** → Connect → пароль `tunnelguard`. RViz и терминал находятся в том же контейнере. Не нужны внешний X-сервер, `xhost`, проброс `/tmp/.X11-unix` или установка ROS на хост. Compose слушает только 127.0.0.1. При необходимости задайте `TG_VNC_PASSWORD` до `up`; не публикуйте этот демонстрационный рабочий стол в интернет.
@@ -79,10 +81,10 @@ tg reset
 ### Остановка и диагностика
 
 ```bash
-docker compose -f compose.gui.yaml logs --tail=100
-docker compose -f compose.gui.yaml exec tunnelguard tg status
-docker compose -f compose.gui.yaml exec tunnelguard cat /tmp/tunnel_guard.log
-docker compose -f compose.gui.yaml down
+docker compose -f compose.repro.yaml logs --tail=100
+docker compose -f compose.repro.yaml exec tunnelguard tg status
+docker compose -f compose.repro.yaml exec tunnelguard cat /tmp/tunnel_guard.log
+docker compose -f compose.repro.yaml down
 ```
 
 `down` удаляет контейнер, не каталог данных на хосте. Том с бэгами подключён только для чтения. Снимки/результаты сохраняйте в отдельный подключённый writable-каталог, если они нужны на хосте.
@@ -138,7 +140,7 @@ python tools/falcon_export_bag.py bags/falcon_test 0 300
 python tools/falcon_export_bag.py bags/falcon_test 0 300 --cache /путь/falcon_cache.bin
 ```
 
-Для уже скачанного `.zst` можно применять потоковый анализ `finals_archive_eval.py` без распаковки, но он сохраняет диагностические JSON, не является player. Полный `tg unpack` выполняйте на диске достаточного размера: сжатый размер не равен распакованному. Облако предпочтительно для крупных архивов.
+Для уже скачанного `.zst` можно применять потоковый анализ `finals_archive_eval.py` без распаковки, но он сохраняет диагностические JSON, не является player. Каталог `/data` в Compose подключён только для чтения: **не выполняйте `tg unpack` с назначением `/data`**. Распакуйте на хосте/в облаке в отдельный writable-каталог и затем подключите его как TG_BAGS_DIR. Полную распаковку выполняйте на диске достаточного размера: сжатый размер не равен распакованному. Облако предпочтительно для крупных архивов.
 
 ## 5. Другой LiDAR и проверка осей
 
@@ -163,3 +165,32 @@ ros2 run tunnel_guard detector_node --ros-args -p forward_axis:=falcon
 6. При намеренной остановке RViz в Xvfb/Mesa наблюдалась ошибка его завершения; она отдельно отражена в протоколе. Во время обработки финального облачного теста детектор и RViz работали, сообщения получены без потерь.
 
 Подтверждённые результаты, конфигурация и ограничения: [METRICS_RU.md](finals/METRICS_RU.md), [FINAL_HANDOFF_RU.md](FINAL_HANDOFF_RU.md). Нельзя гарантировать отсутствие ошибок на неизвестном железе; для передачи организаторам фиксируйте digest образа и выполняйте короткий smoke test на их машине.
+
+
+## 7. Три новых бэга: точные имена и запуск
+
+Все три сцены находятся внутри `new_synth_data.zst`, а не в трёх отдельных архивах. На текущем ПК архив: `C:\Users\ehime\Desktop\Moscow Competition\new_synth_data.zst`; полная распаковка не выполнялась из-за места. Перенесите архив на диск/облако с достаточным свободным местом. Если на Linux уже установлен zstd:
+
+```bash
+mkdir -p /ваш/writable/каталог/новые_бэги
+zstd -dc /ваш/путь/new_synth_data.zst | tar -xf - -C /ваш/writable/каталог/новые_бэги
+export TG_BAGS_DIR=/ваш/writable/каталог/новые_бэги
+docker compose -f compose.repro.yaml config
+docker compose -f compose.repro.yaml pull
+docker compose -f compose.repro.yaml up -d
+```
+
+При переносе проверьте SHA-256 архива на обоих ПК: `Get-FileHash -Algorithm SHA256 -LiteralPath '...new_synth_data.zst'` (PowerShell) или `sha256sum ...new_synth_data.zst` (Linux). Распакованные каталоги должны содержать metadata.yaml и соответствующий .db3. В терминале noVNC:
+
+```bash
+tg bags
+tg play /data/synthetic_platform_cloud_only 1.0 --start-paused
+# Пробел: начать; Ctrl+C: остановить, затем следующая запись
+tg play /data/synthetic_switch_cloud_only 1.0 --start-paused
+tg play /data/synthetic_tunnels_cloud_only 1.0 --start-paused
+```
+
+Сначала выполните короткий тест из раздела 4. Затем на каждой новой полной записи проверьте правильные оси, входной PointCloud2, выход статуса, отсутствие аварий, паузу/скорость/шаг и переключение бэгов. Короткий облачный тест Falcon не доказывает 10 Гц на новых плотных записях или неизвестном железе. [Сопоставление данных, ограничения точности и дальнейшие шаги](ASSESSMENT_AND_NEXT_STEPS_RU.md).
+
+
+[Облачная проверка именно фиксированного Compose](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/workflows/reproduction.yml): pull по digest, установленный native C++/23 регрессии, реальный noVNC/RViz и строго 301/301 сообщений, 9 проверок управления. Артефакт frozen-reproduction-results сохраняет inspect образа, логи и результаты. Успех этой проверки не заменяет полный прогон новых плотных бэгов на ПК организаторов.

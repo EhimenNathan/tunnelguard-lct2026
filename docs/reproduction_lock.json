@@ -1,0 +1,14 @@
+{
+  "runtime_commit": "32357fa",
+  "verified_cloud_run": 39023316258,
+  "platform": "linux/amd64",
+  "gui_image": "ghcr.io/ehimennathan/tunnel_guard_gui@sha256:c3c759358b8c309eb808f547e2fa7054f110f6fb38ffcf6fa2f60fc0a6dcf639",
+  "base_image": "ghcr.io/ehimennathan/tunnel_guard@sha256:895bd41b9f00e53b64f38b32d576146945758c28672c74e3a649e51a9215e0ab",
+  "local_regression": {
+    "passed": 22,
+    "skipped": 1,
+    "skip": "native C++ unavailable in Windows host"
+  },
+  "docker_required_on_local_pc": true,
+  "arm64": "Explicit amd64 emulation only; performance not validated"
+}

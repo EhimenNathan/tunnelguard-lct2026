@@ -1,0 +1,68 @@
+name: reproduction
+on:
+  push:
+    branches: [main]
+    paths: ['compose.repro.yaml', 'docs/reproduction_lock.json', '.github/workflows/reproduction.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: reproduction-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  frozen-image:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Проверка Compose и загрузка фиксированного образа
+        run: |
+          mkdir -p bags results
+          docker compose -f compose.repro.yaml config --quiet
+          IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['gui_image'])")
+          BASE=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          echo "IMG=$IMG" >> "$GITHUB_ENV"
+          echo "BASE=$BASE" >> "$GITHUB_ENV"
+          docker pull "$IMG"
+          docker pull "$BASE"
+          docker image inspect "$IMG" > results/image_inspect.json
+          test "$(docker image inspect --format '{{.Architecture}}' "$IMG")" = amd64
+          cp docs/reproduction_lock.json results/
+      - name: Регрессии установленного пакета и native C++
+        run: >-
+          docker run --rm "$BASE" bash -c "cd /tmp && python3 -c
+          'from tunnel_guard.core.geometry import HAVE_NATIVE; assert HAVE_NATIVE;
+          import pytest; raise SystemExit(pytest.main([\"-q\", \"/ws/src/tunnel_guard/test\"]))'"
+      - name: Малый бэг из записи Falcon организаторов
+        run: |
+          pip install --quiet numpy zstandard
+          python tools/falcon_export_bag.py bags/falcon_test 0 300
+      - name: Запуск именно через фиксированный Compose
+        env:
+          TG_BAGS_DIR: ${{ github.workspace }}/bags
+          TG_GUI_AUTOSTART: "0"
+        run: |
+          docker compose -f compose.repro.yaml up -d
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:6080/vnc.html > results/novnc.html; then break; fi
+            sleep 1
+          done
+          grep -q noVNC results/novnc.html
+          docker compose -f compose.repro.yaml cp tools/cloud_live_check.py tunnelguard:/tmp/cloud_live_check.py
+          docker compose -f compose.repro.yaml exec -T tunnelguard bash -c \
+            'source /opt/ros/humble/setup.bash; source /ws/install/setup.bash; python3 /tmp/cloud_live_check.py --bag /data/falcon_test --out /tmp/repro-results --expected 301' || exit_code=$?
+          exit "${exit_code:-0}"
+      - name: Управление проигрывателем
+        run: |
+          docker run --rm -v "$PWD/bags:/data:ro" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" "$BASE" python3 /tools/cloud_controls_check.py /data/falcon_test /results
+      - name: Логи и завершение
+        if: always()
+        run: |
+          docker compose -f compose.repro.yaml cp tunnelguard:/tmp/repro-results/. results/ || true
+          docker compose -f compose.repro.yaml logs --no-color > results/compose.log 2>&1 || true
+          docker compose -f compose.repro.yaml down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-reproduction-results
+          path: results/
