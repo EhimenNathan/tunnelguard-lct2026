@@ -149,6 +149,14 @@ class TrackGeometry:
 
     def to_track(self, pts):
         """(N,3) forward-frame points -> (s, l, h): along-track, lateral (+left), height above the rail plane."""
+        from .fast import HAVE_FAST, track_coordinates
+        if HAVE_FAST:
+            l, h = track_coordinates(pts, self.yc, self.zr, self._head, self.xs[1]-self.xs[0], self.roll)
+            return pts[:, 0], l, h
+        return self.to_track_reference(pts)
+
+    def to_track_reference(self, pts):
+        """Vectorised reference used for parity checks and hosts without Numba."""
         x = pts[:, 0]
         step = self.xs[1] - self.xs[0]
         u = np.clip(x / step, 0.0, len(self.xs) - 1.000001)
@@ -354,6 +362,8 @@ if HAVE_NUMBA:
 
 def warmup():
     """Compile the numba kernels once (called at node start so the first lidar frame is not delayed)."""
+    from .fast import warmup as warmup_points
+    warmup_points()
     if not HAVE_NUMBA:
         return False
     z1, i1 = np.zeros(4), np.zeros(4, np.int64)

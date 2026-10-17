@@ -82,6 +82,9 @@ class DetectorConfig:
     cluster: ClusterConfig = field(default_factory=ClusterConfig)
     tracker: TrackerConfig = field(default_factory=TrackerConfig)
     farfield: FarFieldConfig = field(default_factory=FarFieldConfig)
+    lowfield: FarFieldConfig = field(default_factory=lambda: FarFieldConfig(
+        h_lo=0.16, h_hi=0.55, floor_support=0.55, min_frames=8, min_points=12, stop_frames=12,
+        visibility_sigma_k=1.0, height_sigma_k=2.0, span_max=1.2))
     adapt: AdaptConfig = field(default_factory=lambda: AdaptConfig(enabled=False))   # online self-calibration (adapt.py)
     ego_check: bool = True              # ego-motion consistency: a STOP object must close in as the train advances
     ego_min_travel: float = 4.0         # train travel (lidar odometry) over the track history needed to test [m]
@@ -145,6 +148,7 @@ class ObstacleDetector:
         self.axis = AxisDetector()
         self.mount = MountCalibrator()
         self.far = FarField(self.cfg.farfield)
+        self.low = FarField(self.cfg.lowfield, id_base=200000)
         self._settled, self._geo_ref = 0, None
         self._dens = []
         self.sensor_scale = 1.0
@@ -167,6 +171,7 @@ class ObstacleDetector:
         self.axis = AxisDetector()
         self.mount = MountCalibrator()
         self.far = FarField(self.cfg.farfield)
+        self.low = FarField(self.cfg.lowfield, id_base=200000)
         self._settled, self._geo_ref = 0, None
         self._dens = []
         self.sensor_scale = 1.0
@@ -213,6 +218,9 @@ class ObstacleDetector:
         o = np.lexsort((r, key))
         k, rr = key[o], r[o]
         kr = (k - k.min()).astype(np.float64) * 1e5 + rr          # cells far apart on one sorted axis (r < 1e4 m)
+        from .fast import HAVE_FAST, scatter_sorted
+        if HAVE_FAST:
+            return scatter_sorted(o, k, rr, kr, cfg.scatter_depth, cfg.scatter_depth_max)
         j_up = np.searchsorted(kr, kr + cfg.scatter_depth)        # first return at least scatter_depth deeper
         j_dn = np.searchsorted(kr, kr - cfg.scatter_depth, side='right') - 1
         n = len(kr)
@@ -308,26 +316,8 @@ class ObstacleDetector:
             st += bool(np.any(np.abs(near - (s_now + dx)) < cfg.ego_pool_ds))
         return co >= 2 and st == 0
 
-    def process(self, xyz, stamp, intensity=None, ring=None):
+    def _prepare_reference(self, xyz, valid, Rm):
         cfg = self.cfg
-        t0 = time.perf_counter()
-        tm = {}
-        xyz = np.asarray(xyz, dtype=np.float32)
-        # a bit-identical repeat of the previous cloud (recorders and simulators re-send frames) carries no new
-        # information: re-issue the last decision instead of feeding the trackers a frame with zero motion
-        fp = (len(xyz), hash(xyz[::max(1, len(xyz) // 4096)].tobytes()))
-        if cfg.skip_duplicates and self._last is not None and fp == self._last_fp:
-            return self._last
-        self._last_fp = fp
-        r2 = np.einsum('ij,ij->i', xyz, xyz)
-        valid = np.isfinite(r2) & (r2 > cfg.min_range ** 2) & (r2 < cfg.max_range ** 2)
-        if cfg.forward_axis != 'auto':
-            axis = cfg.forward_axis
-        elif self.axis.axis is not None:
-            axis = self.axis.axis
-        else:
-            axis = self.axis.update(xyz[valid])
-        Rm = forward_rotation(axis).astype(np.float32)
         # the rotation is a signed axis permutation: select columns instead of a matrix product (identical values)
         cols = []
         for k in range(3):
@@ -352,6 +342,38 @@ class ObstacleDetector:
             rank = np.cumsum(valid) - 1                     # position among valid points (decimation pattern)
             sel = sel[(X[sel] >= cfg.near_decimate_x) | (rank[sel] % cfg.near_decimate == 0)]
         p = np.stack([X[sel], Y[sel], Z[sel]], axis=1)
+        return p, sel, Rm
+
+    def process(self, xyz, stamp, intensity=None, ring=None):
+        cfg = self.cfg
+        t0 = time.perf_counter()
+        tm = {}
+        xyz = np.asarray(xyz, dtype=np.float32)
+        # a bit-identical repeat of the previous cloud (recorders and simulators re-send frames) carries no new
+        # information: re-issue the last decision instead of feeding the trackers a frame with zero motion
+        fp = (len(xyz), hash(xyz[::max(1, len(xyz) // 4096)].tobytes()))
+        if cfg.skip_duplicates and self._last is not None and fp == self._last_fp:
+            return self._last
+        self._last_fp = fp
+        r2 = np.einsum('ij,ij->i', xyz, xyz)
+        valid = np.isfinite(r2) & (r2 > cfg.min_range ** 2) & (r2 < cfg.max_range ** 2)
+        if cfg.forward_axis != 'auto':
+            axis = cfg.forward_axis
+        elif self.axis.axis is not None:
+            axis = self.axis.axis
+        else:
+            axis = self.axis.update(xyz[valid])
+        Rm = forward_rotation(axis).astype(np.float32)
+        from .fast import HAVE_FAST, prepare_forward
+        if HAVE_FAST and (not cfg.mount_calibration or self.mount.R is not None):
+            level = self.mount.R.astype(np.float32) if cfg.mount_calibration else np.eye(3, dtype=np.float32)
+            columns = np.argmax(np.abs(Rm), axis=1).astype(np.int64)
+            signs = Rm[np.arange(3), columns].astype(np.float32)
+            p, sel = prepare_forward(xyz, valid, columns, signs, level, cfg.near_decimate_x,
+                                     cfg.near_decimate, np.tan(np.radians(cfg.half_fov_deg)))
+            Rm = (level @ Rm).astype(np.float32)
+        else:
+            p, sel, Rm = self._prepare_reference(xyz, valid, Rm)
         inten = np.asarray(intensity)[sel] if intensity is not None else None
         rg = np.asarray(ring)[sel] if ring is not None else None
         tm['prep'] = time.perf_counter() - t0
@@ -538,12 +560,22 @@ class ObstacleDetector:
         dust = [dict(distance=float(c['s_min']), n=int(c['n']), far=False) for c in cands_all if c.get('scatter')]
         # far field: temporal evidence beyond the range this frame can confirm on its own
         env_range = horizon
-        if cfg.farfield.enabled and g.ok and settled:
+        if cfg.farfield.enabled and g.ok and (settled or cfg.farfield.accumulate_unsettled):
             far_to = min(self._range_cap(p), float(g.xs[-1]))
             far_from = cfg.farfield.s_min
             if far_to > far_from:
                 env_range = max(env_range, far_to)
-                for f in self.far.update(p, g, far_from, far_to, travel, exclude=scat):
+                previous_far = {o['id'] for o in self._last.obstacles if o.get('far')} if self._last else set()
+                far_objects = self.far.update(p, g, far_from, far_to, travel, exclude=scat, trusted=settled)
+                if cfg.lowfield.enabled:
+                    far_objects += self.low.update(p, g, far_from, far_to, travel, exclude=scat, trusted=settled)
+                for f in far_objects:
+                    # Accumulation continues during convergence, but a new
+                    # object may not appear from unstable geometry alone.
+                    # Existing tracks retain CAUTION through short instability;
+                    # the final geometry gate still prevents an uncertain STOP.
+                    if f['id'] not in previous_far and (not settled or not len(f['idx'])):
+                        continue
                     if any(abs(f['distance'] - d['distance']) < 5.0 for d in dust) or                             (cfg.scatter_check and len(f['idx']) >= 6 and self._scatter(p[f['idx']])):
                         dust.append(dict(distance=f['distance'], n=int(len(f['idx'])), far=True))
                         continue

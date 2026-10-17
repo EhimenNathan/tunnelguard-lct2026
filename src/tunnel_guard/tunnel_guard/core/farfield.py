@@ -25,10 +25,14 @@ class FarFieldConfig:
     s_max: float = 520.0            # evidence grid length [m]
     half_width: float = 1.0         # lateral core |l| [m] (envelope half width 1.1-1.35 m minus margin)
     centre_half_width: float = 0.9  # an object's mean lateral offset must be inside this
-    h_lo: float = 0.3               # core height band above the rail plane [m]
+    h_lo: float = 0.3
     h_hi: float = 2.6
     cell: float = 1.0               # along-track cell [m]
-    window: int = 15                # frames of evidence
+    window: int = 21                # sparse returns survive short scan-phase gaps
+    accumulate_unsettled: bool = True  # age the window through uncertainty; only trusted frames add evidence
+    height_sigma_k: float = 2.0     # low-object STOP needs height above floor with this vertical uncertainty margin
+    visibility_sigma_k: float = 0.0  # optional minimum height certainty for a separate low-obstacle channel
+    span_max: float = 0.0           # optional compactness gate, along-track metres; 0 disables
     min_frames: int = 6             # frames with hits (cell +-1) for a detection
     min_points: int = 8             # points in the window
     stop_frames: int = 9            # frames with hits for STOP
@@ -37,7 +41,7 @@ class FarFieldConfig:
 
 
 class FarField:
-    def __init__(self, cfg: FarFieldConfig = None):
+    def __init__(self, cfg: FarFieldConfig = None, id_base=100000):
         self.cfg = cfg or FarFieldConfig()
         c = self.cfg
         self.nc = int(np.ceil(c.s_max / c.cell)) + 2
@@ -47,26 +51,31 @@ class FarField:
         self.hmax = np.full(shape, -9.0, np.float32)
         self.lsum = np.zeros(shape, np.float32)
         self.ssum = np.zeros(shape, np.float32)
+        self.smin = np.full(shape, np.inf, np.float32)
+        self.smax = np.full(shape, -np.inf, np.float32)
         self.scnt = np.zeros(shape, np.int32)       # scatter (dust/aerosol) returns per cell
         self.k = 0                    # frames seen
         self.offset = 0.0
         self.ids = np.zeros(self.nc, np.int64)
-        self.next_id = 100000
+        self.id_base = id_base
+        self.next_id = id_base
 
     def reset(self):
-        self.__init__(self.cfg)
+        self.__init__(self.cfg, self.id_base)
 
     def _shift(self, n):
         """Objects move n cells towards the train."""
         for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0),
-                        (self.scnt, 0)):
+                        (self.scnt, 0), (self.smin, np.inf), (self.smax, -np.inf)):
             a[:, :-n] = a[:, n:]
             a[:, -n:] = fill
         self.ssum[:, :-n] -= n * self.cfg.cell * (self.cnt[:, :-n] > 0) * self.cnt[:, :-n]
+        self.smin[:, :-n] -= n*self.cfg.cell
+        self.smax[:, :-n] -= n*self.cfg.cell
         self.ids[:-n] = self.ids[n:]
         self.ids[-n:] = 0
 
-    def update(self, p, g, s_from, s_to, travel=0.0, exclude=None):
+    def update(self, p, g, s_from, s_to, travel=0.0, exclude=None, trusted=True):
         """p: forward-frame points; g: TrackGeometry; evaluate s in [s_from, s_to]. Returns far obstacle dicts."""
         cfg = self.cfg
         if not cfg.enabled or g is None or not g.ok:
@@ -81,9 +90,11 @@ class FarField:
         s_to = min(s_to, cfg.s_max - 2 * cfg.cell)
         row = self.k % cfg.window
         for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0),
-                        (self.scnt, 0)):
+                        (self.scnt, 0), (self.smin, np.inf), (self.smax, -np.inf)):
             a[row] = fill
         sel = np.flatnonzero((p[:, 0] > s_from - 2) & (p[:, 0] < s_to + 2))
+        if not trusted:
+            sel = np.zeros(0, np.int64)
         cells_now = np.zeros(0, np.int64)
         if len(sel):
             s, l, h = g.to_track(p[sel])
@@ -102,6 +113,9 @@ class FarField:
                 np.maximum.at(self.hmax[row], cells_now, h.astype(np.float32))
                 np.add.at(self.lsum[row], cells_now, l.astype(np.float32))
                 np.add.at(self.ssum[row], cells_now, s.astype(np.float32))
+                if cfg.span_max > 0:
+                    np.minimum.at(self.smin[row], cells_now, s.astype(np.float32))
+                    np.maximum.at(self.smax[row], cells_now, s.astype(np.float32))
         self.k += 1
         if self.k < cfg.min_frames:
             return []
@@ -127,6 +141,7 @@ class FarField:
         hmax = nb(self.hmax, 'max').max(0)
         lsum = nb(self.lsum, 'sum').sum(0)
         ssum = nb(self.ssum, 'sum').sum(0)
+        span = nb(self.smax, 'max').max(0) - nb(self.smin, 'min').min(0) if cfg.span_max > 0 else None
         out, used = [], np.zeros(self.nc, bool)
         order = cand[np.lexsort((-npts[cand], -fh[cand]))]
         keep_ids = np.zeros(self.nc, np.int64)
@@ -139,8 +154,12 @@ class FarField:
                 continue
             if sc3[c] >= 0.3 * (sc3[c] + npts[c]):
                 continue                                  # mostly scatter returns around it: a dust / aerosol cloud
-            sl, _ = g.sigma_at(np.array([smean]))
+            sl, sv = g.sigma_at(np.array([smean]))
             if sl[0] > cfg.sigma_l_max:
+                continue
+            if cfg.span_max > 0 and span[c] > cfg.span_max:
+                continue
+            if hmax[c] < cfg.h_lo + cfg.visibility_sigma_k * sv[0]:
                 continue
             used[max(c - 1, 0):c + 2] = True
             prev = self.ids[max(c - 1, 0):c + 2]
@@ -149,7 +168,8 @@ class FarField:
                 self.next_id += 1
             keep_ids[c] = oid
             idx = sel[np.abs(cells_now - c) <= 1] if len(cells_now) else np.zeros(0, np.int64)
-            out.append(dict(id=oid, zone=IN_GAUGE if fh[c] >= cfg.stop_frames else NEAR_GAUGE, distance=float(smean),
+            height_certain = hmax[c] >= cfg.h_lo + cfg.height_sigma_k * sv[0]
+            out.append(dict(id=oid, zone=IN_GAUGE if fh[c] >= cfg.stop_frames and height_certain else NEAR_GAUGE, distance=float(smean),
                             lateral=float(lmean), height=float(hmax[c]), h_min=float(hmin[c]), n=int(npts[c]),
                             confidence=float(fh[c] / cfg.window), frames=int(fh[c]), idx=idx, far=True))
         self.ids = keep_ids

@@ -155,11 +155,34 @@ tunnel_guard:
       h_lo: 0.3
       h_hi: 2.6
       cell: 1.0
-      window: 15
+      window: 21
+      accumulate_unsettled: true
+      height_sigma_k: 2.0
+      visibility_sigma_k: 0.0
+      span_max: 0.0
       min_frames: 6
       min_points: 8
       stop_frames: 9
       floor_support: 1.1
+      sigma_l_max: 0.6
+    lowfield:
+      enabled: true
+      s_min: 30.0
+      s_max: 520.0
+      half_width: 1.0
+      centre_half_width: 0.9
+      h_lo: 0.16
+      h_hi: 0.55
+      cell: 1.0
+      window: 21
+      accumulate_unsettled: true
+      height_sigma_k: 2.0
+      visibility_sigma_k: 1.0
+      span_max: 1.2
+      min_frames: 8
+      min_points: 12
+      stop_frames: 12
+      floor_support: 0.55
       sigma_l_max: 0.6
     adapt:
       enabled: false
