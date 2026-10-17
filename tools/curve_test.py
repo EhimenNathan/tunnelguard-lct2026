@@ -48,7 +48,9 @@ def main(out=None):
                     p = thin(p, rng2) if sparse else p
                     res = det2.process(p, 0.1 * k)
                     if k >= 25:
-                        found += any(abs(o['distance'] - d) < 4 for o in res.obstacles)
+                        # d is forward X; detector reports arc distance on a curve.
+                        target = float(d) if radius is None else 0.5 * (d * np.sqrt(1 + (d / radius)**2) + radius * np.arcsinh(d / radius))
+                        found += any(abs(o['distance'] - target) < 4 for o in res.obstacles)
                 det_rates[d] = found / 10
             row = dict(radius=radius or 'straight', density='falcon-like' if sparse else 'dense',
                        centre_error_cm={x: round(100 * float(np.median(v)), 1) if v else None for x, v in errs.items()},

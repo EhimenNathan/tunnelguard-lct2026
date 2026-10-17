@@ -2,7 +2,7 @@
 import numpy as np
 
 _DT = {1: 'i1', 2: 'u1', 3: 'i2', 4: 'u2', 5: 'i4', 6: 'u4', 7: 'f4', 8: 'f8'}
-_AXES = {'x': (0, 1), '-x': (0, -1), 'y': (1, 1), '-y': (1, -1)}
+_AXES = {'x': (0, 1), '-x': (0, -1), 'y': (1, 1), '-y': (1, -1), 'z': (2, 1), '-z': (2, -1)}
 
 
 def cloud_to_arrays(fields, data, point_step, is_bigendian=False):
@@ -22,6 +22,11 @@ def cloud_to_arrays(fields, data, point_step, is_bigendian=False):
 
 def forward_rotation(axis):
     """3x3 matrix mapping sensor xyz to forward frame (X forward, Y left, Z up), for a horizontal forward axis."""
+    # Falcon native convention (manual section 1.4): x up, y right, z forward.
+    # ROS drivers may already convert to x forward / z up; never apply twice.
+    if axis in ('z', '-z', 'falcon'):
+        sign = -1 if axis == '-z' else 1
+        return np.array([[0., 0., sign], [0., -sign, 0.], [1., 0., 0.]])
     i, sgn = _AXES[axis]
     fwd = np.zeros(3)
     fwd[i] = sgn
@@ -43,9 +48,9 @@ class AxisDetector:
     def update(self, xyz):
         if self.axis is not None:
             return self.axis
-        far = xyz[np.einsum('ij,ij->i', xyz[:, :2], xyz[:, :2]) > self.min_range ** 2]
+        far = xyz[np.einsum('ij,ij->i', xyz, xyz) > self.min_range ** 2]
         for k, (i, sgn) in _AXES.items():
-            j = 1 - i
+            j = 1 if i == 2 else 1 - i
             self.votes[k] += int(np.count_nonzero((sgn * far[:, i] > 0) & (np.abs(far[:, j]) < 0.3 * np.abs(far[:, i]))))
         self.seen += 1
         if self.seen >= self.frames:

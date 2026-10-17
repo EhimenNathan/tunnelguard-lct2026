@@ -6,15 +6,32 @@ from tunnel_guard.core.detector import ObstacleDetector, DetectorConfig
 from tunnel_guard.core.geometry import _track_dp, GAUGE_CC
 
 
+def test_native_falcon_axes_and_already_converted_ros_axes():
+    from tunnel_guard.core.cloud import AxisDetector, forward_rotation
+    rng = np.random.default_rng(4)
+    ros = np.column_stack([rng.uniform(50, 300, 2000), rng.uniform(-3, 3, 2000),
+                           rng.uniform(-2, 4, 2000)])
+    R = forward_rotation('falcon')
+    raw = ros @ R
+    np.testing.assert_allclose(raw @ R.T, ros)
+    assert np.linalg.det(R) == pytest.approx(1.)
+    for points, expected in ((ros, 'x'), (raw, 'z')):
+        axis = AxisDetector(frames=2)
+        axis.update(points)
+        assert axis.update(points) == expected
+
+
 def test_sensor_density_is_per_detector_and_reset_preserves_config():
     a = ObstacleDetector(DetectorConfig(scorer_model='none'))
     a.sensor_scale = 0.7
     a.cfg.cluster.beam_vertical_rad = 0.003
+    a.score_hist[99] = [0.99]
     b = ObstacleDetector(DetectorConfig(scorer_model='none'))
     assert a.sensor_scale == 0.7 and b.sensor_scale == 1.0
     a.reset()
     assert a.sensor_scale == 1.0
     assert a.cfg.cluster.beam_vertical_rad == 0.003
+    assert a.score_hist == {}
 
 
 def test_rail_continuity_rejects_stronger_isolated_gauge_pair():

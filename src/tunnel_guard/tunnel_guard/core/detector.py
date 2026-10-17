@@ -161,6 +161,8 @@ class ObstacleDetector:
         self._reach = 0.0
         self.geo.reset()
         self.tracker.reset()
+        self.ftracker.reset()
+        self.score_hist.clear()
         self.calib.reset()
         self.axis = AxisDetector()
         self.mount = MountCalibrator()
