@@ -7,7 +7,7 @@ name: docker
 on:
   push:
     branches: [main]
-    paths: ['src/**', 'docker/**', 'Dockerfile', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
+    paths: ['src/**', 'docker/**', 'Dockerfile', 'Dockerfile.gui', 'compose.gui.yaml', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
             'tools/export_bag.py', 'tools/cloud_live_check.py', 'tools/cloud_controls_check.py', 'tools/native_benchmark.py', '.github/workflows/docker.yml']
   workflow_dispatch:
     inputs:
@@ -63,12 +63,15 @@ jobs:
 
       - name: Живой запуск ROS 2 + RViz (виртуальный дисплей), снимок экрана и частота выдачи
         run: |
-          docker run --rm -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" -e LIBGL_ALWAYS_SOFTWARE=1 -e EXPECTED="$EXPECTED" tunnel_guard bash -c '
-            set -e
-            apt-get update -qq && apt-get install -y -qq xvfb imagemagick > /dev/null
-            Xvfb :99 -screen 0 1600x900x24 & export DISPLAY=:99; sleep 2
-            python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results --expected "$EXPECTED"
-          '
+          docker build --build-arg TG_BASE=tunnel_guard -f Dockerfile.gui -t tunnel_guard_gui .
+          docker run -d --name tg_gui -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" tunnel_guard_gui
+          for i in $(seq 1 30); do
+            if docker exec tg_gui python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:6080/vnc.html',timeout=2)"; then break; fi
+            sleep 1
+          done
+          docker exec tg_gui python3 -c "import urllib.request; assert b'noVNC' in urllib.request.urlopen('http://localhost:6080/vnc.html').read()"
+          docker exec tg_gui bash -c 'source /opt/ros/humble/setup.bash; source /ws/install/setup.bash; python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results --expected '"$EXPECTED"
+          docker stop tg_gui
 
       - name: Пауза, покадровый шаг, скорость и переключение бэгов без перезапуска
         run: |
@@ -86,4 +89,13 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           IMG=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/tunnel_guard
-          docker tag tunnel_guard $IMG:latest && docker push $IMG:latest
+          docker tag tunnel_guard $IMG:latest
+          docker tag tunnel_guard_gui ${IMG}_gui:latest
+          for target in "$IMG:latest" "${IMG}_gui:latest"; do
+            pushed=false
+            for attempt in 1 2 3; do
+              if docker push "$target"; then pushed=true; break; fi
+              sleep $((attempt * 5))
+            done
+            "$pushed"
+          done

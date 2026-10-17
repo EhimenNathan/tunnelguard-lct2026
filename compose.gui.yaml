@@ -1,0 +1,12 @@
+services:
+  tunnelguard:
+    image: ghcr.io/ehimennathan/tunnel_guard_gui:latest
+    ports:
+      - "127.0.0.1:6080:6080"
+    volumes:
+      - "${TG_BAGS_DIR:-./bags}:/data:ro"
+    environment:
+      TG_VNC_PASSWORD: "${TG_VNC_PASSWORD:-tunnelguard}"
+    shm_size: 512mb
+    init: true
+    stop_grace_period: 20s
