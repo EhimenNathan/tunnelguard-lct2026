@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
     paths: ['src/**', 'docker/**', 'Dockerfile', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
-            'tools/export_bag.py', 'tools/cloud_live_check.py', '.github/workflows/docker.yml']
+            'tools/export_bag.py', 'tools/cloud_live_check.py', 'tools/native_benchmark.py', '.github/workflows/docker.yml']
   workflow_dispatch:
     inputs:
       frames:
@@ -33,7 +33,10 @@ jobs:
         run: docker build -t tunnel_guard .
 
       - name: Модульные тесты в контейнере
-        run: docker run --rm tunnel_guard bash -c "cd /ws/src/tunnel_guard && python3 -m pytest -q test"
+        run: >-
+          docker run --rm tunnel_guard bash -c "cd /tmp && python3 -c
+          'import tunnel_guard; from tunnel_guard.core.geometry import HAVE_NATIVE; assert HAVE_NATIVE;
+          import pytest; raise SystemExit(pytest.main([\"-q\", \"/ws/src/tunnel_guard/test\"]))'"
 
       - name: Тестовый бэг из записи Falcon (потоково с Яндекс.Диска организаторов)
         env:
@@ -45,6 +48,11 @@ jobs:
           echo "EXPECTED=$((LAST - FIRST + 1))" >> "$GITHUB_ENV"
           python tools/falcon_export_bag.py bags/falcon_test "$FIRST" "$LAST"
           ls -la bags/falcon_test
+
+      - name: Численный паритет и время ядра C++ / Numba
+        run: |
+          mkdir -p results
+          docker run --rm -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tunnel_guard python3 /tools/native_benchmark.py /results/native_benchmark.json
 
       - name: Офлайн-оценка в контейнере без сети (--network none)
         run: |

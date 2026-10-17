@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import rclpy
+from tunnel_guard.core.geometry import HAVE_NATIVE
 from rclpy.node import Node
 from tunnel_guard_msgs.msg import ObstacleStatus
 
@@ -70,7 +71,7 @@ def main():
                   messages=len(arrivals) >= 0.95 * args.expected,
                   rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))
-    report = dict(expected=args.expected, received=len(arrivals), output_hz=hz,
+    report = dict(expected=args.expected, received=len(arrivals), output_hz=hz, native_geometry=HAVE_NATIVE,
                   processing_ms_p50=float(np.median(processing)) if processing else None,
                   processing_ms_p95=float(np.percentile(processing, 95)) if processing else None,
                   processing_ms_p99=float(np.percentile(processing, 99)) if processing else None,
