@@ -57,6 +57,28 @@ def prepare_forward(xyz, valid, columns, signs, level, near_x, decimate, tangent
     return out[:count],selected[:count]
 
 
+@njit(cache=True)
+def keyed_max(keys, values, size):
+    out=np.full(size,-np.inf)
+    for i in range(len(keys)):
+        key=keys[i]
+        if key<0 or key>=size:raise ValueError('BEV key outside grid')
+        if values[i]>out[key]:out[key]=values[i]
+    return out
+
+
+@njit(cache=True)
+def visible_horizon(x,y,z,clearance):
+    """Same first blocked endpoint, without allocating quadratic mesh arrays."""
+    for i in range(len(x)):
+        for j in range(i+1):
+            u=x[j]/max(x[i],1e-6)
+            dy=y[j]-(y[0]+(y[i]-y[0])*u)
+            dz=z[j]-(z[0]+(z[i]-z[0])*u)
+            if max(abs(dy),abs(dz))>clearance:return float(x[i])
+    return float(x[-1])
+
+
 def warmup():
     if HAVE_FAST:
         track_coordinates(np.zeros((2,3),np.float32),np.zeros(3),np.zeros(3),np.zeros(3),1.,0.)
@@ -64,3 +86,6 @@ def warmup():
         scatter_sorted(np.arange(2),np.zeros(2,np.int64),np.zeros(2),np.zeros(2),.5,5.)
         scatter_sorted(np.arange(2),np.zeros(2,np.int64),np.zeros(2,np.float32),np.zeros(2),.5,5.)
         prepare_forward(np.zeros((2,3),np.float32),np.ones(2,np.bool_),np.arange(3),np.ones(3,np.float32),np.eye(3,dtype=np.float32),25.,3,2.7)
+        keyed_max(np.arange(2),np.zeros(2,np.float32),4)
+        keyed_max(np.arange(2),np.zeros(2),4)
+        visible_horizon(np.arange(8.)[::2],np.zeros(8)[::2],np.zeros(8)[::2],1.8)

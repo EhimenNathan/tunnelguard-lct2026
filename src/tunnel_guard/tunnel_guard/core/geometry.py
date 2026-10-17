@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.linalg import solveh_banded
+from scipy.linalg.blas import dsbmv
 from scipy.ndimage import distance_transform_edt, gaussian_filter, grey_opening, maximum_filter1d
 
 GAUGE_CC = 1.595          # rail-head centre-to-centre distance for 1520 mm gauge [m]
@@ -139,6 +140,9 @@ class TrackGeometry:
         x = self.xs[:n:2]
         y = self.yc[:n:2]
         z = self.zr[:n:2]
+        from .fast import HAVE_FAST, visible_horizon
+        if HAVE_FAST:
+            return visible_horizon(x,y,z,clearance)
         u = x[None, :] / np.maximum(x[:, None], 1e-6)
         dev_y = y[None, :] - (y[0] + (y[:, None] - y[0]) * u)
         dev_z = z[None, :] - (z[0] + (z[:, None] - z[0]) * u)
@@ -199,8 +203,9 @@ def _ridge_map(pts, x_edges, z_ref, dy, y_lim=4.0):
     x, y, z = x[s], y[s], z[s]
     nr = len(x_edges) - 1
     key = (np.searchsorted(x_edges, x, side='right') - 1) * nb + ((y + y_lim) / dy).astype(np.int64)
-    H = np.full(nr * nb, -np.inf)
-    if len(key):
+    from .fast import HAVE_FAST, keyed_max
+    H = keyed_max(key,z,nr*nb) if HAVE_FAST else np.full(nr * nb, -np.inf)
+    if len(key) and not HAVE_FAST:
         order = np.argsort(key)
         ks = key[order]
         starts = np.r_[0, np.nonzero(np.diff(ks))[0] + 1]
@@ -542,7 +547,9 @@ def _solve_profile(n, lam, data_idx, data_val, data_w, prior=None, prior_w=0.0, 
     x0 = np.zeros(n) if x0 is None else x0
     ab[3] += 1e-9 + prior_w
     np.add.at(ab[3], data_idx, data_w)
-    grad = H_pen @ x0 + prior_w * (x0 - (prior if prior is not None else x0))
+    # H_pen is symmetric with bandwidth three. A dense GEMV wastes work
+    # and can launch a BLAS thread pool thirteen times for each cloud.
+    grad = dsbmv(3,1.0,ab_pen,x0) + prior_w * (x0 - (prior if prior is not None else x0))
     np.add.at(grad, data_idx, data_w * (x0[data_idx] - data_val))
     if jtj is not None:
         ab[3] += jtj[0]

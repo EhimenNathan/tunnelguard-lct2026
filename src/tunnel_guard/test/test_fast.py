@@ -36,3 +36,25 @@ def test_linear_scatter_search_matches_numpy(monkeypatch):
     det=ObstacleDetector();actual=det._scatter_flags(p)
     monkeypatch.setattr(fast,'HAVE_FAST',False)
     np.testing.assert_array_equal(actual,det._scatter_flags(p))
+
+def test_linear_grid_max_matches_sorted_reduction():
+    rng=np.random.default_rng(251);keys=rng.integers(0,1000,30000);v=rng.normal(size=len(keys)).astype(np.float32)
+    expected=np.full(1000,-np.inf);np.maximum.at(expected,keys,v)
+    np.testing.assert_array_equal(fast.keyed_max(keys,v,1000),expected)
+
+def test_streamed_visibility_matches_full_mesh(monkeypatch):
+    x=np.arange(501.)
+    for y in [np.zeros_like(x),.0008*x*x,.000002*x*x*x]:
+        g=TrackGeometry(x,y,-1.8+.00003*x*x)
+        for clearance in [1.,1.8,3.]:
+            actual=g.sight_distance(clearance)
+            with monkeypatch.context() as m:
+                m.setattr(fast,'HAVE_FAST',False)
+                assert actual==g.sight_distance(clearance)
+
+def test_banded_penalty_matvec_matches_dense():
+    from scipy.linalg.blas import dsbmv
+    from tunnel_guard.core.geometry import _penalty_bands
+    rng=np.random.default_rng(501);ab,H=_penalty_bands(501,1e3,1e8)
+    for x in [rng.normal(size=501),np.full(501,-1.8),np.linspace(-2,3,501)]:
+        np.testing.assert_allclose(dsbmv(3,1.,ab,x),H@x,rtol=1e-12,atol=3e-6)
