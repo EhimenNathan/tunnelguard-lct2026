@@ -59,7 +59,10 @@ def main():
                          and node.count_subscribers(topic)>0 and node.count_publishers(topic)>0)
                 if not resumed:
                     ready_since = (ready_since or time.monotonic()) if ready else None
-                    if ready_since is not None and time.monotonic()-ready_since>1.0:
+                    # The publisher graph appears before Humble's --delay 2.0
+                    # finishes. Resuming inside that delay races player startup.
+                    # Wait beyond it; keep exact 301/301 acceptance unchanged.
+                    if ready_since is not None and time.monotonic()-ready_since>2.5:
                         resume.call_async(Resume.Request())
                         resumed = True
                 if len(arrivals) >= 100 and capture is None:
@@ -93,6 +96,9 @@ def main():
                   rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))
     report = dict(expected=args.expected, received=len(arrivals), output_hz=hz, native_geometry=HAVE_NATIVE,
+                  first_output_stamp=stamps[0] if stamps else None,
+                  last_output_stamp=stamps[-1] if stamps else None,
+                  max_delivery_backlog_ms=float(max(0.0, np.max((np.array(arrivals)-arrivals[0])-(np.array(stamps)-stamps[0])))*1000) if arrivals else None,
                   processing_ms_p50=float(np.median(processing)) if processing else None,
                   processing_ms_p95=float(np.percentile(processing, 95)) if processing else None,
                   processing_ms_p99=float(np.percentile(processing, 99)) if processing else None,
