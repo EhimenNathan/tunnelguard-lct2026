@@ -30,11 +30,12 @@ class FarFieldConfig:
     cell: float = 1.0               # along-track cell [m]
     window: int = 21                # sparse returns survive short scan-phase gaps
     accumulate_unsettled: bool = True  # age the window through uncertainty; only trusted frames add evidence
-    height_sigma_k: float = 2.0     # low-object STOP needs height above floor with this vertical uncertainty margin
+    height_sigma_k: float = 0.0     # low-object STOP needs height above floor with this vertical uncertainty margin
     visibility_sigma_k: float = 0.0  # optional minimum height certainty for a separate low-obstacle channel
     span_max: float = 0.0           # optional compactness gate, along-track metres; 0 disables
     min_frames: int = 6             # frames with hits (cell +-1) for a detection
     min_points: int = 8             # points in the window
+    stop_window: int = 15           # STOP uses recent evidence; longer CAUTION memory must not prolong a stale alarm
     stop_frames: int = 9            # frames with hits for STOP
     floor_support: float = 1.1      # lowest return of the object must be below this height [m]
     sigma_l_max: float = 0.6        # geometry must be at least this certain laterally at the object
@@ -131,6 +132,8 @@ class FarField:
             return out
         c3 = nb(self.cnt, 'sum')
         fh = (c3 > 0).sum(0)
+        recent = (self.k - 1 - np.arange(min(cfg.window, cfg.stop_window))) % cfg.window
+        stop_hits = (c3[recent] > 0).sum(0)
         npts = c3.sum(0)
         cand = np.flatnonzero((fh >= cfg.min_frames) & (npts >= cfg.min_points))
         if not len(cand):
@@ -169,7 +172,7 @@ class FarField:
             keep_ids[c] = oid
             idx = sel[np.abs(cells_now - c) <= 1] if len(cells_now) else np.zeros(0, np.int64)
             height_certain = hmax[c] >= cfg.h_lo + cfg.height_sigma_k * sv[0]
-            out.append(dict(id=oid, zone=IN_GAUGE if fh[c] >= cfg.stop_frames and height_certain else NEAR_GAUGE, distance=float(smean),
+            out.append(dict(id=oid, zone=IN_GAUGE if stop_hits[c] >= cfg.stop_frames and height_certain else NEAR_GAUGE, distance=float(smean),
                             lateral=float(lmean), height=float(hmax[c]), h_min=float(hmin[c]), n=int(npts[c]),
                             confidence=float(fh[c] / cfg.window), frames=int(fh[c]), idx=idx, far=True))
         self.ids = keep_ids

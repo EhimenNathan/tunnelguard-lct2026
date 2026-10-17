@@ -98,7 +98,7 @@ class DetectorConfig:
     stop_debounce_window: int = 3       # stop_debounce_window frames.  Off: on the sealed drive it removed ~1 false event
                                         # per 2.8 km but cost far-field recall (box@120 m 71 -> 57 %) - not worth it
     stop_debounce_s: float = 30.0
-    skip_duplicates: bool = True        # re-issue the last decision for a bit-identical repeated cloud
+    skip_duplicates: bool = True        # re-issue only the same timestamp AND identical complete measurement
     settle_frames: int = 10             # start-up: the track estimate must change < settle_tol over 20-150 m on this many
     settle_tol: float = 0.15            # consecutive frames before STOP is allowed beyond the directly measured rails [m]
 
@@ -155,12 +155,14 @@ class ObstacleDetector:
         self.calib = ClutterCalibrator(self.cfg.adapt)
         self.recent = deque(maxlen=self.cfg.ego_history)   # per frame: (odometry segment, x, s, l) of candidates
         self._last, self._last_fp = None, None
+        self._last_raw = self._last_intensity = self._last_ring = None
         self._last_stamp = None
         self._reach = 0.0
 
     def reset(self):
         self.recent.clear()
         self._last, self._last_fp = None, None
+        self._last_raw = self._last_intensity = self._last_ring = None
         self._last_stamp = None
         self._reach = 0.0
         self.geo.reset()
@@ -349,12 +351,15 @@ class ObstacleDetector:
         t0 = time.perf_counter()
         tm = {}
         xyz = np.asarray(xyz, dtype=np.float32)
-        # a bit-identical repeat of the previous cloud (recorders and simulators re-send frames) carries no new
-        # information: re-issue the last decision instead of feeding the trackers a frame with zero motion
-        fp = (len(xyz), hash(xyz[::max(1, len(xyz) // 4096)].tobytes()))
-        if cfg.skip_duplicates and self._last is not None and fp == self._last_fp:
-            return self._last
-        self._last_fp = fp
+        # A stationary scene can legitimately produce identical fresh scans.
+        # Only a repeated sensor timestamp may reuse the old decision. The cheap
+        # sample is never sufficient proof: one changed far return matters.
+        fp = (len(xyz), hash(xyz[::max(1, len(xyz) // 4096)].tobytes())) if cfg.skip_duplicates else None
+        if cfg.skip_duplicates and self._last is not None and stamp == self._last.stamp and fp == self._last_fp:
+            def same(a,b):
+                return a is b if a is None or b is None else np.array_equal(a,b,equal_nan=True)
+            if same(xyz,self._last_raw) and same(intensity,self._last_intensity) and same(ring,self._last_ring):
+                return self._last
         r2 = np.einsum('ij,ij->i', xyz, xyz)
         valid = np.isfinite(r2) & (r2 > cfg.min_range ** 2) & (r2 < cfg.max_range ** 2)
         if cfg.forward_axis != 'auto':
@@ -616,6 +621,13 @@ class ObstacleDetector:
         nearest = min((o['distance'] for o in in_g), default=float('nan'))
         ttc = min((o['ttc'] for o in in_g), default=float('inf'))
         clear = min(float(np.nanmin([horizon, nearest])) if in_g else float(horizon), self._range_cap(p))
+        # Commit the deduplication snapshot only after a successful evaluation;
+        # callers may reuse and mutate their input buffer for the next scan.
+        if cfg.skip_duplicates:
+            self._last_fp = fp
+            self._last_raw = xyz.copy()
+            self._last_intensity = None if intensity is None else np.array(intensity,copy=True)
+            self._last_ring = None if ring is None else np.array(ring,copy=True)
         tm['tracking'] = time.perf_counter() - t3
         tm['total'] = time.perf_counter() - t0
         self._last = FrameResult(stamp=stamp, level=level, obstacles=obstacles, nearest_distance=nearest, nearest_ttc=ttc,
