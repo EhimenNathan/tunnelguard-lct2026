@@ -47,7 +47,7 @@ def main(src,output):
       q=res.forward_points;sel=np.flatnonzero((q[:,0]>2)&(q[:,0]<410)&(abs(q[:,1])<15)&(q[:,2]>-5)&(q[:,2]<10))
       sel=rng.choice(sel,min(3500,len(sel)),False)
       xx=np.arange(5.,min(res.envelope_range,400.)+1,5.) if g.ok else np.array([])
-      clips.append(dict(row,truth_x=None,p=np.round(q[sel],2).ravel().tolist(),
+      clips.append(dict(row,truth_x=None,p=np.round(q[sel].astype(np.float64),2).ravel().tolist(),
         line=np.round(np.column_stack([xx,g.centre(xx),g.rail_z(xx)]),3).tolist() if len(xx) else [],
         boxes=[dict(c=np.round(o['centroid_fwd'],3).tolist(),size=np.round(o['size'],3).tolist(),zone=int(o['zone']),d=float(o['distance']),n=int(o['n'])) for o in res.obstacles]))
      local+=1

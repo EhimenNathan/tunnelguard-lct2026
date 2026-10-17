@@ -9,3 +9,6 @@
 Текущая и историческая абляции опубликованы раздельно. Новые материалы: `tools/finals_current_figures.py`, `finals_ablation.py`, `finals_dust_eval.py`, `finals_archive_eval.py`, `finals_archive_check.py`. Полное создание отчёта не требует распаковки больших архивов.
 
 Локальная копия видео: `C:\Users\ehime\Desktop\Moscow Competition\TunnelGuard_Финал_2026.mp4`. Репозиторий содержит тот же MP4 в web/assets, а готовый пользовательский пакет — в outputs текущего чата. [Инструкция для ПК](../RUN_ON_PC_RU.md), [новый сайт](https://ehimennathan.github.io/tunnelguard-lct2026/), [сайт отбора](https://ehimennathan.github.io/tunnelguard-lct2026/qualification.html).
+
+
+Дополнительный локальный профиль первых 120 кадров плотной новой синтетики: после 30 кадров прогрева p50 119,72 мс, p95 202,33 мс (69/90 >100 мс). Повтор с одним потоком BLAS был медленнее (p95 760,67 мс); это не контролируемое сравнение процессоров. Эти Windows-прогоны не подтверждают 10 Гц на новом архиве. Нужен отдельный ROS-тест на целевом железе. Файлы: `docs/finals/new_synth/timing_windows*.json`.

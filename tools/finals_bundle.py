@@ -78,7 +78,7 @@ def main(cache, truth_path, output):
                 if g.ok:
                     xx=np.arange(5.,min(r.envelope_range,400.)+1,5.)
                     line=np.round(np.column_stack([xx,g.centre(xx),g.rail_z(xx)]),3).tolist()
-                clips[ci].append(dict(row,p=np.round(p[sel],2).ravel().tolist(),line=line,
+                clips[ci].append(dict(row,p=np.round(p[sel].astype(np.float64),2).ravel().tolist(),line=line,
                                        boxes=[dict(c=np.round(o['centroid_fwd'],3).tolist(),
                                                    size=np.round(o['size'],3).tolist(),zone=int(o['zone']),
                                                    d=round(float(o['distance']),1),n=int(o['n'])) for o in r.obstacles]))

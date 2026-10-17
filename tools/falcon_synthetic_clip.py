@@ -23,7 +23,7 @@ def main(cache,out):
         xx=np.arange(5.,min(r.envelope_range,400.)+1,5.) if g.ok else np.array([])
         rows.append(dict(k=k,t=t,level=int(r.level),ms=1000*r.timings['total'],truth_x=200.,
                          env=r.envelope_range,measured=g.valid_range,clear=r.clear_distance,synthetic=True,
-                         p=np.round(p[sel],2).ravel().tolist(),
+                         p=np.round(p[sel].astype(np.float64),2).ravel().tolist(),
                          line=np.round(np.column_stack([xx,g.centre(xx),g.rail_z(xx)]),3).tolist() if len(xx) else [],
                          dust=[dict(d=float(d['distance']),n=int(d['n'])) for d in r.dust],
                          boxes=[dict(c=np.round(o['centroid_fwd'],3).tolist(),size=np.round(o['size'],3).tolist(),
