@@ -6,7 +6,7 @@ tunnel_guard:
   ros__parameters:
     input_topic: 'auto'
     publish_envelope_points: true
-    marker_step: 4.0
+    marker_step: 8.0
     forward_axis: 'auto'
     mount_calibration: true
     min_range: 1.5

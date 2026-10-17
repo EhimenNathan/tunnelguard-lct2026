@@ -24,7 +24,7 @@ def fmt(v):
 def main():
     flat = P.flatten(P.default_config())
     lines = [HEADER, 'tunnel_guard:', '  ros__parameters:', "    input_topic: 'auto'", '    publish_envelope_points: true',
-             '    marker_step: 4.0']
+             '    marker_step: 8.0']
     groups = {}
     for k, v in flat.items():
         head, _, tail = k.partition('.')
