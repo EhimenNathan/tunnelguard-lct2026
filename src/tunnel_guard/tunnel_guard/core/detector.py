@@ -74,6 +74,7 @@ class DetectorConfig:
     scatter_depth_max: float = 5.0      # returns further apart along the line of sight are different objects (a person
                                         # behind a dust cloud stays a person)
     scatter_min_cells: int = 3
+    sensor_adaptive: bool = True        # measure the lidar's angular sampling and normalise beam-based quantities to it
     hold_frames: int = 10              # a confirmed STOP object that drops out (thin wire between beams, below the field of
                                        # view when very close) is held at its predicted distance for up to this many frames
     geometry: GeometryConfig = field(default_factory=GeometryConfig)
@@ -145,6 +146,8 @@ class ObstacleDetector:
         self.mount = MountCalibrator()
         self.far = FarField(self.cfg.farfield)
         self._settled, self._geo_ref = 0, None
+        self._dens = []
+        self.sensor_scale = 1.0
         self.calib = ClutterCalibrator(self.cfg.adapt)
         self.recent = deque(maxlen=self.cfg.ego_history)   # per frame: (odometry segment, x, s, l) of candidates
         self._last, self._last_fp = None, None
@@ -163,6 +166,8 @@ class ObstacleDetector:
         self.mount = MountCalibrator()
         self.far = FarField(self.cfg.farfield)
         self._settled, self._geo_ref = 0, None
+        self._dens = []
+        self.sensor_scale = 1.0
 
     def _range_cap(self, p):
         """Reported clear distance never exceeds what the lidar demonstrably measures."""
@@ -172,6 +177,24 @@ class ObstacleDetector:
             # demonstrated reach: the 10th farthest return ahead (robust to single spurious points)
             self._reach = max(self._reach, float(np.partition(p[:, 0], len(p) - 10)[len(p) - 10]))
         return min(self._reach + 1.0, self.cfg.max_range)
+
+    def _sense_density(self, p):
+        """Angular sampling density of this lidar (rays/deg^2) in the forward cone at 15-80 m, from the fullest cells;
+        after 10 frames the beam-based quantities are normalised to it (Pandar128 reference: 80 rays/deg^2)."""
+        q = p[(p[:, 0] > 15) & (p[:, 0] < 80)]
+        az = np.degrees(np.arctan2(q[:, 1], q[:, 0]))
+        el = np.degrees(np.arctan2(q[:, 2], np.hypot(q[:, 0], q[:, 1])))
+        m = (np.abs(az) < 12) & (np.abs(el) < 4)
+        if np.count_nonzero(m) < 200:
+            return
+        key = np.floor(az[m] / 0.5).astype(np.int64) * 1000 + np.floor(el[m] / 0.5).astype(np.int64)
+        counts = np.bincount(np.unique(key, return_inverse=True)[1])
+        self._dens.append(float(np.percentile(counts, 90)) / 0.25)
+        if len(self._dens) == 10:
+            scale = float(np.sqrt(80.0 / max(np.median(self._dens), 1.0)))
+            if abs(scale - 1.0) < 0.15:
+                scale = 1.0                      # the training sensor itself (Pandar128): exactly unchanged behaviour
+            self.sensor_scale = scale
 
     def _scatter_flags(self, q):
         """Per-point scatter flag: another return in the same small solid angle lies scatter_depth..scatter_depth_max
@@ -346,6 +369,8 @@ class ObstacleDetector:
         else:
             self._settled, self._geo_ref = 0, None
         settled = self._settled >= cfg.settle_frames
+        if cfg.sensor_adaptive and len(self._dens) < 10:
+            self._sense_density(p)
         tm['geometry'] = time.perf_counter() - t1
 
         t2 = time.perf_counter()
@@ -427,7 +452,7 @@ class ObstacleDetector:
         self.ftracker.update([c['ml_view'] for c in cands_all], stamp,
                              ego_speed=self.calib.ego_speed() if (cfg.adapt.enabled or cfg.ego_check) else None)
         for c in cands_all:
-            feats.append(candidate_features(c['ml_view'], g, cfg.gauge, sight, c['ml_view'].get('track')))
+            feats.append(candidate_features(c['ml_view'], g, cfg.gauge, sight, c['ml_view'].get('track'), self.sensor_scale))
         feats = np.asarray(feats, np.float32).reshape(-1, len(FEATURE_NAMES))
         if self.scorer is not None and len(cands_all):
             # hybrid decision (validated leave-one-recording-out): beyond the near field a temporally smoothed learned

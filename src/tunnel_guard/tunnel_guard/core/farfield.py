@@ -47,6 +47,7 @@ class FarField:
         self.hmax = np.full(shape, -9.0, np.float32)
         self.lsum = np.zeros(shape, np.float32)
         self.ssum = np.zeros(shape, np.float32)
+        self.scnt = np.zeros(shape, np.int32)       # scatter (dust/aerosol) returns per cell
         self.k = 0                    # frames seen
         self.offset = 0.0
         self.ids = np.zeros(self.nc, np.int64)
@@ -57,7 +58,8 @@ class FarField:
 
     def _shift(self, n):
         """Objects move n cells towards the train."""
-        for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0)):
+        for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0),
+                        (self.scnt, 0)):
             a[:, :-n] = a[:, n:]
             a[:, -n:] = fill
         self.ssum[:, :-n] -= n * self.cfg.cell * (self.cnt[:, :-n] > 0) * self.cnt[:, :-n]
@@ -78,16 +80,22 @@ class FarField:
         s_from = max(s_from, cfg.s_min)
         s_to = min(s_to, cfg.s_max - 2 * cfg.cell)
         row = self.k % cfg.window
-        for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0)):
+        for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0),
+                        (self.scnt, 0)):
             a[row] = fill
-        sel = np.flatnonzero((p[:, 0] > s_from - 2) & (p[:, 0] < s_to + 2) &
-                             (True if exclude is None else ~exclude))      # scatter returns never count as evidence
+        sel = np.flatnonzero((p[:, 0] > s_from - 2) & (p[:, 0] < s_to + 2))
         cells_now = np.zeros(0, np.int64)
         if len(sel):
             s, l, h = g.to_track(p[sel])
             core = (s >= s_from) & (s <= s_to) & (np.abs(l) < cfg.half_width) & (h > cfg.h_lo) & (h < cfg.h_hi)
             if core.any():
                 sel, s, l, h = sel[core], s[core], l[core], h[core]
+                if exclude is not None:
+                    # scatter returns (dust, aerosol) never count as evidence, but are counted to recognise a cloud
+                    sc = exclude[sel]
+                    if sc.any():
+                        np.add.at(self.scnt[row], np.floor(s[sc] / cfg.cell).astype(np.int64), 1)
+                    sel, s, l, h = sel[~sc], s[~sc], l[~sc], h[~sc]
                 cells_now = np.floor(s / cfg.cell).astype(np.int64)
                 np.add.at(self.cnt[row], cells_now, 1)
                 np.minimum.at(self.hmin[row], cells_now, h.astype(np.float32))
@@ -114,6 +122,7 @@ class FarField:
         if not len(cand):
             self.ids[:] = 0
             return []
+        sc3 = nb(self.scnt, 'sum').sum(0)
         hmin = nb(self.hmin, 'min').min(0)
         hmax = nb(self.hmax, 'max').max(0)
         lsum = nb(self.lsum, 'sum').sum(0)
@@ -128,6 +137,8 @@ class FarField:
             smean = ssum[c] / max(npts[c], 1)
             if hmin[c] > cfg.floor_support or abs(lmean) > cfg.centre_half_width:
                 continue
+            if sc3[c] >= 0.3 * (sc3[c] + npts[c]):
+                continue                                  # mostly scatter returns around it: a dust / aerosol cloud
             sl, _ = g.sigma_at(np.array([smean]))
             if sl[0] > cfg.sigma_l_max:
                 continue

@@ -21,8 +21,8 @@ CFG = os.path.join(os.path.dirname(HERE), 'src', 'tunnel_guard', 'config', 'obst
 DISTANCES = [60, 90, 100, 120, 150, 175, 180, 190, 200, 215, 220, 230, 250, 260, 270, 280, 300]
 OBJECTS = {
     'person': dict(kind='person', size=(0.5, 0.3, 1.75), rho=0.10),
-    'box_0.5': dict(kind='box', size=(0.5, 0.5, 0.5), rho=0.20),
-    'box_0.3': dict(kind='box', size=(0.3, 0.3, 0.3), rho=0.20),
+    'box_0.5': dict(kind='box', size=(0.5, 0.5, 0.5), rho=0.20, z0=-1.80),       # standing on the rails
+    'box_0.3': dict(kind='box', size=(0.3, 0.3, 0.3), rho=0.20, z0=-1.80),
     'dust': dict(kind='dust', size=(2.4, 3.0, 2.5), sigma=0.6, rho=0.05, z0=-1.9),
 }
 WARM, ON = 30, 50

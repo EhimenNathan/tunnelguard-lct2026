@@ -160,7 +160,7 @@ class TunnelGuardNode(Node):
         self.discovery = self.create_timer(0.5, self._discover)
         self.create_service(Trigger, '~/reset', self._on_reset)
         self.create_timer(5.0, self._report)
-        self.get_logger().info(f'TunnelGuard started (input_topic={topic}, reliability={self.qos_in.reliability.name.lower()}, custom msgs={HAVE_MSGS}, vision_msgs={HAVE_VISION})')
+        self.get_logger().info(f'TunnelGuard started (input_topic={self.fixed_topic}, reliability={self.qos_in.reliability.name.lower()}, custom msgs={HAVE_MSGS}, vision_msgs={HAVE_VISION})')
 
     # ------------------------------------------------------------------ plumbing
     def _discover(self):

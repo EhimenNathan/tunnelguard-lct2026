@@ -74,7 +74,7 @@ def launch_setup(context):
         started = []
 
         def on_output(event):
-            if not started and b'TunnelGuard started' in event.text:
+            if not started and b'[tunnel_guard]: TunnelGuard started (' in event.text:
                 started.append(True)
                 return [TimerAction(period=LaunchConfiguration('play_delay'), actions=[play])]
             return None

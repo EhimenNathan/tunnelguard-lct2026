@@ -9,8 +9,8 @@ import numpy as np
 
 from .gauge import half_width
 
-BEAM_V = 0.00218      # Pandar128 vertical resolution in the central band (0.125 deg)
-BEAM_H = 0.00175      # Pandar128 horizontal resolution at 10 Hz (0.1 deg)
+BEAM_V0 = 0.00218     # Pandar128 vertical resolution in the central band (0.125 deg) - the scorer's training sensor
+BEAM_H0 = 0.00175     # Pandar128 horizontal resolution at 10 Hz (0.1 deg)
 
 FEATURE_NAMES = [
     's', 'log_s', 'n', 'log_n', 'n_norm', 's_ext',
@@ -23,9 +23,11 @@ FEATURE_NAMES = [
 ]
 
 
-def candidate_features(c, g, gauge_cfg, sight, track=None):
+def candidate_features(c, g, gauge_cfg, sight, track=None, sensor_scale=1.0):
     s = max(c['s_min'], 1.0)
-    n = c['n']
+    BEAM_V, BEAM_H = BEAM_V0 * sensor_scale, BEAM_H0 * sensor_scale
+    density = 1.0 / (sensor_scale * sensor_scale)
+    n = max(c['n'] / density, 1.0)       # point count expressed at the training sensor's density
     l_ext = c['l_max'] - c['l_min']
     h_ext = c['h_max'] - c['h_min']
     same_side = c['l_min'] * c['l_max'] > 0
@@ -43,7 +45,7 @@ def candidate_features(c, g, gauge_cfg, sight, track=None):
         s, np.log(s), n, np.log(n), n * (s / 50.0) ** 2, c['s_max'] - c['s_min'],
         c['l_mean'], abs(c['l_mean']), l_ext, l_absmax, l_absmin,
         c['h_min'], c['h_max'], h_ext, h_mid, h_ext / (BEAM_V * s), l_ext / (BEAM_H * s), n / max(h_ext / (BEAM_V * s), 1.0),
-        c.get('in_gauge_raw', c['in_gauge']), c.get('in_gauge_raw', c['in_gauge']) / n, sl, sv,
+        c.get('in_gauge_raw', c['in_gauge']) / density, c.get('in_gauge_raw', c['in_gauge']) / max(c['n'], 1), sl, sv,
         depth_lat, depth_top, depth_lat / max(sl, 0.02),
         g.valid_range - s, g.rail_range - s, g.trusted_range - s, sight - s,
         c.get('wall_left', 0), c.get('wall_right', 0), float(c.get('contained', True)), c.get('shell_pts', 0),

@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
     paths: ['src/**', 'docker/**', 'Dockerfile', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
-            'tools/export_bag.py', '.github/workflows/docker.yml']
+            'tools/export_bag.py', 'tools/cloud_live_check.py', '.github/workflows/docker.yml']
   workflow_dispatch:
     inputs:
       frames:
@@ -22,6 +22,7 @@ permissions:
 jobs:
   build-test:
     runs-on: ubuntu-22.04
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
 
@@ -35,10 +36,14 @@ jobs:
         run: docker run --rm tunnel_guard bash -c "cd /ws/src/tunnel_guard && python3 -m pytest -q test"
 
       - name: Тестовый бэг из записи Falcon (потоково с Яндекс.Диска организаторов)
+        env:
+          FRAME_SELECTION: ${{ github.event.inputs.frames || '0 300' }}
         run: |
           pip install --quiet zstandard numpy
-          F="${{ github.event.inputs.frames || '0 300' }}"
-          python tools/falcon_export_bag.py bags/falcon_test $F
+          read -r FIRST LAST <<< "$FRAME_SELECTION"
+          [[ "$FIRST" =~ ^[0-9]+$ && "$LAST" =~ ^[0-9]+$ ]]
+          echo "EXPECTED=$((LAST - FIRST + 1))" >> "$GITHUB_ENV"
+          python tools/falcon_export_bag.py bags/falcon_test "$FIRST" "$LAST"
           ls -la bags/falcon_test
 
       - name: Офлайн-оценка в контейнере без сети (--network none)
@@ -50,20 +55,15 @@ jobs:
 
       - name: Живой запуск ROS 2 + RViz (виртуальный дисплей), снимок экрана и частота выдачи
         run: |
-          docker run --rm -v "$PWD/bags:/data" -v "$PWD/results:/results" -e LIBGL_ALWAYS_SOFTWARE=1 tunnel_guard bash -c '
+          docker run --rm -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" -e LIBGL_ALWAYS_SOFTWARE=1 -e EXPECTED="$EXPECTED" tunnel_guard bash -c '
             set -e
             apt-get update -qq && apt-get install -y -qq xvfb imagemagick > /dev/null
             Xvfb :99 -screen 0 1600x900x24 & export DISPLAY=:99; sleep 2
-            ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=true bag:=/data/falcon_test > /results/launch.log 2>&1 &
-            sleep 25
-            timeout 12 ros2 topic hz /tunnel_guard/status > /results/status_hz.txt 2>&1 || true
-            ros2 topic echo --once /tunnel_guard/status > /results/status_once.txt 2>&1 || true
-            import -window root /results/rviz.png
-            sleep 6; import -window root /results/rviz_2.png
+            python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results --expected "$EXPECTED"
           '
-          tail -5 results/status_hz.txt; head -30 results/status_once.txt
 
       - name: Результаты (бэг не публикуется - это данные организаторов)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: tunnelguard-results
