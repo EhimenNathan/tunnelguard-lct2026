@@ -1,0 +1,41 @@
+{
+  "camera": "fixed forward-facing cab",
+  "source": "organizer new_synth_data saved clips",
+  "playback_rate": 2,
+  "fps": 20,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "scenes": [
+    {
+      "name": "Платформа",
+      "frames": 16,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 37.499876976013184,
+      "source_end_s": 38.49998700618744,
+      "video_start_s": 0.0,
+      "video_end_s": 19.25
+    },
+    {
+      "name": "Стрелка",
+      "frames": 30,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 72.4999989271164,
+      "source_end_s": 73.49990689754486,
+      "video_start_s": 19.25,
+      "video_end_s": 56.0
+    },
+    {
+      "name": "Тоннель",
+      "frames": 22,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 52.50010895729065,
+      "source_end_s": 54.40010595321655,
+      "video_start_s": 56.0,
+      "video_end_s": 83.2
+    }
+  ],
+  "duration_s": 83.2,
+  "output_bytes": 7015465
+}
