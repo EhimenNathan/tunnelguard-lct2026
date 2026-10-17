@@ -1,0 +1,77 @@
+# Облачная проверка Docker-образа (то же, что docker build / docker run на своей машине):
+#  1) сборка образа;  2) модульные тесты в контейнере;  3) тестовый бэг из записи Falcon организаторов (потоково по
+#  публичной ссылке, без скачивания архива);  4) офлайн-оценка бэга без сети;  5) живой запуск ROS 2 + RViz на
+#  виртуальном дисплее: снимок экрана RViz, частота /tunnel_guard/status;  6) публикация образа в ghcr.io.
+name: docker
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'docker/**', 'Dockerfile', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
+            'tools/export_bag.py', '.github/workflows/docker.yml']
+  workflow_dispatch:
+    inputs:
+      frames:
+        description: 'кадры записи Falcon для тестового бэга (first last)'
+        default: '0 300'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Освободить место на раннере
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+
+      - name: Сборка образа
+        run: docker build -t tunnel_guard .
+
+      - name: Модульные тесты в контейнере
+        run: docker run --rm tunnel_guard bash -c "cd /ws/src/tunnel_guard && python3 -m pytest -q test"
+
+      - name: Тестовый бэг из записи Falcon (потоково с Яндекс.Диска организаторов)
+        run: |
+          pip install --quiet zstandard numpy
+          F="${{ github.event.inputs.frames || '0 300' }}"
+          python tools/falcon_export_bag.py bags/falcon_test $F
+          ls -la bags/falcon_test
+
+      - name: Офлайн-оценка в контейнере без сети (--network none)
+        run: |
+          mkdir -p results
+          docker run --rm --network none -v "$PWD/bags:/data" -v "$PWD/results:/results" tunnel_guard \
+            ros2 run tunnel_guard evaluate_bag --bag /data/falcon_test --out /results/falcon_test
+          cat results/falcon_test_summary.json
+
+      - name: Живой запуск ROS 2 + RViz (виртуальный дисплей), снимок экрана и частота выдачи
+        run: |
+          docker run --rm -v "$PWD/bags:/data" -v "$PWD/results:/results" -e LIBGL_ALWAYS_SOFTWARE=1 tunnel_guard bash -c '
+            set -e
+            apt-get update -qq && apt-get install -y -qq xvfb imagemagick > /dev/null
+            Xvfb :99 -screen 0 1600x900x24 & export DISPLAY=:99; sleep 2
+            ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=true bag:=/data/falcon_test > /results/launch.log 2>&1 &
+            sleep 25
+            timeout 12 ros2 topic hz /tunnel_guard/status > /results/status_hz.txt 2>&1 || true
+            ros2 topic echo --once /tunnel_guard/status > /results/status_once.txt 2>&1 || true
+            import -window root /results/rviz.png
+            sleep 6; import -window root /results/rviz_2.png
+          '
+          tail -5 results/status_hz.txt; head -30 results/status_once.txt
+
+      - name: Результаты (бэг не публикуется - это данные организаторов)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tunnelguard-results
+          path: results/
+
+      - name: Публикация образа в ghcr.io (docker pull без сборки)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          IMG=ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/tunnel_guard
+          docker tag tunnel_guard $IMG:latest && docker push $IMG:latest

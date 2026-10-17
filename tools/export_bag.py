@@ -13,7 +13,6 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.getcwd())
-from loader import BagCache
 
 
 class Cdr:
@@ -76,6 +75,7 @@ def main():
     ap.add_argument('--topic', default='/lidar_points')
     ap.add_argument('--frame', default='hesai_lidar')
     a = ap.parse_args()
+    from loader import BagCache
     b = BagCache(a.name)
     first, last = (a.span + [0, b.n - 1])[:2] if a.span else (0, b.n - 1)
     os.makedirs(a.out, exist_ok=True)

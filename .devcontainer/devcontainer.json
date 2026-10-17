@@ -1,0 +1,13 @@
+{
+  "name": "TunnelGuard: ROS 2 Humble + RViz в браузере",
+  "build": { "dockerfile": "../Dockerfile", "context": ".." },
+  "overrideCommand": true,
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": { "password": "tunnelguard", "webPort": "6080" }
+  },
+  "forwardPorts": [6080],
+  "portsAttributes": { "6080": { "label": "Рабочий стол с RViz (noVNC)", "onAutoForward": "openBrowser" } },
+  "containerEnv": { "DISPLAY": ":1", "LIBGL_ALWAYS_SOFTWARE": "1", "TG_DATA": "/workspaces/bags" },
+  "hostRequirements": { "cpus": 4, "memory": "8gb" },
+  "postCreateCommand": "bash .devcontainer/setup.sh"
+}

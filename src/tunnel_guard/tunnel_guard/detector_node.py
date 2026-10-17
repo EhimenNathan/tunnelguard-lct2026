@@ -142,6 +142,9 @@ class TunnelGuardNode(Node):
         self.pub_cloud = self.create_publisher(PointCloud2, '~/cloud', QoSProfile(depth=2))
         self.declare_parameter('display_max_points', 150000)
         self.tf_static = StaticTransformBroadcaster(self) if HAVE_TF else None
+        self.declare_parameter('display_smoothing', 0.6)
+        self._disp = None
+        self._t_frames = []
         self.tf_key = None
         self.sub = None
         self.sub_topic = None
@@ -183,12 +186,14 @@ class TunnelGuardNode(Node):
             self.destroy_subscription(self.sub)
             self.detector.reset()
             self.last_stamp = None
+            self._disp = None
         self.sub = self.create_subscription(PointCloud2, topic, self._on_cloud, self.qos_in)
         self.sub_topic = topic
         self.silent_since = None
         self.get_logger().info(f'subscribed to {topic}')
 
     def _on_reset(self, request, response):
+        self._disp = None
         self.detector.reset()
         self.last_stamp = None
         response.success = True
@@ -207,6 +212,7 @@ class TunnelGuardNode(Node):
         if self.last_stamp is not None and (stamp < self.last_stamp - 1.0 or stamp > self.last_stamp + 30.0):
             self.get_logger().warn('time jumped (bag restarted or a different bag) - resetting state')
             self.detector.reset()
+            self._disp = None
         self.last_stamp = stamp
         fields = [(f.name, f.offset, f.datatype, f.count) for f in msg.fields]
         arr = cloud_to_arrays(fields, msg.data, msg.point_step, msg.is_bigendian)
@@ -326,42 +332,81 @@ class TunnelGuardNode(Node):
         def pt(q):
             return Point(x=float(q[0]), y=float(q[1]), z=float(q[2]))
 
-        if g is not None and g.ok and res.clear_distance > 2.0:
+        if g is not None and g.ok and max(res.clear_distance, res.envelope_range) > 2.0:
             step = float(self.get_parameter('marker_step').value)
-            xs = np.arange(1.0, res.clear_distance + 1e-6, step)
-            if xs[-1] < res.clear_distance:
-                xs = np.append(xs, res.clear_distance)
-            yc, zr = g.centre(xs), g.rail_z(xs)
+            far_end = max(res.envelope_range, res.clear_distance)
+            grid = np.arange(0.0, far_end + step, step)
+            yc_now, zr_now = g.centre(grid), g.rail_z(grid)
+            # display smoothing: the drawn envelope follows the estimate with a short time constant, so it neither
+            # flickers nor lags (decisions always use the unsmoothed estimate of the current frame)
+            a = float(self.get_parameter('display_smoothing').value)
+            prev = self._disp
+            if prev is not None and len(prev[0]) >= len(grid) and a > 0:
+                yc = a * prev[0][:len(grid)] + (1 - a) * yc_now
+                zr = a * prev[1][:len(grid)] + (1 - a) * zr_now
+            else:
+                yc, zr = yc_now, zr_now
+            self._disp = (np.r_[yc, np.full(4000, yc[-1])], np.r_[zr, np.full(4000, zr[-1])])
             prof = np.array(self.cfg.gauge.profile, float)       # (h, half-width) bottom -> top
             ring = np.concatenate([np.stack([prof[:, 1], prof[:, 0]], 1),
                                    np.stack([-prof[::-1, 1], prof[::-1, 0]], 1)])
-            P = np.stack([np.repeat(xs[:, None], len(ring), 1),
-                          yc[:, None] + ring[None, :, 0],
-                          zr[:, None] + ring[None, :, 1] + g.roll * ring[None, :, 0]], 2)       # (nx, nr, 3)
-            tube = mk('envelope', 0, Marker.TRIANGLE_LIST)
-            tube.scale.x = tube.scale.y = tube.scale.z = 1.0
-            tube.color.r, tube.color.g, tube.color.b = col
-            tube.color.a = 0.16
-            a, b = P[:-1, :-1].reshape(-1, 3), P[:-1, 1:].reshape(-1, 3)
-            c, d = P[1:, :-1].reshape(-1, 3), P[1:, 1:].reshape(-1, 3)
-            tri = np.stack([a, b, c, b, d, c], 1).reshape(-1, 3)
-            tube.points = [pt(q) for q in tri]
-            ma.markers.append(tube)
-            for k, j in enumerate((0, len(prof) - 1, len(prof), len(ring) - 1)):
-                e = mk('envelope_edges', k, Marker.LINE_STRIP)
-                e.scale.x = 0.06
-                e.color.r, e.color.g, e.color.b = col
-                e.color.a = 0.95
-                e.points = [pt(q) for q in P[:, j]]
-                ma.markers.append(e)
-            for k, dist in enumerate(range(50, int(res.clear_distance) + 1, 50)):
+
+            def section(x0, x1):
+                xs = grid[(grid >= x0) & (grid <= x1)]
+                if len(xs) < 2:
+                    return None
+                i = np.searchsorted(grid, xs)
+                return np.stack([np.repeat(xs[:, None], len(ring), 1),
+                                 yc[i][:, None] + ring[None, :, 0],
+                                 zr[i][:, None] + ring[None, :, 1] + g.roll * ring[None, :, 0]], 2)
+
+            def tube(P, mid, alpha):
+                m = mk('envelope', mid, Marker.TRIANGLE_LIST)
+                m.scale.x = m.scale.y = m.scale.z = 1.0
+                m.color.r, m.color.g, m.color.b = col
+                m.color.a = alpha
+                a_, b_ = P[:-1, :-1].reshape(-1, 3), P[:-1, 1:].reshape(-1, 3)
+                c_, d_ = P[1:, :-1].reshape(-1, 3), P[1:, 1:].reshape(-1, 3)
+                m.points = [pt(q) for q in np.stack([a_, b_, c_, b_, d_, c_], 1).reshape(-1, 3)]
+                return m
+
+            near_P = section(1.0, res.clear_distance)            # verified clear: solid envelope
+            far_P = section(res.clear_distance, far_end)         # far field (temporal evidence): early-warning zone
+            for mid, P, alpha in ((0, near_P, 0.18), (1, far_P, 0.06)):
+                if P is not None:
+                    ma.markers.append(tube(P, mid, alpha))
+            P = near_P if far_P is None else (far_P if near_P is None else np.concatenate([near_P, far_P[1:]]))
+            if P is not None:
+                for k, j in enumerate((0, len(prof) - 1, len(prof), len(ring) - 1)):
+                    e = mk('envelope_edges', k, Marker.LINE_STRIP)
+                    e.scale.x = 0.06
+                    e.color.r, e.color.g, e.color.b = col
+                    e.color.a = 0.95
+                    e.points = [pt(q) for q in P[:, j]]
+                    ma.markers.append(e)
+            for k, dist in enumerate(range(50, int(far_end) + 1, 50)):
+                i = int(np.searchsorted(grid, dist))
                 t = mk('distance_marks', k, Marker.TEXT_VIEW_FACING)
-                t.pose.position = Point(x=float(dist), y=float(g.centre(np.array([dist]))[0] - 2.2),
-                                        z=float(g.rail_z(np.array([dist]))[0]))
+                t.pose.position = Point(x=float(dist), y=float(yc[min(i, len(yc) - 1)] - 2.2), z=float(zr[min(i, len(zr) - 1)]))
                 t.scale.z = 0.6 + 0.012 * dist
                 t.color.r = t.color.g = t.color.b = 0.85
                 t.color.a = 0.9
                 t.text = f'{dist} m'
+                ma.markers.append(t)
+            for k, dz in enumerate(res.dust or []):
+                i = int(np.clip(np.searchsorted(grid, dz['distance']), 0, len(grid) - 1))
+                m = mk('dust', k, Marker.CUBE)
+                m.pose.position = Point(x=float(dz['distance'] + 1.5), y=float(yc[i]), z=float(zr[i] + 1.3))
+                m.scale.x, m.scale.y, m.scale.z = 3.0, 2.4, 2.4
+                m.color.r = m.color.g = m.color.b = 0.75
+                m.color.a = 0.25
+                ma.markers.append(m)
+                t = mk('dust_labels', k, Marker.TEXT_VIEW_FACING)
+                t.pose.position = Point(x=float(dz['distance'] + 1.5), y=float(yc[i]), z=float(zr[i] + 3.0))
+                t.scale.z = 0.6 + 0.01 * dz['distance']
+                t.color.r = t.color.g = t.color.b = 0.9
+                t.color.a = 1.0
+                t.text = 'DUST / AEROSOL (filtered)'
                 ma.markers.append(t)
         p = res.forward_points
         for o in res.obstacles:
@@ -386,7 +431,11 @@ class TunnelGuardNode(Node):
         st.color.r, st.color.g, st.color.b = col
         st.color.a = 1.0
         nd = '' if math.isnan(res.nearest_distance) else f' | obstacle {res.nearest_distance:.1f} m'
-        st.text = f'{LEVEL_NAMES[res.level]}{nd} | clear {res.clear_distance:.0f} m | {1e3 * res.timings["total"]:.0f} ms'
+        now = time.monotonic()
+        self._t_frames = [t for t in self._t_frames if now - t < 2.0] + [now]
+        hz = (len(self._t_frames) - 1) / max(self._t_frames[-1] - self._t_frames[0], 1e-3) if len(self._t_frames) > 1 else 0.0
+        st.text = (f'{LEVEL_NAMES[res.level]}{nd} | clear {res.clear_distance:.0f} m | envelope {res.envelope_range:.0f} m'
+                   f' | {1e3 * res.timings["total"]:.0f} ms | {hz:.1f} Hz')
         ma.markers.append(st)
         return ma
 

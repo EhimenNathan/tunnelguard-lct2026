@@ -10,49 +10,23 @@ Visualization Manager:
       Name: Grid
       Enabled: true
       Cell Size: 10
-      Plane Cell Count: 40
-      Color: 60; 60; 60
+      Plane Cell Count: 60
+      Color: 55; 55; 65
+      Offset:
+        X: 150
+        Y: 0
+        Z: -2
     - Class: rviz_default_plugins/PointCloud2
-      Name: Lidar
+      Name: Lidar (TunnelGuard view - grey by range, yellow near envelope, red inside, magenta obstacle)
       Enabled: true
       Topic:
-        Value: /lidar_points
+        Value: /tunnel_guard/cloud
         Reliability Policy: Best Effort
         Depth: 2
-      Size (m): 0.03
       Style: Points
-      Size (Pixels): 1
-      Color Transformer: Intensity
-      Channel Name: intensity
-      Use rainbow: true
-      Autocompute Intensity Bounds: false
-      Min Intensity: 0
-      Max Intensity: 60
+      Size (Pixels): 2
+      Color Transformer: RGB8
       Decay Time: 0
-    - Class: rviz_default_plugins/PointCloud2
-      Name: Lidar (hesai128 topic)
-      Enabled: true
-      Topic:
-        Value: /sensing/lidar/hesai128/pointcloud
-        Reliability Policy: Best Effort
-        Depth: 2
-      Style: Points
-      Size (Pixels): 1
-      Color Transformer: Intensity
-      Channel Name: intensity
-      Use rainbow: true
-      Autocompute Intensity Bounds: false
-      Min Intensity: 0
-      Max Intensity: 60
-    - Class: rviz_default_plugins/PointCloud2
-      Name: Envelope points
-      Enabled: true
-      Topic:
-        Value: /tunnel_guard/envelope_points
-      Style: Points
-      Size (Pixels): 3
-      Color Transformer: FlatColor
-      Color: 255; 170; 0
     - Class: rviz_default_plugins/PointCloud2
       Name: Obstacle points
       Enabled: true
@@ -61,28 +35,32 @@ Visualization Manager:
       Style: Points
       Size (Pixels): 6
       Color Transformer: FlatColor
-      Color: 255; 0; 0
+      Color: 255; 0; 255
     - Class: rviz_default_plugins/MarkerArray
-      Name: TunnelGuard markers
+      Name: Envelope, obstacles, dust, distances, status
       Enabled: true
       Topic:
         Value: /tunnel_guard/markers
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
   Global Options:
-    Background Color: 20; 20; 28
-    Fixed Frame: hesai_lidar
+    Background Color: 18; 18; 26
+    Fixed Frame: tunnel_guard
     Frame Rate: 30
   Views:
     Current:
-      Class: rviz_default_plugins/ThirdPersonFollower
-      Name: Current View
+      Class: rviz_default_plugins/Orbit
+      Name: Behind the train
       Target Frame: <Fixed Frame>
-      Distance: 45
-      Pitch: 0.35
-      Yaw: 1.57
+      Distance: 62
+      Pitch: 0.28
+      Yaw: 3.1416
       Focal Point:
-        X: 0
-        Y: -25
+        X: 45
+        Y: 0
         Z: 0
+      Near Clip Distance: 0.1
 Window Geometry:
   Width: 1600
   Height: 900
