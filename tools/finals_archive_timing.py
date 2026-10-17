@@ -13,7 +13,10 @@ def main(src,out):
  for k,(t,pc) in enumerate(frames(open(src,'rb'))):
   a=decode(pc);p=np.column_stack([a[key] for key in 'xyz']).astype(np.float32)
   tic=time.perf_counter();res=det.process(p,t,intensity=a.get('intensity'),ring=a.get('ring'));elapsed=(time.perf_counter()-tic)*1000
-  if k>=30:rows.append(dict(k=k,ms=elapsed,timings={key:float(v*1000) for key,v in res.timings.items()}))
+  if k>=30:
+   timed={'prep','geometry','envelope','tracking','total'}
+   rows.append(dict(k=k,ms=elapsed,timings={key:float(v*1000) for key,v in res.timings.items() if key in timed},
+                    diagnostics={key:float(v) for key,v in res.timings.items() if key not in timed}))
   if k>=119:break
  ms=[x['ms'] for x in rows]
  report=dict(archive=Path(src).name,python=platform.python_version(),platform=platform.platform(),frames=120,warmup=30,scored=len(rows),
