@@ -108,7 +108,7 @@ class TunnelGuardNode(Node):
         # live lidar drivers publish best effort (sensor data QoS); bag playback is forced to reliable by the launch file
         self.declare_parameter('input_reliability', 'best_effort')
         self.declare_parameter('publish_envelope_points', True)
-        self.declare_parameter('marker_step', 4.0)
+        self.declare_parameter('marker_step', 8.0)
         self.declare_parameter('display_hz', 5.0)
         self._display_last = -float('inf')
         self.cfg = P.default_config()
@@ -143,7 +143,7 @@ class TunnelGuardNode(Node):
         self.pub_obst_pts = self.create_publisher(PointCloud2, '~/obstacle_points', qos_out)
         self.pub_env_pts = self.create_publisher(PointCloud2, '~/envelope_points', qos_out)
         self.pub_cloud = self.create_publisher(PointCloud2, '~/cloud', QoSProfile(depth=2))
-        self.declare_parameter('display_max_points', 150000)
+        self.declare_parameter('display_max_points', 60000)
         self.tf_static = StaticTransformBroadcaster(self) if HAVE_TF else None
         self.declare_parameter('display_smoothing', 0.6)
         self._disp = None
@@ -422,13 +422,15 @@ class TunnelGuardNode(Node):
                 t.scale.z = 0.6 + 0.01 * dz['distance']
                 t.color.r = t.color.g = t.color.b = 0.9
                 t.color.a = 1.0
-                t.text = 'DUST / AEROSOL (filtered)'
+                t.text = 'ПЫЛЬ / АЭРОЗОЛЬ (фильтр)'
                 ma.markers.append(t)
         p = res.forward_points
         for o in res.obstacles:
             q = p[o['idx']] if p is not None and len(o['idx']) else None
-            c = q.mean(0) if q is not None else np.zeros(3)
-            ext = (q.max(0) - q.min(0)) if q is not None else np.zeros(3)
+            c = q.mean(0) if q is not None else np.asarray(o['centroid_fwd'], float).copy()
+            if o.get('held'):
+                c[0] = float(o['distance'])
+            ext = (q.max(0) - q.min(0)) if q is not None else np.asarray(o['size'], float)
             m = mk('obstacles', int(o['id']), Marker.CUBE)
             m.pose.position = pt(c)
             m.scale.x, m.scale.y, m.scale.z = (float(max(v, 0.3)) for v in ext)
