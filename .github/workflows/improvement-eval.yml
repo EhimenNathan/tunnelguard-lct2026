@@ -1,0 +1,38 @@
+name: improvement-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: improvement-eval
+  cancel-in-progress: true
+jobs:
+  paired-evaluation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Место и контейнеры
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker build -t tg_candidate .
+          BASE=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          echo "BASE=$BASE" >> "$GITHUB_ENV"
+          docker pull "$BASE"
+          df -h /
+      - name: Полная запись Falcon, потоковая загрузка без архива
+        run: |
+          pip install --quiet numpy zstandard
+          python tools/falcon_export_bag.py bags/falcon_test 0 4442
+      - name: Замороженная версия — 4443 кадра и 68 условий
+        run: |
+          mkdir -p results/baseline results/candidate
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$BASE" python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/baseline --ladder
+      - name: Новая версия — те же кадры, инъекции и seeds
+        run: |
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --ladder
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paired-improvement-results
+          path: results/
