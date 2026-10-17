@@ -49,7 +49,10 @@ def launch_setup(context):
     if bag and topic == 'auto':
         topic = bag_cloud_topic(bag) or 'auto'
     overrides = {'input_topic': topic}
-    play_cmd = ['ros2', 'bag', 'play', bag, '--rate', LaunchConfiguration('rate')]
+    # Publisher discovery must happen before the first cloud, not just before starting the player process.
+    play_cmd = ['ros2', 'bag', 'play', bag, '--rate', LaunchConfiguration('rate'), '--delay', '2.0']
+    if LaunchConfiguration('start_paused').perform(context).lower() in ('1', 'true', 'yes'):
+        play_cmd.append('--start-paused')
     if bag and topic != 'auto':
         # large clouds over best-effort DDS lose fragments; replaying a file must be lossless -> reliable on both ends
         qos_file = os.path.join(tempfile.gettempdir(), 'tunnel_guard_bag_qos.yaml')
@@ -93,6 +96,7 @@ def generate_launch_description():
         DeclareLaunchArgument('rviz', default_value='false'),
         DeclareLaunchArgument('bag', default_value='', description='rosbag2 directory to play (optional)'),
         DeclareLaunchArgument('rate', default_value='1.0'),
+        DeclareLaunchArgument('start_paused', default_value='false'),
         DeclareLaunchArgument('copy_bag', default_value='false',
                               description='copy the bag into the container first (use on Docker Desktop for Windows/macOS)'),
         DeclareLaunchArgument('play_delay', default_value='1.0',

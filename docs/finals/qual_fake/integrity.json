@@ -1,0 +1,7 @@
+{
+  "archive": "cloud_with_fake_obj.zst",
+  "bytes": 1746145824,
+  "decompressed_bytes": 6283067392,
+  "valid": false,
+  "error": "zstd decompress error: Data corruption detected"
+}

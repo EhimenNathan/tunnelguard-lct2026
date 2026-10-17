@@ -74,7 +74,10 @@ play() {
     ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger >/dev/null
     echo "playing $bag  (topic $topic, rate $rate)"
     echo "keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop"
-    ros2 bag play "$bag" --rate "$rate" --qos-profile-overrides-path "$qos" "$@" || true
+    local status=0
+    ros2 bag play "$bag" --rate "$rate" --delay 2.0 --qos-profile-overrides-path "$qos" "$@" || status=$?
+    # Ctrl+C is an expected console action; other failures must remain visible to scripts and CI.
+    [ "$status" -eq 0 ] || [ "$status" -eq 130 ] || return "$status"
 }
 
 bags() {

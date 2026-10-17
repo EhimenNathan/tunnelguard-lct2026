@@ -15,6 +15,8 @@ from tunnel_guard.core.geometry import HAVE_NATIVE
 from rclpy.node import Node
 from tunnel_guard_msgs.msg import ObstacleStatus
 from std_msgs.msg import Float32
+from rosbag2_interfaces.srv import Resume
+import yaml
 
 
 def main():
@@ -39,15 +41,27 @@ def main():
     sub = node.create_subscription(ObstacleStatus, '/tunnel_guard/status', receive, 1000)
     cb_sub = node.create_subscription(Float32, '/tunnel_guard/callback_ms', lambda m: callback_ms.append(float(m.data)), 1000)
     started = time.monotonic()
+    info = yaml.safe_load((Path(args.bag)/'metadata.yaml').read_text())['rosbag2_bagfile_information']
+    topic = next(t['topic_metadata']['name'] for t in info['topics_with_message_count'] if t['topic_metadata']['type']=='sensor_msgs/msg/PointCloud2')
+    resume = node.create_client(Resume, '/rosbag2_player/resume')
+    ready_since = None
+    resumed = False
     with (out / 'launch.log').open('w') as log:
         proc = subprocess.Popen(['ros2', 'launch', 'tunnel_guard', 'tunnel_guard.launch.py',
-                                 'rviz:=true', 'bag:=' + args.bag, 'play_delay:=3.0'],
+                                 'rviz:=true', 'bag:=' + args.bag, 'play_delay:=3.0', 'start_paused:=true'],
                                 stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         screenshot = False
         capture = None
         try:
             while time.monotonic() - started < 100:
                 rclpy.spin_once(node, timeout_sec=0.1)
+                ready = (resume.service_is_ready() and node.count_publishers('/tunnel_guard/status')>0
+                         and node.count_subscribers(topic)>0 and node.count_publishers(topic)>0)
+                if not resumed:
+                    ready_since = (ready_since or time.monotonic()) if ready else None
+                    if ready_since is not None and time.monotonic()-ready_since>1.0:
+                        resume.call_async(Resume.Request())
+                        resumed = True
                 if len(arrivals) >= 100 and capture is None:
                     # Capturing software-rendered RViz may take a second; never block the output subscriber.
                     capture = subprocess.Popen(['import', '-window', 'root', str(out / 'rviz.png')])
@@ -75,7 +89,7 @@ def main():
     hz = (len(times) - 1) / (times[-1] - times[0]) if len(times) > 1 else 0.0
     log_text = (out / 'launch.log').read_text()
     checks = dict(no_crash='Traceback' not in runtime_log and 'process has died' not in runtime_log,
-                  messages=len(arrivals) >= 0.95 * args.expected,
+                  messages=len(arrivals) == args.expected,
                   rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))
     report = dict(expected=args.expected, received=len(arrivals), output_hz=hz, native_geometry=HAVE_NATIVE,

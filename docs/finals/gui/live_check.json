@@ -1,0 +1,26 @@
+{
+  "expected": 301,
+  "received": 301,
+  "output_hz": 9.998424899244437,
+  "native_geometry": true,
+  "processing_ms_p50": 41.63866424560547,
+  "processing_ms_p95": 53.349674224853516,
+  "processing_ms_p99": 57.27652359008789,
+  "arrival_gap_ms_p99": 134.187266400005,
+  "processing_over_100ms": 0,
+  "callback_ms_p95": 77.11090240478515,
+  "shutdown_clean": false,
+  "stop_messages": 187,
+  "checks": {
+    "no_crash": true,
+    "messages": true,
+    "rate": true,
+    "stop": true,
+    "rviz": true,
+    "ordered": true
+  },
+  "passed": true,
+  "ci_run": 39021164621,
+  "commit": "4ae36ed",
+  "gui": "noVNC + Xvfb + Openbox + RViz"
+}
