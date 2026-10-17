@@ -14,7 +14,7 @@ class TrackerConfig:
     window: int = 5
     confirm_hits: int = 3
     max_misses_tentative: int = 2
-    max_misses_confirmed: int = 5
+    max_misses_confirmed: int = 10    # a confirmed track survives 1 s without detection (object permanence)
     gate_s_base: float = 1.2
     gate_s_rel: float = 0.02
     gate_l: float = 0.8
@@ -38,6 +38,8 @@ class Track:
     ls: list = field(default_factory=list)
     stop_hist: list = field(default_factory=list)   # recent frames with a STOP-eligible detection (1/0)
     obs: list = field(default_factory=list)   # (odometry segment, train position x, s) of matched detections
+    prev: dict = None                         # last matched cluster (kept while the track coasts)
+    zone_last: int = 0                        # zone reported the last time the object was seen
 
     @property
     def hit_count(self):
@@ -91,6 +93,7 @@ class Tracker:
                 tr.hits.append(1)
                 tr.misses = 0
                 tr.last = c
+                tr.prev = c
                 tr.ls.append(c['l_mean'])
                 tr.ls = tr.ls[-10:]
                 c['track'] = tr
@@ -107,7 +110,7 @@ class Tracker:
                        if k.misses <= (cfg.max_misses_confirmed if k.confirmed else cfg.max_misses_tentative) and k.s > -2.0]
         for j, c in enumerate(clusters):
             if not used[j]:
-                t = Track(self.next_id, c['s_min'], c['l_mean'], hits=[1], last=c, ls=[c['l_mean']],
+                t = Track(self.next_id, c['s_min'], c['l_mean'], hits=[1], last=c, prev=c, ls=[c['l_mean']],
                           v=float(ego_speed) if ego_speed is not None and np.isfinite(ego_speed) and ego_speed > 0 else 0.0)
                 c['track'] = t
                 self.tracks.append(t)

@@ -28,10 +28,10 @@ class FarFieldConfig:
     h_lo: float = 0.3               # core height band above the rail plane [m]
     h_hi: float = 2.6
     cell: float = 1.0               # along-track cell [m]
-    window: int = 10                # frames of evidence
-    min_frames: int = 5             # frames with hits (cell +-1) for a detection
+    window: int = 15                # frames of evidence
+    min_frames: int = 6             # frames with hits (cell +-1) for a detection
     min_points: int = 8             # points in the window
-    stop_frames: int = 8            # frames with hits for STOP
+    stop_frames: int = 9            # frames with hits for STOP
     floor_support: float = 1.1      # lowest return of the object must be below this height [m]
     sigma_l_max: float = 0.6        # geometry must be at least this certain laterally at the object
 
@@ -64,7 +64,7 @@ class FarField:
         self.ids[:-n] = self.ids[n:]
         self.ids[-n:] = 0
 
-    def update(self, p, g, s_from, s_to, travel=0.0):
+    def update(self, p, g, s_from, s_to, travel=0.0, exclude=None):
         """p: forward-frame points; g: TrackGeometry; evaluate s in [s_from, s_to]. Returns far obstacle dicts."""
         cfg = self.cfg
         if not cfg.enabled or g is None or not g.ok:
@@ -80,7 +80,8 @@ class FarField:
         row = self.k % cfg.window
         for a, fill in ((self.cnt, 0), (self.hmin, 9.0), (self.hmax, -9.0), (self.lsum, 0.0), (self.ssum, 0.0)):
             a[row] = fill
-        sel = np.flatnonzero((p[:, 0] > s_from - 2) & (p[:, 0] < s_to + 2))
+        sel = np.flatnonzero((p[:, 0] > s_from - 2) & (p[:, 0] < s_to + 2) &
+                             (True if exclude is None else ~exclude))      # scatter returns never count as evidence
         cells_now = np.zeros(0, np.int64)
         if len(sel):
             s, l, h = g.to_track(p[sel])

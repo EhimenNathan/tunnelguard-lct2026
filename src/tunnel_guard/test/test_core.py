@@ -83,11 +83,12 @@ def test_ray_hits_box():
 def test_end_to_end_clear_and_obstacle():
     cfg = DetectorConfig(forward_axis='x')
     det = ObstacleDetector(cfg)
-    for k in range(5):
+    # start-up (~2 s): mounting self-calibration (8 frames) and geometry settling (10 stable frames)
+    for k in range(20):
         res = det.process(make_tunnel(radius=800.0, seed=k), 0.1 * k)
-    assert res.level == LEVEL_CLEAR, [(o['distance'], o['lateral'], o['height']) for o in res.obstacles]
-    for k in range(5, 10):
-        res = det.process(make_tunnel(radius=800.0, seed=k, obstacles=[(90.0 - 1.0 * (k - 5), 0.0, 0.6, 0.6, 1.0)]), 0.1 * k)
+        assert res.level == LEVEL_CLEAR, [(o['distance'], o['lateral'], o['height']) for o in res.obstacles]
+    for k in range(20, 25):
+        res = det.process(make_tunnel(radius=800.0, seed=k, obstacles=[(90.0 - 1.0 * (k - 20), 0.0, 0.6, 0.6, 1.0)]), 0.1 * k)
     assert res.level == LEVEL_STOP
     assert abs(res.nearest_distance - 86.0) < 2.0
 
@@ -212,3 +213,52 @@ def test_router_loads_hanging_expert_next_to_main_scorer():
     assert solo.scorer_hang is None
     rules = ObstacleDetector(DetectorConfig(scorer_model='none'))
     assert rules.scorer is None and rules.scorer_hang is None
+
+
+def test_scatter_separates_aerosol_from_solid_surface():
+    """A solid surface returns from one depth per line of sight; an aerosol cloud from many."""
+    from tunnel_guard.core.detector import ObstacleDetector as Det
+    det = Det(DetectorConfig())
+    rng = np.random.default_rng(1)
+    # solid: a 0.6 x 1.7 m person-like plate at 40 m
+    yy, zz = np.meshgrid(np.linspace(-0.3, 0.3, 12), np.linspace(-1.5, 0.2, 30))
+    solid = np.column_stack([np.full(yy.size, 40.0) + rng.normal(0, 0.02, yy.size), yy.ravel(), zz.ravel()])
+    cloud = np.column_stack([rng.uniform(38, 41, 300), rng.uniform(-1, 1, 300), rng.uniform(-1.5, 0.5, 300)])
+    assert det._scatter_flags(solid).mean() < 0.1
+    assert det._scatter_flags(cloud).mean() > 0.7
+    # a person 30 m behind a dust cloud stays a person (returns farther apart than scatter_depth_max)
+    both = np.vstack([cloud, solid + np.array([30.0, 0, 0])])
+    assert det._scatter_flags(both)[len(cloud):].mean() < 0.1
+
+
+def test_mount_calibration_recovers_pitch():
+    from tunnel_guard.core.cloud import MountCalibrator
+    pitch = np.radians(3.0)
+    cal = MountCalibrator(frames=3)
+    rng = np.random.default_rng(2)
+    for _ in range(3):
+        x = rng.uniform(5, 40, 4000); y = rng.uniform(-3, 3, 4000)
+        z = np.full(4000, -2.0) + rng.normal(0, 0.01, 4000)        # level floor 2 m below the lidar
+        # sensor pitched up by 3 deg: the floor appears to fall away with distance
+        p = np.column_stack([x * np.cos(pitch) + z * np.sin(pitch), y, -x * np.sin(pitch) + z * np.cos(pitch)])
+        R = cal.update(p)
+    lev = p @ R.T
+    slope = np.polyfit(lev[:, 0], lev[:, 2], 1)[0]
+    assert abs(np.degrees(np.arctan(slope))) < 0.2
+
+
+def test_farfield_accumulates_faint_persistent_object():
+    from tunnel_guard.core.farfield import FarField, FarFieldConfig
+    from tunnel_guard.core.geometry import TrackGeometry
+    xs = np.arange(0.0, 501.0)
+    g = TrackGeometry(xs, np.zeros(len(xs)), np.full(len(xs), -1.8), ok=True)
+    ff = FarField(FarFieldConfig())
+    rng = np.random.default_rng(3)
+    found = []
+    for k in range(20):
+        person = np.column_stack([np.full(3, 280.0) + rng.normal(0, 0.05, 3), rng.normal(0, 0.1, 3), rng.uniform(-1.3, -0.3, 3)])
+        noise = np.column_stack([rng.uniform(100, 400, 2), rng.uniform(-0.8, 0.8, 2), rng.uniform(-1.4, 0.6, 2)])
+        out = ff.update(np.vstack([person, noise]).astype(np.float32), g, 60.0, 450.0)
+        found.append(out)
+    assert any(abs(o['distance'] - 280.0) < 2 for o in found[-1]) and found[-1][0]['zone'] == IN_GAUGE
+    assert all(abs(o['distance'] - 280.0) < 3 for o in found[-1])              # random single returns never accumulate

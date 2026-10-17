@@ -65,6 +65,17 @@ class DetectorConfig:
     shell_hanging_h: float = 0.8       # a shell-attached cluster whose bottom is above this is 'hanging', not infrastructure
     shell_touch_min: float = 0.25      # max gap between cluster top and shell for attachment [m]
     shell_touch_beams: float = 3.0     #   or this many vertical beam spacings at the cluster's range
+    shell_edge_l: float = 0.75         # only clusters reaching this close to the envelope edge can be infrastructure: fixed
+                                       # structure never stands in the core of the kinematic envelope, a hanging cable can
+    scatter_check: bool = True          # dust / aerosol / spray: volumetric returns cannot trigger STOP
+    scatter_cell_deg: float = 0.3       # angular cell for the depth-spread test
+    scatter_depth: float = 0.5          # a solid surface returns at one depth per line of sight; a cloud at many [m]
+    scatter_frac: float = 0.5           # ... share of a cluster's returns that are scatter returns
+    scatter_depth_max: float = 5.0      # returns further apart along the line of sight are different objects (a person
+                                        # behind a dust cloud stays a person)
+    scatter_min_cells: int = 3
+    hold_frames: int = 10              # a confirmed STOP object that drops out (thin wire between beams, below the field of
+                                       # view when very close) is held at its predicted distance for up to this many frames
     geometry: GeometryConfig = field(default_factory=GeometryConfig)
     gauge: GaugeConfig = field(default_factory=GaugeConfig)
     cluster: ClusterConfig = field(default_factory=ClusterConfig)
@@ -106,6 +117,7 @@ class FrameResult:
     all_candidates: list = None
     features: np.ndarray = None
     envelope_range: float = 0.0     # how far the envelope is evaluated (frame pipeline + far-field evidence)
+    dust: list = None               # volumetric scatter zones (dust, aerosol, spray): information only
 
 
 class ObstacleDetector:
@@ -160,6 +172,55 @@ class ObstacleDetector:
             # demonstrated reach: the 10th farthest return ahead (robust to single spurious points)
             self._reach = max(self._reach, float(np.partition(p[:, 0], len(p) - 10)[len(p) - 10]))
         return min(self._reach + 1.0, self.cfg.max_range)
+
+    def _scatter_flags(self, q):
+        """Per-point scatter flag: another return in the same small solid angle lies scatter_depth..scatter_depth_max
+        in front of or behind it.  A solid surface returns from one depth per line of sight; a cloud from many."""
+        cfg = self.cfg
+        flag = np.zeros(len(q), bool)
+        if len(q) < 2:
+            return flag
+        r = np.sqrt(np.einsum('ij,ij->i', q, q))
+        az = np.degrees(np.arctan2(q[:, 1], q[:, 0]))
+        el = np.degrees(np.arctan2(q[:, 2], np.hypot(q[:, 0], q[:, 1])))
+        key = np.floor(az / cfg.scatter_cell_deg).astype(np.int64) * 100003 + \
+            np.floor(el / cfg.scatter_cell_deg).astype(np.int64)
+        o = np.lexsort((r, key))
+        k, rr = key[o], r[o]
+        kr = (k - k.min()).astype(np.float64) * 1e5 + rr          # cells far apart on one sorted axis (r < 1e4 m)
+        j_up = np.searchsorted(kr, kr + cfg.scatter_depth)        # first return at least scatter_depth deeper
+        j_dn = np.searchsorted(kr, kr - cfg.scatter_depth, side='right') - 1
+        n = len(kr)
+        up_ok = j_up < n
+        ju = np.minimum(j_up, n - 1)
+        f = up_ok & (k[ju] == k) & (rr[ju] - rr < cfg.scatter_depth_max)
+        dn_ok = j_dn >= 0
+        jd = np.maximum(j_dn, 0)
+        f |= dn_ok & (k[jd] == k) & (rr - rr[jd] < cfg.scatter_depth_max)
+        flag[o] = f
+        return flag
+
+    def _scatter(self, q):
+        """Volumetric scatter (dust, aerosol, spray, smoke) versus a solid surface.  Within one small solid angle a
+        solid object returns from a single depth; a cloud returns from many.  True when the depth spread inside the
+        angular cells that hold several returns is large in most of them."""
+        cfg = self.cfg
+        if len(q) < 6:
+            return False
+        r = np.sqrt(np.einsum('ij,ij->i', q, q))
+        az = np.degrees(np.arctan2(q[:, 1], q[:, 0]))
+        el = np.degrees(np.arctan2(q[:, 2], np.hypot(q[:, 0], q[:, 1])))
+        key = np.floor(az / cfg.scatter_cell_deg).astype(np.int64) * 100003 + \
+            np.floor(el / cfg.scatter_cell_deg).astype(np.int64)
+        o = np.argsort(key, kind='stable')
+        k, rr = key[o], r[o]
+        starts = np.r_[0, np.nonzero(np.diff(k))[0] + 1]
+        ends = np.r_[starts[1:], len(k)]
+        multi = (ends - starts) >= 2
+        if np.count_nonzero(multi) < cfg.scatter_min_cells:
+            return False
+        spread = np.maximum.reduceat(rr, starts)[multi] - np.minimum.reduceat(rr, starts)[multi]
+        return bool(np.mean(spread > cfg.scatter_depth) >= cfg.scatter_frac)
 
     def _near(self, lo, hi):
         nmax = len(self._nb_starts) - 1
@@ -312,6 +373,11 @@ class ObstacleDetector:
             zone_sub[(zone_sub == IN_GAUGE) & (s > measured)] = NEAR_GAUGE
         zone = np.zeros(len(p), np.uint8)
         zone[np.nonzero(near_env)[0]] = zone_sub
+        # scatter returns (dust, aerosol, spray) among envelope points and the far corridor
+        scat = np.zeros(len(p), bool)
+        if cfg.scatter_check:
+            sc_idx = np.flatnonzero((zone > 0) | ((p[:, 0] > cfg.farfield.s_min) & (np.abs(p[:, 1]) < 6.0)))
+            scat[sc_idx] = self._scatter_flags(p[sc_idx])
         e = zone_sub > 0
         eidx = np.nonzero(near_env)[0][e]
         clusters = self.clusterer.run(s[e], l[e], h[e], zone_sub[e],
@@ -325,6 +391,8 @@ class ObstacleDetector:
         for c in cands_all:
             c['in_gauge_raw'] = c['in_gauge']
             c['gravity_fail'] = c['s_min'] > cfg.gravity_min_s and c['h_min'] > cfg.gravity_max_base
+            c['scatter'] = cfg.scatter_check and len(c['idx']) >= 3 and \
+                float(np.mean(scat[c['idx']])) >= cfg.scatter_frac
             c['shape_fail'] = (c['s_min'] > cfg.extent_min_s and c['n'] < cfg.extent_min_points_exempt and
                                c['h_max'] - c['h_min'] < cfg.extent_min_beams * cfg.cluster.beam_vertical_rad * c['s_min'])
             left, right = self._wall_counts(c, s, l, h)
@@ -338,14 +406,15 @@ class ObstacleDetector:
             # infrastructure = a floor-to-roof slice attached to the shell (tunnel wall at a curve, pole); an object hanging
             # from the roof whose bottom is clear of the floor is a hazard and is judged by the scorer instead
             c['shell'] = (cfg.shell_check and c['h_max'] >= cfg.shell_min_height and c['shell_pts'] >= cfg.shell_min_points
-                          and c['h_min'] < cfg.shell_hanging_h)
+                          and c['h_min'] < cfg.shell_hanging_h
+                          and max(abs(c['l_min']), abs(c['l_max'])) >= cfg.shell_edge_l)
         # rule-based decision path: suspended / sliver clusters cannot trigger STOP; uncontained or shell-attached
         # clusters are infrastructure
         cands = []
         for c in cands_all:
-            if c['gravity_fail'] or c['shape_fail']:
+            if c['gravity_fail'] or c['shape_fail'] or c['scatter']:
                 c['in_gauge'] = 0
-            if c['contained'] and not c['shell']:
+            if c['contained'] and not c['shell'] and not c['scatter']:
                 cands.append(c)
         tm['envelope'] = time.perf_counter() - t2
         tm['sight'] = sight
@@ -385,11 +454,11 @@ class ObstacleDetector:
                 hist.append(float(mg))
                 del hist[:-(cfg.scorer_smooth_k or self.scorer.smooth_k)]
                 c['score'] = tau + float(np.mean(hist))      # = smoothed probability when a single scorer is used
-                rule_kept = c['contained'] and not c['shell']
+                rule_kept = c['contained'] and not c['shell'] and not c['scatter']
                 rule_stop = rule_kept and c['in_gauge'] >= cfg.min_in_gauge_points
                 # physical evidence of fixed infrastructure (attachment to the tunnel shell) is a hard veto
                 ml_stop = (c['in_gauge_raw'] >= cfg.min_in_gauge_points and c['score'] >= tau
-                           and not (cfg.scorer_shell_veto and c['shell']))
+                           and not (cfg.scorer_shell_veto and c['shell']) and not c['scatter'])
                 eligible = ml_stop or (rule_stop and c['s_min'] < cfg.scorer_near_override_s)
                 if eligible or rule_kept:
                     c['in_gauge'] = c['in_gauge_raw'] if eligible else 0
@@ -406,6 +475,18 @@ class ObstacleDetector:
                 del tr.obs[:-cfg.ego_history]
         obstacles = []
         for tr in tracks:
+            if tr.confirmed and tr.last is None and tr.prev is not None and tr.zone_last == IN_GAUGE \
+                    and tr.misses <= cfg.hold_frames and tr.s > 0.5:
+                # object permanence: keep a STOP object that briefly drops out, at its predicted distance
+                c = tr.prev
+                vv = max(tr.v, 0.0)
+                obstacles.append(dict(id=tr.id, zone=IN_GAUGE, distance=float(tr.s), range=float(tr.s),
+                                      centroid=c['centroid'] @ Rm, nearest=c['nearest'] @ Rm, centroid_fwd=c['centroid'],
+                                      size=(c['s_max'] - c['s_min'], c['l_max'] - c['l_min'], c['h_max'] - c['h_min']),
+                                      lateral=c['l_mean'], height=c['h_max'], n=0, confidence=0.5, closing_speed=vv,
+                                      ttc=tr.s / vv if vv > 0.3 else float('inf'), age=tr.age,
+                                      idx=np.zeros(0, np.int64), ego_veto=False, held=True))
+                continue
             if not tr.confirmed or tr.last is None:
                 tr.stop_hist = (tr.stop_hist + [0])[-cfg.stop_debounce_window:]
                 continue
@@ -417,6 +498,7 @@ class ObstacleDetector:
             tr.stop_hist = (tr.stop_hist + [int(zone_c == IN_GAUGE)])[-cfg.stop_debounce_window:]
             if zone_c == IN_GAUGE and c['s_min'] >= cfg.stop_debounce_s and sum(tr.stop_hist) < cfg.stop_debounce_frames:
                 zone_c = NEAR_GAUGE
+            tr.zone_last = zone_c
             v = tr.v
             ttc = tr.s / v if v > 0.3 else float('inf')
             conf = float(c['score']) if 'score' in c else float(np.clip(0.25 * tr.hit_count + 0.05 * min(c['n'], 10), 0.0, 1.0))
@@ -425,6 +507,8 @@ class ObstacleDetector:
                                   size=(c['s_max'] - c['s_min'], c['l_max'] - c['l_min'], c['h_max'] - c['h_min']),
                                   lateral=c['l_mean'], height=c['h_max'], n=c['n'], confidence=conf,
                                   closing_speed=v, ttc=ttc, age=tr.age, idx=c['idx'], ego_veto=ego_veto))
+        # dust / aerosol zones (volumetric scatter): reported for information, never as obstacles
+        dust = [dict(distance=float(c['s_min']), n=int(c['n']), far=False) for c in cands_all if c.get('scatter')]
         # far field: temporal evidence beyond the range this frame can confirm on its own
         env_range = horizon
         if cfg.farfield.enabled and g.ok and settled:
@@ -432,7 +516,10 @@ class ObstacleDetector:
             far_from = cfg.farfield.s_min
             if far_to > far_from:
                 env_range = max(env_range, far_to)
-                for f in self.far.update(p, g, far_from, far_to, travel):
+                for f in self.far.update(p, g, far_from, far_to, travel, exclude=scat):
+                    if any(abs(f['distance'] - d['distance']) < 5.0 for d in dust) or                             (cfg.scatter_check and len(f['idx']) >= 6 and self._scatter(p[f['idx']])):
+                        dust.append(dict(distance=f['distance'], n=int(len(f['idx'])), far=True))
+                        continue
                     dup = [o for o in obstacles if abs(f['distance'] - o['distance']) < 6.0]
                     if dup:
                         # the same object seen by the frame pipeline: temporal evidence can only raise its zone
@@ -475,5 +562,5 @@ class ObstacleDetector:
         self._last = FrameResult(stamp=stamp, level=level, obstacles=obstacles, nearest_distance=nearest, nearest_ttc=ttc,
                            clear_distance=clear, curvature=g.curvature(20.0) if g.ok else 0.0, geometry=g,
                            timings=tm, candidates=cands, forward_points=p, zone=zone, rotation=Rm,
-                           all_candidates=cands_all, features=feats, envelope_range=float(env_range))
+                           all_candidates=cands_all, features=feats, envelope_range=float(env_range), dust=dust)
         return self._last
