@@ -1,0 +1,44 @@
+{
+  "archive": "new_synth_data.zst",
+  "archive_bytes": 2532818915,
+  "commit": "ca407f5624d806036c45c75883179a344a019a29",
+  "frames": 1667,
+  "duration_s": 166.39999985694885,
+  "stop_frames": 440,
+  "caution_frames": 546,
+  "geometry_ok": 1577,
+  "steady_frames": 1577,
+  "dust_flagged_frames": 596,
+  "obstacle_range_max": 172.5882787459936,
+  "p95_ms": 276.1582000013731,
+  "ground_truth": "Нет независимых меток классов/препятствий; число dust flags не доказывает наличие настоящей пыли; FP/FN неизвестны",
+  "complete": true,
+  "pieces": 3,
+  "provenance_note": "Полный потоковый прогон с ring; ядро эквивалентно ca407f5. Скрипт до добавления partial-error обработки; кадров ровно 386+736+545 по metadata.",
+  "by_piece": [
+    {
+      "piece": "./synthetic_platform_cloud_only/synthetic_platform_cloud_only_0.db3",
+      "frames": 386,
+      "stop": 233,
+      "caution": 88,
+      "dust_frames": 55,
+      "duration_s": 38.49998700618744
+    },
+    {
+      "piece": "synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3",
+      "frames": 736,
+      "stop": 144,
+      "caution": 314,
+      "dust_frames": 266,
+      "duration_s": 73.49990689754486
+    },
+    {
+      "piece": "synthetic_tunnels_cloud_only/synthetic_tunnels_cloud_only_0.db3",
+      "frames": 545,
+      "stop": 63,
+      "caution": 144,
+      "dust_frames": 275,
+      "duration_s": 54.40010595321655
+    }
+  ]
+}

@@ -26,7 +26,11 @@ def main():
   ax.plot(x,[100*r['stop'] for r in rows],'-s',color=RED,label='СТОП',lw=2,ms=4)
   axes_style(ax);ax.set_title(title,loc='left',fontweight='bold',pad=13,color=INK)
   ax.set_ylim(-3,106);ax.set_xlim(55,305);ax.set_xticks([60,100,150,180,200,230,260,280,300]);ax.set_xlabel('Дистанция инъекции, м');ax.set_ylabel('Доля 50 кадров, %')
-  if kind=='dust':ax.text(175,45,'0 / 850 кадров СТОП\n17 дистанций',ha='center',color=CYAN,fontsize=16,fontweight='bold')
+  if kind=='dust':
+   ax.text(175,40,'0 / 850 кадров СТОП\n17 дистанций',ha='center',color=CYAN,fontsize=16,fontweight='bold')
+   if (D/'dust_zones.json').exists():
+    dust=json.loads((D/'dust_zones.json').read_text(encoding='utf-8'))
+    ax.plot([z['distance'] for z in dust],[100*z['dust_zone_rate'] for z in dust],'-^',color=GOLD,label='Информационная зона пыли',lw=2,ms=4)
   ax.legend(loc='lower left' if kind=='person' else 'upper right',frameon=False,labelcolor=INK,fontsize=10)
  fig.suptitle('ЛЕСТНИЦА ДАЛЬНОСТЕЙ · ТЕКУЩИЙ FALCON',x=.07,ha='left',y=.97,fontsize=20,fontweight='bold')
  fig.text(.07,.92,'Реальный фон + синтетические лучевые инъекции · все 68 условий, включая неудачи',color=MUTED,fontsize=12)

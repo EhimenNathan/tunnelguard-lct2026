@@ -75,7 +75,7 @@ def frame_image(f,title,chapter,focus=False):
     sx=1390
     text(d,(sx,250),'РЕШЕНИЕ СИСТЕМЫ',17,MUTED)
     text(d,(sx,286),['СВОБОДНО','ВНИМАНИЕ','СТОП'][f['level']],44,[CYAN,GOLD,RED][f['level']],True)
-    values=[('Цель по траектории',f'{target:.1f} м'),('Габарит / экстраполяция',f"{f['env']:.0f} м"),
+    values=[('Цель по траектории',f'{target:.1f} м' if f.get('truth_x') is not None else 'нет разметки'),('Габарит / экстраполяция',f"{f['env']:.0f} м"),
             ('Измеренная геометрия',f"{f['measured']:.0f} м"),('Свободный путь',f"{f['clear']:.0f} м")]
     for i,(label,val) in enumerate(values):
         y=383+i*110;text(d,(sx,y),label,20,MUTED);text(d,(sx,y+35),val,34,INK,True)
@@ -89,7 +89,7 @@ def main(web,out):
     s=json.loads((data/'finals_summary.json').read_text());cloud=json.loads((data/'cloud_live.json').read_text())
     ladder=json.loads((data/'finals_ladder.json').read_text())
     writer=imageio.get_writer(out,fps=FPS,codec='libx264',macro_block_size=2,
-                            ffmpeg_params=['-crf','22','-preset','fast','-pix_fmt','yuv420p'])
+                            ffmpeg_params=['-crf','22','-preset','fast'])
     def put(im,seconds):
         a=np.asarray(im)
         for _ in range(int(seconds*FPS)):writer.append_data(a)
@@ -106,6 +106,7 @@ def main(web,out):
            ('falcon_clip_3.json','Пыль и человек: разный физический отклик','04 / СИНТЕТИКА В РЕАЛЬНОМ ФОНЕ',False)]
     for filename,title,chapter,focus in specs:
         frames=json.loads((data/filename).read_text())
+        if filename=='falcon_clip_0.json':frames=frames[18:]
         for f in frames:
             im=frame_image(f,title,chapter,focus)
             put(im,.15)
@@ -126,7 +127,10 @@ def main(web,out):
             d.rectangle((x,y-400*v,x+35,y),fill=CYAN);d.rectangle((x+38,y-400*stop,x+73,y),fill=RED)
             text(d,(x,y+20),row['distance'],18,MUTED)
             text(d,(x-2,y-400*v-35),f'{100*v:.0f}%',17,INK)
-        text(d,(95,290),'Обнаружение',23,CYAN);text(d,(370,290),'СТОП',23,RED)
+        text(d,(95,290),'Ложное препятствие' if kind=='dust' else 'Обнаружение',23,CYAN);text(d,(440,290),'Ложный СТОП' if kind=='dust' else 'СТОП',23,RED)
+        if kind=='dust':
+            text(d,(200,470),'0 ложных СТОП / 850 кадров с пылью',48,CYAN,True)
+            text(d,(200,565),'Зона пыли измеряется отдельно; на 300 м флаг пропадает.',28,MUTED)
         put(im,4)
     im=canvas('07 / ИЗМЕРЕННЫЙ РЕЗУЛЬТАТ','Числа, которые можно проверить.');d=ImageDraw.Draw(im)
     vals=[(f"{s['first_detection']['truth_x']:.1f} м",'первое обнаружение человека по автоматической траектории'),
@@ -137,6 +141,10 @@ def main(web,out):
         y=295+i*145;text(d,(85,y),val,49,CYAN,True);text(d,(500,y+14),label,25,INK)
     text(d,(85,915),'Автотраектория — proxy, не независимая ручная разметка. Дальний диапазон требует улучшения.',21,MUTED)
     put(im,5)
+    for filename,title in [('ablation_current.png','Вклад компонентов: текущий этап'),('distance_ladder_current.png','Все 68 условий: включая пропуски')]:
+        plot=Image.open(web/'assets'/filename).convert('RGB');plot.thumbnail((1800,780))
+        im=canvas('08 / КОНТРОЛИРУЕМЫЕ ЭКСПЕРИМЕНТЫ',title)
+        im.paste(plot,((W-plot.width)//2,245));put(im,5)
     im=canvas('08 / ПРОВЕРИТЬ САМОСТОЯТЕЛЬНО','Docker и RViz — в облаке.');d=ImageDraw.Draw(im)
     text(d,(90,330),'Codespaces → порт 6080 → рабочий стол → tg play',42,CYAN,True)
     for i,t in enumerate(['Пробел — пауза / продолжить','↑ / ↓ — скорость · → — следующий кадр','Ctrl+C → tg play другой_бэг · контейнер продолжает работать']):text(d,(90,450+i*80),t,30,INK)
