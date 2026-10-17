@@ -4,6 +4,8 @@ python tools/finals_cab_video.py web OUTPUT.mp4
 Показаны только сохранённые кадры, без интерполяции облаков/детекций.
 """
 import json
+import hashlib
+import subprocess
 import sys
 from pathlib import Path
 import numpy as np
@@ -97,6 +99,9 @@ def main(web,out):
     durations=[p['duration_s'] for p in json.loads((web.parent/'docs/finals/new_synth/summary.json').read_text())['by_piece']]
     writer=imageio.get_writer(str(out),fps=FPS,codec='libx264',macro_block_size=2,pixelformat='yuv420p',ffmpeg_params=['-crf','19','-preset','fast'])
     manifest={'camera':'fixed forward-facing cab','source':'organizer new_synth_data saved clips','playback_rate':2,'fps':FPS,'resolution':[W,H],'scenes':[]}
+    manifest['detector_commit']=json.loads((web.parent/'docs/finals/new_synth/summary.json').read_text())['commit']
+    manifest['generator_commit']=subprocess.check_output(['git','rev-parse','HEAD'],cwd=web.parent,text=True).strip()
+    manifest['clip_sha256']={name:hashlib.sha256((web/f'data/new_synth_{name}.json').read_bytes()).hexdigest() for name in ['platform','switch','tunnels']}
     count=0
     try:
         for i,frames in enumerate(scenes):

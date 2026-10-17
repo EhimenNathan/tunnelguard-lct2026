@@ -16,7 +16,7 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           docker build -t tg_candidate .
-          BASE=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          BASE=ghcr.io/ehimennathan/tunnel_guard@sha256:895bd41b9f00e53b64f38b32d576146945758c28672c74e3a649e51a9215e0ab
           echo "BASE=$BASE" >> "$GITHUB_ENV"
           docker pull "$BASE"
           df -h /
@@ -31,6 +31,8 @@ jobs:
       - name: Новая версия — те же кадры, инъекции и seeds
         run: |
           docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --ladder
+      - name: Пороги качества перед публикацией
+        run: python3 tools/finals_compare_gate.py results/baseline results/candidate results/quality_gates.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
