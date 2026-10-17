@@ -1,15 +1,15 @@
 {
   "expected": 301,
   "received": 301,
-  "output_hz": 9.998164130807162,
+  "output_hz": 9.922519218555447,
   "native_geometry": true,
-  "processing_ms_p50": 40.57674789428711,
-  "processing_ms_p95": 50.29203414916992,
-  "processing_ms_p99": 54.66281509399414,
-  "arrival_gap_ms_p99": 125.99201172997199,
+  "processing_ms_p50": 22.322298049926758,
+  "processing_ms_p95": 28.61163330078125,
+  "processing_ms_p99": 34.033935546875,
+  "arrival_gap_ms_p99": 845.6410519201088,
   "processing_over_100ms": 0,
-  "callback_ms_p95": 71.405721282959,
-  "shutdown_clean": false,
+  "callback_ms_p95": 39.5162353515625,
+  "shutdown_clean": true,
   "stop_messages": 187,
   "checks": {
     "no_crash": true,
@@ -20,6 +20,7 @@
     "ordered": true
   },
   "passed": true,
-  "ci_run": 39004731113,
-  "commit": "ca407f5"
+  "ci_run": 39023316258,
+  "commit": "32357fa",
+  "gui": "noVNC + Xvfb + Openbox + RViz"
 }

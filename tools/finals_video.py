@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 import imageio.v2 as imageio
 
 W,H,FPS=1920,1080,20
+PROFILE=None
 BG='#070d15';PANEL='#0c1723';INK='#e9f1f4';MUTED='#8b9da9';CYAN='#6cdeeb';RED='#ff7379';GOLD='#f1c37d'
 fonts=Path('C:/Windows/Fonts')
 def font(size,bold=False):
@@ -50,12 +51,13 @@ def frame_image(f,title,chapter,focus=False):
     for x,y in xy[ok]:d.ellipse((x-1,y-1,x+1,y+1),fill='#7e9aaf')
     line=np.asarray(f['line'])
     if len(line):
-        for lat,h in [(-1.45,0),(1.45,0),(-1.45,3.5),(1.45,3.5)]:
+        for lat,h in [(-PROFILE[0][1],PROFILE[0][0]),(PROFILE[0][1],PROFILE[0][0]),(-PROFILE[-1][1],PROFILE[-1][0]),(PROFILE[-1][1],PROFILE[-1][0])]:
             q=line+np.array([0,lat,h]);xx,v=project(q,eye,look,rect)
             for i in range(1,len(xx)):
                 if v[i] and v[i-1]:d.line([tuple(xx[i-1]),tuple(xx[i])],fill=CYAN if q[i,0]<=f['measured'] else '#576986',width=2)
         for x,y,z in line[::2]:
-            q=np.array([[x,y-1.45,z],[x,y+1.45,z],[x,y+1.45,z+3.5],[x,y-1.45,z+3.5],[x,y-1.45,z]])
+            ring=np.array([[w,h] for h,w in PROFILE]+[[-w,h] for h,w in PROFILE[::-1]]+[[PROFILE[0][1],PROFILE[0][0]]])
+            q=np.column_stack([np.full(len(ring),x),y+ring[:,0],z+ring[:,1]])
             xx,v=project(q,eye,look,rect)
             if v.all():d.line([tuple(a) for a in xx],fill='#355c70',width=1)
     for o in f['boxes']:
@@ -85,7 +87,9 @@ def frame_image(f,title,chapter,focus=False):
     return im
 
 def main(web,out):
+    global PROFILE
     web=Path(web);data=web/'data'
+    PROFILE=json.loads((data/'gauge_profile.json').read_text())['profile']
     s=json.loads((data/'finals_summary.json').read_text());cloud=json.loads((data/'cloud_live.json').read_text())
     ladder=json.loads((data/'finals_ladder.json').read_text())
     writer=imageio.get_writer(out,fps=FPS,codec='libx264',macro_block_size=2,
