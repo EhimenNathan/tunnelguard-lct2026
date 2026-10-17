@@ -193,6 +193,12 @@ class TunnelGuardNode(Node):
         self.get_logger().info(f'subscribed to {topic}')
 
     def _on_reset(self, request, response):
+        reliable = str(self.get_parameter('input_reliability').value).lower() == 'reliable'
+        self.qos_in = QoSProfile(reliability=ReliabilityPolicy.RELIABLE if reliable else ReliabilityPolicy.BEST_EFFORT,
+                                 history=HistoryPolicy.KEEP_LAST, depth=10 if reliable else 2,
+                                 durability=DurabilityPolicy.VOLATILE)
+        if self.sub_topic is not None:
+            self._subscribe(self.sub_topic)
         self._disp = None
         self.detector.reset()
         self.last_stamp = None

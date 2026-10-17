@@ -26,7 +26,7 @@ start() {
     echo "starting TunnelGuard detector (rviz=$rviz), log: $LOG"
     nohup ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=$rviz > "$LOG" 2>&1 &
     for i in $(seq 1 60); do
-        grep -q "TunnelGuard started" "$LOG" 2>/dev/null && { echo "detector ready"; return; }
+        grep -q '\[tunnel_guard\]: TunnelGuard started (' "$LOG" 2>/dev/null && { echo "детектор готов"; return; }
         sleep 0.5
     done
     echo "detector did not report ready yet - see $LOG"
@@ -70,7 +70,8 @@ play() {
     topic=$(cloud_topic "$bag")
     local qos=/tmp/tg_qos.yaml
     printf '%s:\n  reliability: reliable\n  history: keep_last\n  depth: 10\n' "$topic" > "$qos"
-    ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger >/dev/null 2>&1 || true
+    ros2 param set /tunnel_guard input_reliability reliable >/dev/null
+    ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger >/dev/null
     echo "playing $bag  (topic $topic, rate $rate)"
     echo "keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop"
     ros2 bag play "$bag" --rate "$rate" --qos-profile-overrides-path "$qos" "$@" || true

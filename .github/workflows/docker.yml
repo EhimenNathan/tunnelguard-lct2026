@@ -8,7 +8,7 @@ on:
   push:
     branches: [main]
     paths: ['src/**', 'docker/**', 'Dockerfile', 'tools/falcon_*.py', 'tools/sqlstream.py', 'tools/sqlpages.py',
-            'tools/export_bag.py', 'tools/cloud_live_check.py', 'tools/native_benchmark.py', '.github/workflows/docker.yml']
+            'tools/export_bag.py', 'tools/cloud_live_check.py', 'tools/cloud_controls_check.py', 'tools/native_benchmark.py', '.github/workflows/docker.yml']
   workflow_dispatch:
     inputs:
       frames:
@@ -69,6 +69,10 @@ jobs:
             Xvfb :99 -screen 0 1600x900x24 & export DISPLAY=:99; sleep 2
             python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results --expected "$EXPECTED"
           '
+
+      - name: Пауза, покадровый шаг, скорость и переключение бэгов без перезапуска
+        run: |
+          docker run --rm -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" tunnel_guard python3 /tools/cloud_controls_check.py /data/falcon_test /results
 
       - name: Результаты (бэг не публикуется - это данные организаторов)
         if: always()
