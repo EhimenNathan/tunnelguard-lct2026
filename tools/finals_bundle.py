@@ -32,6 +32,8 @@ def save(path, obj):
 
 
 def main(cache, truth_path, output):
+    source_commit = subprocess.check_output(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True).strip()
+    source_hashes = {str(p.relative_to(HERE.parent)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE.parent/'src/tunnel_guard/tunnel_guard/core').glob('*.py')}
     out = Path(output); out.mkdir(parents=True, exist_ok=True)
     truth = {r['k']: r for r in fill_gaps(json.loads(Path(truth_path).read_text()))}
     det = make_detector([])
@@ -113,7 +115,7 @@ def main(cache, truth_path, output):
                  envelope_change_p95_m=float(np.percentile(abs(np.diff(ev)),95)),jitter=jitter,
                  latency_ms=dict(p50=float(np.median(ms)),p95=float(np.percentile(ms,95)),p99=float(np.percentile(ms,99)),
                                  max=float(max(ms)),over_100=sum(v>100 for v in ms),n=len(ms)),
-                 provenance=dict(commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True).strip(),
+                 provenance=dict(commit=source_commit,source_sha256=source_hashes,
                                  python=platform.python_version(),platform=platform.platform(),
                                  cache_bytes=Path(cache).stat().st_size,
                                  index_sha256=hashlib.sha256(Path(cache+'.idx.npy').read_bytes()).hexdigest(),

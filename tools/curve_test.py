@@ -14,6 +14,7 @@ import numpy as np
 
 from tunnel_sim import centreline, make_tunnel
 from tunnel_guard.core.detector import DetectorConfig, ObstacleDetector
+MODEL = os.path.join(os.path.dirname(HERE), 'src', 'tunnel_guard', 'config', 'obstacle_scorer.json')
 
 
 def thin(p, rng):
@@ -27,7 +28,7 @@ def main(out=None):
     for radius in (None, 800.0, 500.0, 300.0):
         for sparse in (False, True):
             rng = np.random.default_rng(1)
-            det = ObstacleDetector(DetectorConfig(forward_axis='x', mount_calibration=False))
+            det = ObstacleDetector(DetectorConfig(forward_axis='x', mount_calibration=False, scorer_model=MODEL))
             errs = {x: [] for x in (25, 50, 75, 100, 150)}
             for k in range(30):
                 p = make_tunnel(radius=radius, seed=k)
@@ -40,7 +41,7 @@ def main(out=None):
             det_rates = {}
             for d in (40, 80, 120, 150):
                 rng2 = np.random.default_rng(d)
-                det2 = ObstacleDetector(DetectorConfig(forward_axis='x', mount_calibration=False))
+                det2 = ObstacleDetector(DetectorConfig(forward_axis='x', mount_calibration=False, scorer_model=MODEL))
                 found = 0
                 for k in range(35):
                     obs = [(float(d), 0.0, 0.6, 0.6, 1.0)] if k >= 20 else []
@@ -48,9 +49,8 @@ def main(out=None):
                     p = thin(p, rng2) if sparse else p
                     res = det2.process(p, 0.1 * k)
                     if k >= 25:
-                        # d is forward X; detector reports arc distance on a curve.
-                        target = float(d) if radius is None else 0.5 * (d * np.sqrt(1 + (d / radius)**2) + radius * np.arcsinh(d / radius))
-                        found += any(abs(o['distance'] - target) < 4 for o in res.obstacles)
+                        # to_track uses forward X, not integrated arc length.
+                        found += any(abs(o['distance'] - d) < 4 and abs(o['lateral']) < 1 for o in res.obstacles)
                 det_rates[d] = found / 10
             row = dict(radius=radius or 'straight', density='falcon-like' if sparse else 'dense',
                        centre_error_cm={x: round(100 * float(np.median(v)), 1) if v else None for x, v in errs.items()},

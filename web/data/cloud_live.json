@@ -1,0 +1,25 @@
+{
+  "expected": 301,
+  "received": 301,
+  "output_hz": 9.998164130807162,
+  "native_geometry": true,
+  "processing_ms_p50": 40.57674789428711,
+  "processing_ms_p95": 50.29203414916992,
+  "processing_ms_p99": 54.66281509399414,
+  "arrival_gap_ms_p99": 125.99201172997199,
+  "processing_over_100ms": 0,
+  "callback_ms_p95": 71.405721282959,
+  "shutdown_clean": false,
+  "stop_messages": 187,
+  "checks": {
+    "no_crash": true,
+    "messages": true,
+    "rate": true,
+    "stop": true,
+    "rviz": true,
+    "ordered": true
+  },
+  "passed": true,
+  "ci_run": 39004731113,
+  "commit": "ca407f5"
+}

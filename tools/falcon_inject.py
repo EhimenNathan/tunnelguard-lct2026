@@ -4,7 +4,8 @@ Sensor model measured from the recording itself: in the region of interest (the 
 elevation -4..2 deg) the Falcon samples ~156 rays/deg^2 (0.097 deg x 0.066 deg), outside it 23-47 rays/deg^2
 (0.17 deg x 0.113 deg); the scan phase changes from frame to frame.  Each ray that crosses an object returns from the
 first surface with a range-dependent probability p = 1 / (1 + exp((r - R50) / (0.08 R50))), R50 = 1.1 * 250 m *
-sqrt(rho / 0.1) (datasheet: 250 m at 10 % reflectivity, POD > 90 %); the real returns behind the object along those
+sqrt(rho / 0.1). This empirical logistic is NOT the datasheet POD curve (it gives ~76% at 250 m,
+whereas the datasheet states POD >90% at 10% reflectivity); the real returns behind the object along those
 rays are removed (occlusion).  Calibration: a synthetic person (rho 0.10) at 260 m gives ~4.5 returns per frame, the
 real walking person at 260 m gave 4.6.
 
@@ -89,7 +90,8 @@ def inject(xyz, inten, objects, rng):
         t_in, t_out = box_hits(d_l, lo_l, hi_l)
         hit = np.isfinite(t_in)
         if ob['kind'] == 'dust':
-            L = np.where(hit, t_out - t_in, 0.0)
+            L = np.zeros_like(t_in)
+            np.subtract(t_out, t_in, out=L, where=hit)
             ret = hit & (rng.random(len(L)) < 1.0 - np.exp(-ob.get('sigma', 0.6) * L))
             depth = t_in + np.minimum(rng.exponential(1.0 / ob.get('sigma', 0.6), len(L)), L)
             ret &= rng.random(len(L)) < p_detect(depth, ob.get('rho', 0.05) * 4)
