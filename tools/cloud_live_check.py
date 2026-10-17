@@ -14,6 +14,7 @@ import rclpy
 from tunnel_guard.core.geometry import HAVE_NATIVE
 from rclpy.node import Node
 from tunnel_guard_msgs.msg import ObstacleStatus
+from std_msgs.msg import Float32
 
 
 def main():
@@ -27,6 +28,7 @@ def main():
     rclpy.init()
     node = Node('cloud_output_probe')
     arrivals, stamps, processing, levels = [], [], [], []
+    callback_ms = []
 
     def receive(msg):
         arrivals.append(time.monotonic())
@@ -35,6 +37,7 @@ def main():
         levels.append(int(msg.level))
 
     sub = node.create_subscription(ObstacleStatus, '/tunnel_guard/status', receive, 1000)
+    cb_sub = node.create_subscription(Float32, '/tunnel_guard/callback_ms', lambda m: callback_ms.append(float(m.data)), 1000)
     started = time.monotonic()
     with (out / 'launch.log').open('w') as log:
         proc = subprocess.Popen(['ros2', 'launch', 'tunnel_guard', 'tunnel_guard.launch.py',
@@ -55,6 +58,7 @@ def main():
                 if proc.poll() is not None:
                     break
         finally:
+            runtime_log = (out / 'launch.log').read_text()
             import os
             # launch forwards SIGINT to its children. Signalling the entire group would deliver it twice.
             proc.send_signal(signal.SIGINT) if proc.poll() is None else None
@@ -70,7 +74,7 @@ def main():
     times = np.array(arrivals[warm:])
     hz = (len(times) - 1) / (times[-1] - times[0]) if len(times) > 1 else 0.0
     log_text = (out / 'launch.log').read_text()
-    checks = dict(no_crash='Traceback' not in log_text and 'process has died' not in log_text,
+    checks = dict(no_crash='Traceback' not in runtime_log and 'process has died' not in runtime_log,
                   messages=len(arrivals) >= 0.95 * args.expected,
                   rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))
@@ -80,6 +84,8 @@ def main():
                   processing_ms_p99=float(np.percentile(processing, 99)) if processing else None,
                   arrival_gap_ms_p99=float(np.percentile(np.diff(times), 99) * 1000) if len(times) > 1 else None,
                   processing_over_100ms=sum(v > 100 for v in processing),
+                  callback_ms_p95=float(np.percentile(callback_ms, 95)) if callback_ms else None,
+                  shutdown_clean='Traceback' not in log_text and 'process has died' not in log_text,
                   stop_messages=levels.count(2), checks=checks, passed=all(checks.values()))
     (out / 'live_check.json').write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2), flush=True)

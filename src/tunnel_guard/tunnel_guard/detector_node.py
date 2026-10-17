@@ -108,7 +108,9 @@ class TunnelGuardNode(Node):
         # live lidar drivers publish best effort (sensor data QoS); bag playback is forced to reliable by the launch file
         self.declare_parameter('input_reliability', 'best_effort')
         self.declare_parameter('publish_envelope_points', True)
-        self.declare_parameter('marker_step', 2.0)
+        self.declare_parameter('marker_step', 4.0)
+        self.declare_parameter('display_hz', 5.0)
+        self._display_last = -float('inf')
         self.cfg = P.default_config()
         for name, value in P.flatten(self.cfg).items():
             self.declare_parameter(name, value)
@@ -136,6 +138,7 @@ class TunnelGuardNode(Node):
             self.pub_det = self.create_publisher(Detection3DArray, '~/detections', qos_out)
         self.pub_dist = self.create_publisher(Float32, '~/nearest_distance', qos_out)
         self.pub_alarm = self.create_publisher(UInt8, '~/alarm', qos_out)
+        self.pub_callback_ms = self.create_publisher(Float32, '~/callback_ms', qos_out)
         self.pub_markers = self.create_publisher(MarkerArray, '~/markers', qos_out)
         self.pub_obst_pts = self.create_publisher(PointCloud2, '~/obstacle_points', qos_out)
         self.pub_env_pts = self.create_publisher(PointCloud2, '~/envelope_points', qos_out)
@@ -233,6 +236,9 @@ class TunnelGuardNode(Node):
         self.frames += 1
         self.proc_sum += proc_ms / 1e3
         self._publish(msg.header, res, proc_ms)
+        duration = Float32()
+        duration.data = float(1000 * (time.perf_counter() - t_in))
+        self.pub_callback_ms.publish(duration)
 
     def _publish(self, header, res, proc_ms):
         Rm = res.rotation
@@ -277,15 +283,19 @@ class TunnelGuardNode(Node):
                 da.detections.append(det)
             self.pub_det.publish(da)
         # points
-        if res.obstacles:
+        if self.pub_obst_pts.get_subscription_count() > 0 and res.obstacles:
             idx = np.concatenate([o['idx'] for o in res.obstacles])
             self.pub_obst_pts.publish(make_cloud(header, res.forward_points[idx] @ Rm))
-        else:
+        elif self.pub_obst_pts.get_subscription_count() > 0:
             self.pub_obst_pts.publish(make_cloud(header, np.zeros((0, 3), np.float32)))
-        if self.get_parameter('publish_envelope_points').value:
+        if self.get_parameter('publish_envelope_points').value and self.pub_env_pts.get_subscription_count() > 0:
             self.pub_env_pts.publish(make_cloud(header, res.forward_points[res.zone > 0] @ Rm))
-        self._publish_display(header, res)
-        self.pub_markers.publish(self._markers(header, res))
+        now = time.monotonic()
+        if now - self._display_last >= 1.0 / max(float(self.get_parameter('display_hz').value), 0.1):
+            self._display_last = now
+            self._publish_display(header, res)
+            if self.pub_markers.get_subscription_count() > 0:
+                self.pub_markers.publish(self._markers(header, res))
 
     def _publish_display(self, header, res):
         """Display frame TF (lidar frame -> tunnel_guard) and a colour-coded cloud in the display frame."""
