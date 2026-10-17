@@ -13,11 +13,14 @@ from sqlpages import split_record,parse_pc2
 from falcon_stream import decode
 from falcon_eval import make_detector
 from finals_bundle import save
+from tunnel_guard import params as P
 
 def main(src,output):
  out=Path(output);out.mkdir(parents=True,exist_ok=True)
  det=make_detector([]);rows=[];clips=[];meta=[];rng=np.random.default_rng(17);started=time.time()
  commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True).strip()
+ source_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (HERE.parent/'src/tunnel_guard/tunnel_guard/core').glob('*.py')}
+ config=P.flatten(det.cfg)
  error=None
  try:
   with open(src,'rb') as raw,zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(raw) as z,tarfile.open(fileobj=z,mode='r|') as tf:
@@ -45,7 +48,12 @@ def main(src,output):
      rows.append(row)
      if local%25==0 and len(clips)<100:
       q=res.forward_points;sel=np.flatnonzero((q[:,0]>2)&(q[:,0]<410)&(abs(q[:,1])<15)&(q[:,2]>-5)&(q[:,2]<10))
-      sel=rng.choice(sel,min(3500,len(sel)),False)
+      special=np.unique(np.concatenate([np.asarray(o['idx'],int) for o in res.obstacles])) if res.obstacles else np.zeros(0,int)
+      special=special[(special>=0)&(special<len(q))]
+      if len(special)>2000:special=rng.choice(special,2000,False)
+      far=sel[q[sel,0]>80];near=sel[q[sel,0]<=80]
+      context=np.unique(np.r_[rng.choice(far,min(1400,len(far)),False),rng.choice(near,min(1800,len(near)),False)])
+      sel=np.unique(np.r_[context,special])
       xx=np.arange(5.,min(res.envelope_range,400.)+1,5.) if g.ok else np.array([])
       clips.append(dict(row,truth_x=None,p=np.round(q[sel].astype(np.float64),2).ravel().tolist(),
         line=np.round(np.column_stack([xx,g.centre(xx),g.rail_z(xx)]),3).tolist() if len(xx) else [],
@@ -56,7 +64,7 @@ def main(src,output):
   error=f'{type(exc).__name__}: {exc}';print('ARCHIVE ERROR:',error,flush=True)
  save(out/'rows.json',rows);save(out/'clip.json',clips);save(out/'metadata.json',meta)
  steady=[r for r in rows if r['local']>=30];lat=[r['ms'] for r in steady]
- summary=dict(complete=error is None,archive_error=error,archive=Path(src).name,archive_bytes=Path(src).stat().st_size,commit=commit,frames=len(rows),
+ summary=dict(complete=error is None,archive_error=error,archive=Path(src).name,archive_bytes=Path(src).stat().st_size,commit=commit,source_sha256=source_sha256,config=config,frames=len(rows),
    duration_s=sum(max(r['t'] for r in rows if r['piece']==piece) for piece in {r['piece'] for r in rows}),pieces=len({r['piece'] for r in rows}),stop_frames=sum(r['level']==2 for r in rows),
    caution_frames=sum(r['level']==1 for r in rows),geometry_ok=sum(r['geometry'] for r in steady),steady_frames=len(steady),
    dust_flagged_frames=sum(bool(r['dust']) for r in rows),
