@@ -142,9 +142,14 @@ class FarField:
         sc3 = nb(self.scnt, 'sum').sum(0)
         hmin = nb(self.hmin, 'min').min(0)
         hmax = nb(self.hmax, 'max').max(0)
-        lsum = nb(self.lsum, 'sum').sum(0)
+        l3 = nb(self.lsum, 'sum')
+        lsum = l3.sum(0)
+        stop_lmean = l3[recent].sum(0) / np.maximum(c3[recent].sum(0), 1)
+        stop_hmin = nb(self.hmin, 'min')[recent].min(0)
         ssum = nb(self.ssum, 'sum').sum(0)
-        span = nb(self.smax, 'max').max(0) - nb(self.smin, 'min').min(0) if cfg.span_max > 0 else None
+        # Inspect a wider context than the evidence neighbourhood. A long rail
+        # must not become two compact objects at its truncated endpoints.
+        span = nb(nb(self.smax, 'max'), 'max').max(0) - nb(nb(self.smin, 'min'), 'min').min(0) if cfg.span_max > 0 else None
         out, used = [], np.zeros(self.nc, bool)
         order = cand[np.lexsort((-npts[cand], -fh[cand]))]
         keep_ids = np.zeros(self.nc, np.int64)
@@ -172,7 +177,7 @@ class FarField:
             keep_ids[c] = oid
             idx = sel[np.abs(cells_now - c) <= 1] if len(cells_now) else np.zeros(0, np.int64)
             height_certain = hmax[c] >= cfg.h_lo + cfg.height_sigma_k * sv[0]
-            out.append(dict(id=oid, zone=IN_GAUGE if stop_hits[c] >= cfg.stop_frames and height_certain else NEAR_GAUGE, distance=float(smean),
+            out.append(dict(id=oid, zone=IN_GAUGE if stop_hits[c] >= cfg.stop_frames and abs(stop_lmean[c]) <= cfg.centre_half_width and stop_hmin[c] <= cfg.floor_support and height_certain else NEAR_GAUGE, distance=float(smean),
                             lateral=float(lmean), height=float(hmax[c]), h_min=float(hmin[c]), n=int(npts[c]),
                             confidence=float(fh[c] / cfg.window), frames=int(fh[c]), idx=idx, far=True))
         self.ids = keep_ids

@@ -36,3 +36,28 @@ def test_warning_memory_does_not_extend_stop_memory():
     assert out and out[0]['zone']==1
     for _ in range(15):out=far.update(p[:0],g,30,300)
     assert not out
+
+
+def test_low_channel_rejects_continuous_rail_including_its_endpoints():
+    x=np.arange(501.)
+    g=TrackGeometry(x,np.zeros_like(x),np.full_like(x,-1.8),ok=True,
+                    sigma_l=np.full_like(x,.1),sigma_v=np.full_like(x,.025))
+    s=np.linspace(90,100,101)
+    p=np.column_stack([s,np.full_like(s,.7),np.full_like(s,-1.51)]).astype(np.float32)
+    far=FarField(DetectorConfig().lowfield)
+    for _ in range(25):out=far.update(p,g,30,300)
+    assert not out
+
+
+def test_stop_position_uses_recent_lateral_evidence():
+    from tunnel_guard.core.farfield import FarFieldConfig
+    x=np.arange(501.)
+    g=TrackGeometry(x,np.zeros_like(x),np.full_like(x,-1.8),ok=True,
+                    sigma_l=np.full_like(x,.1),sigma_v=np.full_like(x,.025))
+    p=np.array([[90.,0.,-.8]],np.float32)
+    far=FarField(FarFieldConfig())
+    for _ in range(9):out=far.update(p,g,30,300)
+    assert out and out[0]['zone']==2
+    p[:,1]=-.98
+    for _ in range(15):out=far.update(p,g,30,300)
+    assert out and out[0]['zone']==1
