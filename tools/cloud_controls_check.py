@@ -8,6 +8,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+import tempfile
 import yaml
 import rclpy
 from rclpy.node import Node
@@ -16,7 +17,9 @@ from tunnel_guard_msgs.msg import ObstacleStatus
 
 def main(bag,out):
     out=Path(out);out.mkdir(parents=True,exist_ok=True)
-    alt=out/'switch_bag';shutil.copytree(bag,alt,dirs_exist_ok=True)
+    # Raw organizer data must never be included in uploaded test artifacts,
+    # including when a later service call or cleanup fails.
+    alt=Path(tempfile.mkdtemp(prefix='tg_controls_switch_'));shutil.copytree(bag,alt,dirs_exist_ok=True)
     for db in alt.glob('*.db3'):
         with sqlite3.connect(db) as c:c.execute("UPDATE topics SET name='/falcon_secondary' WHERE type='sensor_msgs/msg/PointCloud2'")
     mp=alt/'metadata.yaml';meta=yaml.safe_load(mp.read_text())
@@ -61,9 +64,17 @@ def main(bag,out):
     finally:
         if player is not None and player.poll() is None:
             os.killpg(player.pid,signal.SIGINT);player.wait(timeout=10)
-        subprocess.run(['tg','stop'],check=False,timeout=10)
-        node.destroy_node();rclpy.shutdown()
-        shutil.rmtree(alt)
+        try:
+            # tg stop allows up to 12 s for launch/RViz shutdown, plus CLI setup.
+            stopped=subprocess.run(['tg','stop'],check=False,timeout=20)
+            checks['stop_command']=stopped.returncode==0
+            log_text=Path('/tmp/tunnel_guard.log').read_text()
+            (out/'controls_node.log').write_text(log_text)
+            checks['clean_detector_shutdown']='process has died' not in log_text and 'Traceback' not in log_text
+            checks['detector_stopped']=subprocess.run(['pgrep','-f','/tunnel_guard/detector_node'],capture_output=True).returncode==1
+        finally:
+            node.destroy_node();rclpy.shutdown()
+            shutil.rmtree(alt)
     report=dict(checks=checks,passed=all(checks.values()),received=len(messages))
     (out/'controls_check.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
     if not report['passed']:raise SystemExit('Проверка управления не пройдена')
