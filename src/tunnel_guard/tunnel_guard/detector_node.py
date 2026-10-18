@@ -200,8 +200,10 @@ class TunnelGuardNode(Node):
         self.qos_in = QoSProfile(reliability=ReliabilityPolicy.RELIABLE if reliable else ReliabilityPolicy.BEST_EFFORT,
                                  history=HistoryPolicy.KEEP_LAST, depth=10 if reliable else 2,
                                  durability=DurabilityPolicy.VOLATILE)
-        if self.sub_topic is not None:
-            self._subscribe(self.sub_topic)
+        self.fixed_topic = self.get_parameter('input_topic').value
+        requested = self.fixed_topic if self.fixed_topic != 'auto' else self.sub_topic
+        if requested is not None:
+            self._subscribe(requested)
         self._disp = None
         self.detector.reset()
         self.last_stamp = None

@@ -29,7 +29,7 @@ def download(release_id,target):
  (target.parent/'source.json').write_text(json.dumps(manifest,indent=2))
 
 def extract(archive,root):
- root=Path(root).resolve();root.mkdir(parents=True,exist_ok=True)
+ root=Path(root).resolve();root.mkdir(parents=True,exist_ok=True);members=[]
  with open(archive,'rb') as raw,zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(raw) as z,tarfile.open(fileobj=z,mode='r|') as tf:
   for m in tf:
    name=PurePosixPath(m.name)
@@ -41,6 +41,8 @@ def extract(archive,root):
    dest.parent.mkdir(parents=True,exist_ok=True)
    with tf.extractfile(m) as src,dest.open('wb') as dst:shutil.copyfileobj(src,dst,4*1024*1024)
    assert dest.stat().st_size==m.size
+   members.append(dict(path=str(name),bytes=m.size))
+ (root/'extraction.json').write_text(json.dumps(dict(expanded_bytes=sum(m['bytes'] for m in members),members=members),indent=2))
  bags=[]
  for p in sorted(root.rglob('metadata.yaml')):
   info=yaml.safe_load(p.read_text())['rosbag2_bagfile_information'];bags.append(dict(path=str(p.parent.relative_to(root)),frames=info['message_count']))

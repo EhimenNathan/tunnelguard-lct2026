@@ -30,11 +30,16 @@ jobs:
           pip install --quiet requests numpy zstandard pyyaml
           python tools/cloud_dense_data.py download "$DATA_RELEASE" private_data/new_synth_data.zst
           python tools/cloud_dense_data.py extract private_data/new_synth_data.zst bags
+      - name: Full installed detector and sampled visualization output
+        run: |
+          mkdir -p results/offline
+          docker run --rm --network none -e TG_SOURCE_SHA="$GITHUB_SHA" -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_organizer_bundle.py /data /results/offline
       - name: Full ROS and RViz replay, every message from all three bags
         run: |
           mkdir -p results
           cp private_data/source.json results/source.json
           cp bags/bags.json results/bags.json
+          cp bags/extraction.json results/extraction.json
           lscpu > results/cpu.txt
           docker run -d --name tg_dense -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense_gui
           for i in $(seq 1 30); do

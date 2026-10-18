@@ -78,9 +78,11 @@ play() {
     if [ $# -ge 2 ]; then shift 2; else shift; fi
     running || start
     topic=$(cloud_topic "$bag")
+    [ -n "$topic" ] || { echo "bag has no PointCloud2 topic"; return 1; }
     local qos=/tmp/tg_qos.yaml
     printf '%s:\n  reliability: reliable\n  history: keep_last\n  depth: 10\n' "$topic" > "$qos"
     ros2 param set /tunnel_guard input_reliability reliable >/dev/null
+    ros2 param set /tunnel_guard input_topic "$topic" >/dev/null
     ros2 service call /tunnel_guard/reset std_srvs/srv/Trigger >/dev/null
     echo "playing $bag  (topic $topic, rate $rate)"
     echo "keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop"

@@ -43,7 +43,7 @@ def main(bag,out):
     try:
         with (out/'controls_play.log').open('w') as log:
             player=subprocess.Popen(['tg','play',bag,'0.5','--start-paused'],stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-            spin(4);checks['starts_paused']=len(messages)==0
+            spin(6);checks['starts_paused']=len(messages)==0
             call('resume',Resume);spin(4);checks['resume']=len(messages)>=10
             checks['initial_rate_half']=abs(call('get_rate',GetRate).rate-.5)<1e-6
             call('pause',Pause);spin(1);count=len(messages);spin(1.5);checks['pause']=len(messages)==count
@@ -52,7 +52,7 @@ def main(bag,out):
             os.killpg(player.pid,signal.SIGINT);player.wait(timeout=10);player=None;spin(2)
             count=len(messages)
             player=subprocess.Popen(['tg','play',str(alt),'1.0','--start-paused'],stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-            spin(5);call('resume',Resume);spin(5)
+            spin(6);call('resume',Resume);spin(5)
             checks['second_bag_output']=len(messages)>count+20
             checks['same_detector_process']=pid()==before
             node_log=Path('/tmp/tunnel_guard.log').read_text()
