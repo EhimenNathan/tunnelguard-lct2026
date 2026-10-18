@@ -1,0 +1,68 @@
+name: dense-organizer-eval
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: 'Unpublished temporary data release ID'
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: dense-organizer-eval
+  cancel-in-progress: true
+jobs:
+  three-complete-bags:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build installed detector and GUI
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker build -t tg_dense .
+          docker build --build-arg TG_BASE=tg_dense -f Dockerfile.gui -t tg_dense_gui .
+          df -h /
+      - name: Fetch unpublished data and verify every SHA256
+        env:
+          TG_DATA_TOKEN: ${{ github.token }}
+          DATA_RELEASE: ${{ inputs.release_id }}
+        run: |
+          pip install --quiet requests numpy zstandard pyyaml
+          python tools/cloud_dense_data.py download "$DATA_RELEASE" private_data/new_synth_data.zst
+          python tools/cloud_dense_data.py extract private_data/new_synth_data.zst bags
+      - name: Full ROS and RViz replay, every message from all three bags
+        run: |
+          mkdir -p results
+          cp private_data/source.json results/source.json
+          cp bags/bags.json results/bags.json
+          lscpu > results/cpu.txt
+          docker run -d --name tg_dense -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense_gui
+          for i in $(seq 1 30); do
+            if docker exec tg_dense python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:6080/vnc.html',timeout=2)"; then break; fi
+            sleep 1
+          done
+          failed=0
+          for spec in 'synthetic_platform_cloud_only 386' 'synthetic_switch_cloud_only 736' 'synthetic_tunnels_cloud_only 545'; do
+            read -r name count <<< "$spec"
+            mkdir -p "results/$name"
+            if ! docker exec tg_dense bash -c 'source /opt/ros/humble/setup.bash; source /ws/install/setup.bash; python3 /tools/cloud_live_check.py --bag /data/'"$name"' --out /results/'"$name"' --expected '"$count"; then failed=1; fi
+          done
+          docker stop tg_dense
+          exit "$failed"
+      - name: Sustained 10Hz acceptance for every full bag
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          reports=[]
+          for p in Path('results').glob('synthetic_*/live_check.json'):
+              r=json.loads(p.read_text()); reports.append(r)
+              assert r['passed'] and r['received']==r['expected']
+              assert r['output_hz']>=9.8, '10Hz budget not met'
+          assert len(reports)==3 and sum(r['received'] for r in reports)==1667
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dense-organizer-results
+          path: results/

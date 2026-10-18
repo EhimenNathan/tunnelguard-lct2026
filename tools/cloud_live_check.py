@@ -54,7 +54,7 @@ def main():
         screenshot = False
         capture = None
         try:
-            while time.monotonic() - started < 100:
+            while time.monotonic() - started < max(100, args.expected / 10.0 + 60.0):
                 rclpy.spin_once(node, timeout_sec=0.1)
                 if not resumed:
                     ready = (resume.service_is_ready() and node.count_publishers('/tunnel_guard/status')>0
