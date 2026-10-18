@@ -112,7 +112,7 @@ def main(web,out,rate=1.):
     steps=[float(np.median(np.diff([f['t'] for f in frames]))) for frames in scenes]
     if rate<=0:raise ValueError('Скорость должна быть положительной')
     if any(s>.15 for s in steps):raise ValueError('Нужны все исходные облака 10 Гц. Сначала finals_organizer_bundle.py --clip-stride 1 и finals_prepare_video.py; клипы сайта прорежены.')
-    writer=imageio.get_writer(str(out),fps=FPS,codec='libx264',macro_block_size=2,pixelformat='yuv420p',ffmpeg_params=['-crf','19','-preset','fast','-threads','2'])
+    writer=imageio.get_writer(str(out),fps=FPS,codec='libx264',macro_block_size=2,pixelformat='yuv420p',ffmpeg_params=['-crf','19','-preset','fast','-threads','2','-movflags','+faststart'])
     manifest={'camera':'fixed forward-facing cab','source':'all original organizer new_synth_data scans, native detector','playback_rate':rate,'fps':FPS,'resolution':[W,H],'scenes':[],'source_scan_step_s':steps}
     manifest['detector_commit']=json.loads((web.parent/'docs/finals/new_synth/summary.json').read_text())['commit']
     manifest['generator_commit']=subprocess.check_output(['git','rev-parse','HEAD'],cwd=Path(__file__).resolve().parents[1],text=True).strip()
