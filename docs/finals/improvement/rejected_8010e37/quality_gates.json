@@ -1,0 +1,16 @@
+{
+  "reference": "automatic trajectory / synthetic injections, not independent ground truth",
+  "checks": {
+    "full_recording": true,
+    "full_ladder": true,
+    "no_new_geometry_dropouts": true,
+    "beside_stop_not_worse": false,
+    "unmatched_stop_not_worse": false,
+    "far_matches_not_worse": true,
+    "near_matches_not_worse": true,
+    "dust_no_obstacle": true,
+    "small_box_detection_improves": true,
+    "person_300_stop_not_worse": false
+  },
+  "passed": false
+}

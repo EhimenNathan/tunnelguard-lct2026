@@ -1,0 +1,549 @@
+{
+  "backend": "Windows NumPy/Numba, not the native cloud benchmark",
+  "rows": [
+    {
+      "frame": 2251,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.9725799560547,
+          "zone": 2,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 5,
+          "sigma_l": 0.2573027196361346,
+          "sigma_h": 0.7227510763135224
+        }
+      ]
+    },
+    {
+      "frame": 2251,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.9725799560547,
+          "zone": 1,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 5,
+          "sigma_l": 0.2573027196361346,
+          "sigma_h": 0.7227510763135224
+        }
+      ]
+    },
+    {
+      "frame": 2252,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.68511962890625,
+          "zone": 2,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 6,
+          "sigma_l": 0.2571056970958308,
+          "sigma_h": 0.5499840476161645
+        }
+      ]
+    },
+    {
+      "frame": 2252,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.68511962890625,
+          "zone": 1,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 6,
+          "sigma_l": 0.2571056970958308,
+          "sigma_h": 0.5499840476161645
+        }
+      ]
+    },
+    {
+      "frame": 2253,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.72190856933594,
+          "zone": 2,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 7,
+          "sigma_l": 0.25689140074698613,
+          "sigma_h": 0.572548090390729
+        }
+      ]
+    },
+    {
+      "frame": 2253,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.72190856933594,
+          "zone": 1,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 7,
+          "sigma_l": 0.25689140074698613,
+          "sigma_h": 0.572548090390729
+        }
+      ]
+    },
+    {
+      "frame": 2254,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.58358764648438,
+          "zone": 2,
+          "n": 7,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 8,
+          "sigma_l": 0.2556612064652254,
+          "sigma_h": 0.4893792214157063
+        }
+      ]
+    },
+    {
+      "frame": 2254,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.58358764648438,
+          "zone": 1,
+          "n": 7,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 8,
+          "sigma_l": 0.2556612064652254,
+          "sigma_h": 0.4893792214157063
+        }
+      ]
+    },
+    {
+      "frame": 2255,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.47213745117188,
+          "zone": 2,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 9,
+          "sigma_l": 0.25552541317554445,
+          "sigma_h": 0.42222625278620535
+        }
+      ]
+    },
+    {
+      "frame": 2255,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.47213745117188,
+          "zone": 1,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 9,
+          "sigma_l": 0.25552541317554445,
+          "sigma_h": 0.42222625278620535
+        }
+      ]
+    },
+    {
+      "frame": 2256,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.24305725097656,
+          "zone": 2,
+          "n": 7,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 10,
+          "sigma_l": 0.2555172627960287,
+          "sigma_h": 0.28386220914569216
+        }
+      ]
+    },
+    {
+      "frame": 2256,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 25,
+          "distance": 211.24305725097656,
+          "zone": 1,
+          "n": 7,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 10,
+          "sigma_l": 0.2555172627960287,
+          "sigma_h": 0.28386220914569216
+        }
+      ]
+    },
+    {
+      "frame": 2310,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 205.15582275390625,
+          "zone": 2,
+          "n": 5,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 16,
+          "sigma_l": 0.9215736957505917,
+          "sigma_h": 1.203422213743149
+        }
+      ]
+    },
+    {
+      "frame": 2310,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 205.15582275390625,
+          "zone": 1,
+          "n": 5,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 16,
+          "sigma_l": 0.9215736957505917,
+          "sigma_h": 1.203422213743149
+        }
+      ]
+    },
+    {
+      "frame": 2315,
+      "variant": "strict_warning",
+      "level": 0,
+      "obs": []
+    },
+    {
+      "frame": 2315,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 100008,
+          "distance": 205.82539563301282,
+          "zone": 1,
+          "n": 156,
+          "far": true,
+          "held": null,
+          "geometry_uncertain": true,
+          "age": 21,
+          "sigma_l": 0.9284061392973078,
+          "sigma_h": 0.9574014886415717
+        }
+      ]
+    },
+    {
+      "frame": 2316,
+      "variant": "strict_warning",
+      "level": 0,
+      "obs": []
+    },
+    {
+      "frame": 2316,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 100008,
+          "distance": 205.7383319805195,
+          "zone": 1,
+          "n": 154,
+          "far": true,
+          "held": null,
+          "geometry_uncertain": true,
+          "age": 21,
+          "sigma_l": 0.9296707237856037,
+          "sigma_h": 0.9901033243740023
+        }
+      ]
+    },
+    {
+      "frame": 2321,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.7745361328125,
+          "zone": 2,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 27,
+          "sigma_l": 0.24556722499758743,
+          "sigma_h": 0.15749104357937593
+        }
+      ]
+    },
+    {
+      "frame": 2321,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.7745361328125,
+          "zone": 1,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 27,
+          "sigma_l": 0.24556722499758743,
+          "sigma_h": 0.15749104357937593
+        }
+      ]
+    },
+    {
+      "frame": 2322,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.62295532226562,
+          "zone": 2,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 28,
+          "sigma_l": 0.2452133539002807,
+          "sigma_h": 0.15895091445476872
+        }
+      ]
+    },
+    {
+      "frame": 2322,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.62295532226562,
+          "zone": 1,
+          "n": 8,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 28,
+          "sigma_l": 0.2452133539002807,
+          "sigma_h": 0.15895091445476872
+        }
+      ]
+    },
+    {
+      "frame": 2323,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.57388305664062,
+          "zone": 2,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 29,
+          "sigma_l": 0.2450070322678094,
+          "sigma_h": 0.16132241082033155
+        }
+      ]
+    },
+    {
+      "frame": 2323,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.57388305664062,
+          "zone": 1,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 29,
+          "sigma_l": 0.2450070322678094,
+          "sigma_h": 0.16132241082033155
+        }
+      ]
+    },
+    {
+      "frame": 2324,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.40313720703125,
+          "zone": 2,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 30,
+          "sigma_l": 0.24486343353667978,
+          "sigma_h": 0.14800434053675487
+        }
+      ]
+    },
+    {
+      "frame": 2324,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.40313720703125,
+          "zone": 1,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 30,
+          "sigma_l": 0.24486343353667978,
+          "sigma_h": 0.14800434053675487
+        }
+      ]
+    },
+    {
+      "frame": 2325,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.3540496826172,
+          "zone": 2,
+          "n": 10,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 31,
+          "sigma_l": 0.24541307478839264,
+          "sigma_h": 0.1494496877201686
+        }
+      ]
+    },
+    {
+      "frame": 2325,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.3540496826172,
+          "zone": 1,
+          "n": 10,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 31,
+          "sigma_l": 0.24541307478839264,
+          "sigma_h": 0.1494496877201686
+        }
+      ]
+    },
+    {
+      "frame": 2326,
+      "variant": "strict_warning",
+      "level": 2,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.17337036132812,
+          "zone": 2,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 32,
+          "sigma_l": 0.2450597954710042,
+          "sigma_h": 0.14668740550061674
+        }
+      ]
+    },
+    {
+      "frame": 2326,
+      "variant": "wide_warning",
+      "level": 1,
+      "obs": [
+        {
+          "id": 28,
+          "distance": 203.17337036132812,
+          "zone": 1,
+          "n": 9,
+          "far": null,
+          "held": null,
+          "geometry_uncertain": null,
+          "age": 32,
+          "sigma_l": 0.2450597954710042,
+          "sigma_h": 0.14668740550061674
+        }
+      ]
+    }
+  ]
+}

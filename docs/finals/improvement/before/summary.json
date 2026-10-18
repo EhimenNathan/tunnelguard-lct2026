@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "reference": "automatic trajectory from the same recording; proxy, not independent ground truth",
+  "matching": "distance <6m AND lateral <1m; on-track |y-0.35|<1.3m; beside >=1.6m",
+  "frames": 4443,
+  "known_reference_frames": 4411,
+  "interpolated_frames": 624,
+  "unknown_reference_frames": 32,
+  "on_track": 3612,
+  "beside": 646,
+  "first_detection": {
+    "k": 66,
+    "t": 6.600121446999765,
+    "truth_x": 258.5199890136719
+  },
+  "first_stop": {
+    "k": 82,
+    "t": 8.200156655999763,
+    "truth_x": 259.8699951171875
+  },
+  "bands": [
+    {
+      "lo": 0,
+      "hi": 50,
+      "n": 387,
+      "hit": 387,
+      "stop": 382,
+      "recall": 1.0,
+      "stop_rate": 0.9870801033591732
+    },
+    {
+      "lo": 50,
+      "hi": 100,
+      "n": 714,
+      "hit": 714,
+      "stop": 714,
+      "recall": 1.0,
+      "stop_rate": 1.0
+    },
+    {
+      "lo": 100,
+      "hi": 150,
+      "n": 550,
+      "hit": 550,
+      "stop": 550,
+      "recall": 1.0,
+      "stop_rate": 1.0
+    },
+    {
+      "lo": 150,
+      "hi": 200,
+      "n": 407,
+      "hit": 407,
+      "stop": 407,
+      "recall": 1.0,
+      "stop_rate": 1.0
+    },
+    {
+      "lo": 200,
+      "hi": 250,
+      "n": 729,
+      "hit": 727,
+      "stop": 718,
+      "recall": 0.9972565157750343,
+      "stop_rate": 0.9849108367626886
+    },
+    {
+      "lo": 250,
+      "hi": 320,
+      "n": 825,
+      "hit": 517,
+      "stop": 379,
+      "recall": 0.6266666666666667,
+      "stop_rate": 0.4593939393939394
+    }
+  ],
+  "beside_stop": 1,
+  "unmatched_stop_frames": 10,
+  "envelope_median_m": 387.6407775878906,
+  "envelope_p90_m": 387.6407775878906,
+  "envelope_max_m": 387.6407775878906,
+  "measured_median_m": 202.0,
+  "geometry_dropouts_after_30": 0,
+  "envelope_change_p95_m": 0.0,
+  "jitter": {
+    "25": {
+      "p50_cm": 0.17952515716184447,
+      "p95_cm": 0.6697323636794063
+    },
+    "50": {
+      "p50_cm": 0.4096487688722225,
+      "p95_cm": 1.237158473473851
+    },
+    "100": {
+      "p50_cm": 0.5021398914058601,
+      "p95_cm": 1.5114318278660774
+    },
+    "150": {
+      "p50_cm": 0.6350731262467941,
+      "p95_cm": 2.0166981271865145
+    },
+    "200": {
+      "p50_cm": 1.0020325176324805,
+      "p95_cm": 9.600409679653794
+    },
+    "250": {
+      "p50_cm": 3.8136477534506414,
+      "p95_cm": 26.459370698330638
+    },
+    "300": {
+      "p50_cm": 6.541029122943014,
+      "p95_cm": 47.24078696164026
+    }
+  },
+  "latency_ms": {
+    "p50": 195.394,
+    "p95": 441.72539999999964,
+    "p99": 644.1128800000004,
+    "max": 1351.606,
+    "over_100": 4400,
+    "n": 4413
+  },
+  "provenance": {
+    "python": "3.13.1",
+    "platform": "Windows-11-10.0.22631-SP0",
+    "cache_bytes": 1718433882,
+    "index_sha256": "b69a88477a99393d343f2daa7d75fe06c4270bb3fa16f4ff7cfe6612e242981c",
+    "truth_sha256": "9f119a29dd69af60cc2468aeddafe9c6cfbc8bef143020d7bf1f618c35c5e722",
+    "models": {
+      "obstacle_scorer.json": "d0b87d387d313a429ad2562fda239f475aac9bc43a5676db48fa97943aaf4eac",
+      "obstacle_scorer_hang.json": "4418710e7e84f2ff7c6969da41b80d0ca4f6c3a1d17a093e3bc2c4c5e7d5d781",
+      "obstacle_scorer_v1.json": "94f13c54b4591302685c56f23888484f10ab9447973bae529951ee93b1db4319",
+      "obstacle_scorer_v3.json": "d0b87d387d313a429ad2562fda239f475aac9bc43a5676db48fa97943aaf4eac",
+      "obstacle_scorer_v4.json": "4418710e7e84f2ff7c6969da41b80d0ca4f6c3a1d17a093e3bc2c4c5e7d5d781"
+    },
+    "report_generation_commit": "2d5301b82e995a1de35b665bcaae627715910b18",
+    "core_equivalent_commit": "70f75bb",
+    "note": "Старый скрипт записал HEAD при завершении, а не старте. Отсутствие diff core/config относительно 70f75bb проверено при упаковке; более поздние изменения ROS не влияют на offline-ядро.",
+    "source_sha256": {
+      "src\\tunnel_guard\\tunnel_guard\\core\\adapt.py": "c1b7182216019b4a930b73be18f8a0217bd4f52eb2c24d3fcf6e4ff57d9c3486",
+      "src\\tunnel_guard\\tunnel_guard\\core\\cloud.py": "0f43f1efa859c1a9f52c18a3ae1d47382b30d989b1e1ae220a07150bf4d3a06c",
+      "src\\tunnel_guard\\tunnel_guard\\core\\cluster.py": "56d5da7ed26ebf7ee3cb1980f8bdf708ddc7c893f0b6130006df6602e503bb52",
+      "src\\tunnel_guard\\tunnel_guard\\core\\detector.py": "7f97c6c4f4febaa47928a5e67695ecc67f4677ac804fae8bf27215480a6115ba",
+      "src\\tunnel_guard\\tunnel_guard\\core\\farfield.py": "7129116862d9a3ef7fe15dac1d6a2e79620069d40fdf80feedd92da19afcc437",
+      "src\\tunnel_guard\\tunnel_guard\\core\\features.py": "9cc844a8d006d4c9c66f8b47f4d750bd1f63d20f705f43f0a1824e27981addab",
+      "src\\tunnel_guard\\tunnel_guard\\core\\gauge.py": "9a379f4e6b3ac63d4b2fb78b9aa8b7e21b3ec7698b1ac58cd139f637e1c66a32",
+      "src\\tunnel_guard\\tunnel_guard\\core\\geometry.py": "c90671c655221084e515c3e7578c6e1413d0668ed150477f87e18d7da14b053f",
+      "src\\tunnel_guard\\tunnel_guard\\core\\pandar.py": "40ecfa6c94fdbe246345b2473f8b53f241b115603f0a68219667012f39049b5d",
+      "src\\tunnel_guard\\tunnel_guard\\core\\scorer.py": "b894e5fa54550bacd2903d80cc7dc4a5c84f10f9b89e26b0a93e4766fff19038",
+      "src\\tunnel_guard\\tunnel_guard\\core\\synth.py": "64b97f4ed1a46c063f6df869620e8778fce1d6055fdd91ab6ab4ba410704fece",
+      "src\\tunnel_guard\\tunnel_guard\\core\\tracker.py": "5c20254a721ea1dbfe5265c86cc029ba58e68fc7fb54d792764301c0b8a8f15e",
+      "src\\tunnel_guard\\tunnel_guard\\core\\__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "local_timing_conditions": "Параллельно выполнялись лестница и аналитические кривые на Windows; это не изолированный бенчмарк."
+  }
+}

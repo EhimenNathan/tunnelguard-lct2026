@@ -52,7 +52,7 @@ def main():
  ax3=fig.add_subplot(gs[1,1]);axes_style(ax3)
  values=[353/387*100,382/387*100];ax3.bar([0,1],values,color=[MUTED,CYAN],width=.55);ax3.set_xticks([0,1],['Память от 60 м','Память от 30 м'],rotation=15,ha='right');ax3.set_ylim(0,110);ax3.set_ylabel('СТОП, %');ax3.set_title('Реальный человек · 0–50 м',loc='left',fontsize=11,pad=15,fontweight='bold')
  for i,v in enumerate(values):ax3.text(i,v+2,f'{v:.2f}%',ha='center',fontsize=10)
- fig.suptitle('АБЛЯЦИЯ · ТЕКУЩИЙ ЭТАП',x=.07,ha='left',y=.97,fontsize=20,fontweight='bold')
+ fig.suptitle('БАЗОВАЯ АБЛЯЦИЯ ФИНАЛА · ДО ОПТИМИЗАЦИИ',x=.07,ha='left',y=.97,fontsize=20,fontweight='bold')
  fig.text(.07,.91,'Три отдельных контролируемых эксперимента · одинаковые настройки внутри каждого сравнения',color=MUTED,fontsize=11)
  fig.text(.07,.035,'Слева: 301 кадр Falcon, автоматический эталон; не независимая оценка FP/FN.\nСправа: синтетический провод и абляция перекрытия дальней памяти на полном реальном прогоне. Источники: docs/finals/*.json.',fontsize=10,color=MUTED)
  finish(fig,'ablation_current.png')

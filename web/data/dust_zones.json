@@ -1,1 +1,172 @@
-[{"distance":60,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":686.46},{"distance":90,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":311.04},{"distance":100,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":251.36},{"distance":120,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":175.1},{"distance":150,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":112.48},{"distance":175,"frames":50,"dust_zone_frames":49,"dust_zone_rate":0.98,"stop_frames":0,"returns_per_frame":83.04},{"distance":180,"frames":50,"dust_zone_frames":49,"dust_zone_rate":0.98,"stop_frames":0,"returns_per_frame":78.86},{"distance":190,"frames":50,"dust_zone_frames":48,"dust_zone_rate":0.96,"stop_frames":0,"returns_per_frame":70.3},{"distance":200,"frames":50,"dust_zone_frames":49,"dust_zone_rate":0.98,"stop_frames":0,"returns_per_frame":63.3},{"distance":215,"frames":50,"dust_zone_frames":49,"dust_zone_rate":0.98,"stop_frames":0,"returns_per_frame":54.48},{"distance":220,"frames":50,"dust_zone_frames":48,"dust_zone_rate":0.96,"stop_frames":0,"returns_per_frame":52.38},{"distance":230,"frames":50,"dust_zone_frames":38,"dust_zone_rate":0.76,"stop_frames":0,"returns_per_frame":48.96},{"distance":250,"frames":50,"dust_zone_frames":44,"dust_zone_rate":0.88,"stop_frames":0,"returns_per_frame":40.3},{"distance":260,"frames":50,"dust_zone_frames":41,"dust_zone_rate":0.82,"stop_frames":0,"returns_per_frame":36.64},{"distance":270,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":34.74},{"distance":280,"frames":50,"dust_zone_frames":50,"dust_zone_rate":1.0,"stop_frames":0,"returns_per_frame":31.3},{"distance":300,"frames":50,"dust_zone_frames":0,"dust_zone_rate":0.0,"stop_frames":0,"returns_per_frame":26.72}]
+[
+  {
+    "object": "dust",
+    "distance": 60,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 686.46
+  },
+  {
+    "object": "dust",
+    "distance": 90,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 311.04
+  },
+  {
+    "object": "dust",
+    "distance": 100,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 251.36
+  },
+  {
+    "object": "dust",
+    "distance": 120,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 175.1
+  },
+  {
+    "object": "dust",
+    "distance": 150,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 112.48
+  },
+  {
+    "object": "dust",
+    "distance": 175,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.98,
+    "first_frame": null,
+    "returns_per_frame": 83.04
+  },
+  {
+    "object": "dust",
+    "distance": 180,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.98,
+    "first_frame": null,
+    "returns_per_frame": 78.86
+  },
+  {
+    "object": "dust",
+    "distance": 190,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.96,
+    "first_frame": null,
+    "returns_per_frame": 70.3
+  },
+  {
+    "object": "dust",
+    "distance": 200,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.98,
+    "first_frame": null,
+    "returns_per_frame": 63.3
+  },
+  {
+    "object": "dust",
+    "distance": 215,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.96,
+    "first_frame": null,
+    "returns_per_frame": 54.48
+  },
+  {
+    "object": "dust",
+    "distance": 220,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.96,
+    "first_frame": null,
+    "returns_per_frame": 52.38
+  },
+  {
+    "object": "dust",
+    "distance": 230,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.84,
+    "first_frame": null,
+    "returns_per_frame": 48.96
+  },
+  {
+    "object": "dust",
+    "distance": 250,
+    "segment": 300,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 40.3
+  },
+  {
+    "object": "dust",
+    "distance": 260,
+    "segment": 420,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.82,
+    "first_frame": null,
+    "returns_per_frame": 36.64
+  },
+  {
+    "object": "dust",
+    "distance": 270,
+    "segment": 500,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 34.74
+  },
+  {
+    "object": "dust",
+    "distance": 280,
+    "segment": 600,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 1.0,
+    "first_frame": null,
+    "returns_per_frame": 31.3
+  },
+  {
+    "object": "dust",
+    "distance": 300,
+    "segment": 100,
+    "detected": 0.0,
+    "stop": 0.0,
+    "dust_zone_rate": 0.0,
+    "first_frame": null,
+    "returns_per_frame": 26.72
+  }
+]

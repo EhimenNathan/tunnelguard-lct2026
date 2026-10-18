@@ -1,0 +1,37 @@
+[INFO] [launch]: All log files can be found below /root/.ros/log/2026-10-18-07-39-22-521054-58b619460d5d-122
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [detector_node-1]: process started with pid [123]
+[INFO] [python3-2]: process started with pid [125]
+[python3-2] QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+[python3-2] [INFO] [1792309162.753010756] [rviz2]: Stereo is NOT SUPPORTED
+[python3-2] [INFO] [1792309162.753201393] [rviz2]: OpenGl version: 4.5 (GLSL 4.5)
+[python3-2] [INFO] [1792309162.802469007] [rviz2]: Stereo is NOT SUPPORTED
+[detector_node-1] [INFO] [1792309163.233715499] [tunnel_guard]: scorer: /ws/install/tunnel_guard/share/tunnel_guard/config/obstacle_scorer.json; numba kernels: True
+[detector_node-1] [INFO] [1792309163.246239717] [tunnel_guard]: subscribed to /iv_points
+[detector_node-1] [INFO] [1792309163.247767967] [tunnel_guard]: TunnelGuard started (input_topic=/iv_points, reliability=reliable, custom msgs=True, vision_msgs=True)
+[INFO] [python3-3]: process started with pid [163]
+[python3-3] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792309166.469571091] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[python3-3] [INFO] [1792309166.469641087] [rosbag2_player]: Set rate to 1
+[python3-3] [INFO] [1792309166.469679464] [rosbag2_player]: Overriding QoS profile for topic /iv_points
+[python3-3] [INFO] [1792309166.474632649] [rosbag2_player]: Adding keyboard callbacks.
+[python3-3] [INFO] [1792309166.474663105] [rosbag2_player]: Press SPACE for Pause/Resume
+[python3-3] [INFO] [1792309166.474672809] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[python3-3] [INFO] [1792309166.474681152] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[python3-3] [INFO] [1792309166.474689304] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[python3-3] [INFO] [1792309166.474781733] [rosbag2_player]: Sleep 2000000000 ns
+[python3-3] [INFO] [1792309168.475383977] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[python3-3] [INFO] [1792309169.077118264] [rosbag2_player]: Resuming play.
+[detector_node-1] [INFO] [1792309173.248004808] [tunnel_guard]: frames=42 mean processing 24.4 ms
+[detector_node-1] [INFO] [1792309178.248027962] [tunnel_guard]: frames=92 mean processing 23.3 ms
+[detector_node-1] [INFO] [1792309183.248193863] [tunnel_guard]: frames=142 mean processing 23.1 ms
+[detector_node-1] [INFO] [1792309188.248045546] [tunnel_guard]: frames=192 mean processing 23.0 ms
+[detector_node-1] [INFO] [1792309193.248004000] [tunnel_guard]: frames=242 mean processing 22.7 ms
+[detector_node-1] [INFO] [1792309198.248005340] [tunnel_guard]: frames=292 mean processing 22.6 ms
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [python3-3]: sending signal 'SIGINT' to process[python3-3]
+[INFO] [python3-2]: sending signal 'SIGINT' to process[python3-2]
+[INFO] [detector_node-1]: sending signal 'SIGINT' to process[detector_node-1]
+[python3-3] Bag playback cancelled by requested SIGINT
+[INFO] [python3-3]: process has finished cleanly [pid 163]
+[INFO] [detector_node-1]: process has finished cleanly [pid 123]
+[INFO] [python3-2]: process has finished cleanly [pid 125]

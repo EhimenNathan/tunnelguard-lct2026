@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "same_protocol": true,
+    "all_255_conditions": true,
+    "no_extra_dust_stop": true,
+    "no_extra_offtrack_stop": true,
+    "no_extra_offtrack_warning": true,
+    "positive_matches_improve": true,
+    "no_positive_case_loses_matches": true
+  },
+  "passed": true,
+  "positive_before": 4977,
+  "positive_after": 5096,
+  "dust_stop_before": 0,
+  "dust_stop_after": 0,
+  "offtrack_stop_before": 0,
+  "offtrack_stop_after": 0,
+  "offtrack_warning_before": 0,
+  "offtrack_warning_after": 0
+}

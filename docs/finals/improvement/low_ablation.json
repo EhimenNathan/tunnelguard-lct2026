@@ -1,0 +1,337 @@
+{
+  "commit": "f2af9385fdfb3767e0c0be58c031d82ec3975505",
+  "source_sha256": {
+    "adapt.py": "c1b7182216019b4a930b73be18f8a0217bd4f52eb2c24d3fcf6e4ff57d9c3486",
+    "cloud.py": "0f43f1efa859c1a9f52c18a3ae1d47382b30d989b1e1ae220a07150bf4d3a06c",
+    "cluster.py": "56d5da7ed26ebf7ee3cb1980f8bdf708ddc7c893f0b6130006df6602e503bb52",
+    "detector.py": "2587ebc078f5e1864b194c62c7fb98307e6cd0067f724ef0d8514903ce9a2ece",
+    "farfield.py": "918642cfb28b9fa4c791c3eb8e450b9ff20a63f3bce078668d707d49d6aed641",
+    "fast.py": "572599edaf59c151fb1e82d0ad232d9a4e64b312e64c7a4dd327f2de632c3355",
+    "features.py": "9cc844a8d006d4c9c66f8b47f4d750bd1f63d20f705f43f0a1824e27981addab",
+    "gauge.py": "9a379f4e6b3ac63d4b2fb78b9aa8b7e21b3ec7698b1ac58cd139f637e1c66a32",
+    "geometry.py": "359d73e5295703ab3f289d567766a34c122db6dcbe0b5099582a08e539aab4b8",
+    "pandar.py": "40ecfa6c94fdbe246345b2473f8b53f241b115603f0a68219667012f39049b5d",
+    "scorer.py": "b894e5fa54550bacd2903d80cc7dc4a5c84f10f9b89e26b0a93e4766fff19038",
+    "synth.py": "64b97f4ed1a46c063f6df869620e8778fce1d6055fdd91ab6ab4ba410704fece",
+    "tracker.py": "5c20254a721ea1dbfe5265c86cc029ba58e68fc7fb54d792764301c0b8a8f15e",
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "method": "Only lowfield.enabled differs; 30 warmup + 50 injection frames, same input; distance match <4m; fresh detector per condition; seeds not used in the original ladder; common backgrounds, not independent accuracy estimates",
+  "trials": [
+    {
+      "object": "box_0.3",
+      "distance": 90,
+      "seed": 1001,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 28,
+          "stop": 0,
+          "dust": 0,
+          "first": 22
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 90,
+      "seed": 2002,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 30,
+          "stop": 0,
+          "dust": 0,
+          "first": 20
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 90,
+      "seed": 3003,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 21,
+          "stop": 0,
+          "dust": 0,
+          "first": 25
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 100,
+      "seed": 1001,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 25,
+          "stop": 0,
+          "dust": 0,
+          "first": 25
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 100,
+      "seed": 2002,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 30,
+          "stop": 0,
+          "dust": 0,
+          "first": 20
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 100,
+      "seed": 3003,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 31,
+          "stop": 0,
+          "dust": 0,
+          "first": 19
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 150,
+      "seed": 1001,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 2,
+          "first": null
+        },
+        "current": {
+          "hit": 18,
+          "stop": 0,
+          "dust": 2,
+          "first": 32
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 150,
+      "seed": 2002,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 2,
+          "first": null
+        },
+        "current": {
+          "hit": 17,
+          "stop": 0,
+          "dust": 2,
+          "first": 28
+        }
+      }
+    },
+    {
+      "object": "box_0.3",
+      "distance": 150,
+      "seed": 3003,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 2,
+          "first": null
+        },
+        "current": {
+          "hit": 21,
+          "stop": 0,
+          "dust": 2,
+          "first": 28
+        }
+      }
+    },
+    {
+      "object": "person",
+      "distance": 300,
+      "seed": 1001,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        }
+      }
+    },
+    {
+      "object": "person",
+      "distance": 300,
+      "seed": 2002,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 13,
+          "stop": 1,
+          "dust": 0,
+          "first": 37
+        },
+        "current": {
+          "hit": 13,
+          "stop": 1,
+          "dust": 0,
+          "first": 37
+        }
+      }
+    },
+    {
+      "object": "person",
+      "distance": 300,
+      "seed": 3003,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        },
+        "current": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 0,
+          "first": null
+        }
+      }
+    },
+    {
+      "object": "dust",
+      "distance": 150,
+      "seed": 1001,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        },
+        "current": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        }
+      }
+    },
+    {
+      "object": "dust",
+      "distance": 150,
+      "seed": 2002,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        },
+        "current": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        }
+      }
+    },
+    {
+      "object": "dust",
+      "distance": 150,
+      "seed": 3003,
+      "segment": 100,
+      "n": 50,
+      "variants": {
+        "without_low": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        },
+        "current": {
+          "hit": 0,
+          "stop": 0,
+          "dust": 50,
+          "first": null
+        }
+      }
+    }
+  ]
+}

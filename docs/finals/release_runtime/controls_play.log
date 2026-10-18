@@ -1,0 +1,31 @@
+playing /data/falcon_test  (topic /iv_points, rate 0.5)
+keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792309208.189405181] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792309208.189450730] [rosbag2_player]: Set rate to 0.5
+[INFO] [1792309208.189482388] [rosbag2_player]: Overriding QoS profile for topic /iv_points
+[INFO] [1792309208.194092526] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1792309208.194119606] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1792309208.194127098] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1792309208.194133577] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1792309208.194142681] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1792309208.194197183] [rosbag2_player]: Sleep 2000000000 ns
+[INFO] [1792309210.194713020] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792309210.819610153] [rosbag2_player]: Resuming play.
+[INFO] [1792309214.926082439] [rosbag2_player]: Pausing play.
+[INFO] [1792309217.434057953] [rosbag2_player]: Playing next message.
+[INFO] [1792309219.464027496] [rosbag2_player]: Set rate to 0.25
+[INFO] [1792309219.465461874] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+playing /tmp/tg_controls_switch_9_qvjx0l  (topic /falcon_secondary, rate 1.0)
+keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792309225.145528429] [rosbag2_storage]: Opened database '/tmp/tg_controls_switch_9_qvjx0l/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792309225.145592355] [rosbag2_player]: Set rate to 1
+[INFO] [1792309225.145626647] [rosbag2_player]: Overriding QoS profile for topic /falcon_secondary
+[INFO] [1792309225.150275273] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1792309225.150303575] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1792309225.150311868] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1792309225.150317887] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1792309225.150323405] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1792309225.150393010] [rosbag2_player]: Sleep 2000000000 ns
+[INFO] [1792309227.150901902] [rosbag2_storage]: Opened database '/tmp/tg_controls_switch_9_qvjx0l/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792309227.752591578] [rosbag2_player]: Resuming play.
+[INFO] [1792309232.776948811] [rclcpp]: signal_handler(SIGINT/SIGTERM)

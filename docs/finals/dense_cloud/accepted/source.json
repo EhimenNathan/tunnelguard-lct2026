@@ -1,0 +1,84 @@
+{
+  "archive_bytes": 2532818915,
+  "archive_sha256": "e09336cb939e6b5a6fdb35ccacce59f3808d875a4084142a02cbd1cf88a26bc7",
+  "parts": [
+    {
+      "id": 652244580,
+      "name": "new_synth.part00",
+      "offset": 0,
+      "size": 5242880,
+      "sha256": "51929188bcb35874d4b620f32b294e662eca93a10de21fd7df5fc34967a1fab3"
+    },
+    {
+      "id": 652249451,
+      "name": "new_synth.part01",
+      "offset": 5242880,
+      "size": 268435456,
+      "sha256": "03dc9406aa783d7664b8e188695c9f8431684ade9175fb7f4c57937ff543b761"
+    },
+    {
+      "id": 652254347,
+      "name": "new_synth.part02",
+      "offset": 273678336,
+      "size": 268435456,
+      "sha256": "82919fc28c191309f28710a2fee3bfadbf45761aba4789e1de4f6f56849702ce"
+    },
+    {
+      "id": 652259297,
+      "name": "new_synth.part03",
+      "offset": 542113792,
+      "size": 268435456,
+      "sha256": "67bb12b5d3ddd297db28d5604fca68f058b818a5182ac8ffbe530745668a3cee"
+    },
+    {
+      "id": 652264713,
+      "name": "new_synth.part04",
+      "offset": 810549248,
+      "size": 268435456,
+      "sha256": "5064b114b489857483e508bfa0fee8c0bf844ad5c9ee2196484616907128b1cf"
+    },
+    {
+      "id": 652268162,
+      "name": "new_synth.part05",
+      "offset": 1078984704,
+      "size": 268435456,
+      "sha256": "93020cb5c1be05a7a68601b2c18cb6189a0aa887e73b887a3e366dec1658fff0"
+    },
+    {
+      "id": 652273652,
+      "name": "new_synth.part06",
+      "offset": 1347420160,
+      "size": 268435456,
+      "sha256": "1d0081056bc5f450595b3ec3b4661cf746eee554410c38eef1e180adb590b437"
+    },
+    {
+      "id": 652279250,
+      "name": "new_synth.part07",
+      "offset": 1615855616,
+      "size": 268435456,
+      "sha256": "c75f7c5d977d8274d44c70eb939a62bcd63d8243c077703314897f551602be68"
+    },
+    {
+      "id": 652282390,
+      "name": "new_synth.part08",
+      "offset": 1884291072,
+      "size": 268435456,
+      "sha256": "c99a20cf42f95539a3ada5fb4bb72337ba1285a44d04973908927d5bcb1d2df1"
+    },
+    {
+      "id": 652286138,
+      "name": "new_synth.part09",
+      "offset": 2152726528,
+      "size": 268435456,
+      "sha256": "570aeaacaa44fa7206234ccc917864b61c1092e4954964e99ef15f7411142e62"
+    },
+    {
+      "id": 652290546,
+      "name": "new_synth.part10",
+      "offset": 2421161984,
+      "size": 111656931,
+      "sha256": "e245911c509093894ef2c9208b7a669ad8b5158926dd5a583278675085594eb4"
+    }
+  ],
+  "source_name": "new_synth_data.zst"
+}

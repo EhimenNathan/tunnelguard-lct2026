@@ -1,0 +1,14 @@
+{
+  "full_decode": true,
+  "faststart_atoms": [
+    "ftyp",
+    "moov",
+    "free",
+    "mdat"
+  ],
+  "identical_copies": 3,
+  "sha256": "d254f7d702281e1993e1293b187507bd5b16a729b6ef0edf1cd980597a61750e",
+  "bytes": 61093917,
+  "duration_s": 166.7,
+  "source_scans": 1667
+}

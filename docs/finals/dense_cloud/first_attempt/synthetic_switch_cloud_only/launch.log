@@ -1,0 +1,42 @@
+[INFO] [launch]: All log files can be found below /root/.ros/log/2026-10-18-07-11-32-683001-792a5cc4334f-246
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [detector_node-1]: process started with pid [247]
+[INFO] [python3-2]: process started with pid [249]
+[python3-2] QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+[python3-2] [INFO] [1792307492.912108047] [rviz2]: Stereo is NOT SUPPORTED
+[python3-2] [INFO] [1792307492.912329701] [rviz2]: OpenGl version: 4.5 (GLSL 4.5)
+[python3-2] [INFO] [1792307492.961864399] [rviz2]: Stereo is NOT SUPPORTED
+[detector_node-1] [INFO] [1792307493.388769770] [tunnel_guard]: scorer: /ws/install/tunnel_guard/share/tunnel_guard/config/obstacle_scorer.json; numba kernels: True
+[detector_node-1] [INFO] [1792307493.403183915] [tunnel_guard]: subscribed to /lidar_points
+[detector_node-1] [INFO] [1792307493.405002621] [tunnel_guard]: TunnelGuard started (input_topic=/lidar_points, reliability=reliable, custom msgs=True, vision_msgs=True)
+[INFO] [ros2-3]: process started with pid [279]
+[ros2-3] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792307496.964328935] [rosbag2_storage]: Opened database '/data/synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3' for READ_ONLY.
+[ros2-3] [INFO] [1792307496.964388946] [rosbag2_player]: Set rate to 1
+[ros2-3] [INFO] [1792307496.964427013] [rosbag2_player]: Overriding QoS profile for topic /lidar_points
+[ros2-3] [INFO] [1792307496.969430178] [rosbag2_player]: Adding keyboard callbacks.
+[ros2-3] [INFO] [1792307496.969456718] [rosbag2_player]: Press SPACE for Pause/Resume
+[ros2-3] [INFO] [1792307496.969466182] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[ros2-3] [INFO] [1792307496.969474324] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[ros2-3] [INFO] [1792307496.969481986] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[ros2-3] [INFO] [1792307496.969579523] [rosbag2_player]: Sleep 2000000000 ns
+[ros2-3] [INFO] [1792307498.970141348] [rosbag2_storage]: Opened database '/data/synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3' for READ_ONLY.
+[ros2-3] [INFO] [1792307499.531891998] [rosbag2_player]: Resuming play.
+[detector_node-1] [INFO] [1792307518.405431614] [tunnel_guard]: frames=56 mean processing 38.8 ms
+[detector_node-1] [INFO] [1792307523.405299311] [tunnel_guard]: frames=106 mean processing 34.8 ms
+[detector_node-1] [INFO] [1792307528.405186733] [tunnel_guard]: frames=156 mean processing 32.8 ms
+[detector_node-1] [INFO] [1792307533.405187890] [tunnel_guard]: frames=206 mean processing 31.8 ms
+[detector_node-1] [INFO] [1792307538.405256009] [tunnel_guard]: frames=256 mean processing 31.2 ms
+[detector_node-1] [INFO] [1792307543.405281030] [tunnel_guard]: frames=306 mean processing 30.9 ms
+[detector_node-1] [INFO] [1792307548.405183449] [tunnel_guard]: frames=356 mean processing 30.4 ms
+[detector_node-1] [INFO] [1792307553.405257481] [tunnel_guard]: frames=406 mean processing 30.3 ms
+[detector_node-1] [INFO] [1792307558.405207348] [tunnel_guard]: frames=456 mean processing 30.2 ms
+[detector_node-1] [INFO] [1792307563.405193397] [tunnel_guard]: frames=506 mean processing 30.2 ms
+[detector_node-1] [INFO] [1792307568.405259962] [tunnel_guard]: frames=556 mean processing 30.1 ms
+[INFO] [ros2-3]: process has finished cleanly [pid 279]
+[detector_node-1] [INFO] [1792307573.405182369] [tunnel_guard]: frames=603 mean processing 29.9 ms
+[detector_node-1] [INFO] [1792307578.405160357] [tunnel_guard]: frames=603 mean processing 29.9 ms
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [python3-2]: sending signal 'SIGINT' to process[python3-2]
+[INFO] [detector_node-1]: sending signal 'SIGINT' to process[detector_node-1]
+[INFO] [detector_node-1]: process has finished cleanly [pid 247]
+[INFO] [python3-2]: process has finished cleanly [pid 249]

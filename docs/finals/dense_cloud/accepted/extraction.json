@@ -1,0 +1,29 @@
+{
+  "expanded_bytes": 13324192783,
+  "members": [
+    {
+      "path": "synthetic_platform_cloud_only/synthetic_platform_cloud_only_0.db3",
+      "bytes": 3085340672
+    },
+    {
+      "path": "synthetic_platform_cloud_only/metadata.yaml",
+      "bytes": 1031
+    },
+    {
+      "path": "synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3",
+      "bytes": 5882982400
+    },
+    {
+      "path": "synthetic_switch_cloud_only/metadata.yaml",
+      "bytes": 1027
+    },
+    {
+      "path": "synthetic_tunnels_cloud_only/synthetic_tunnels_cloud_only_0.db3",
+      "bytes": 4355866624
+    },
+    {
+      "path": "synthetic_tunnels_cloud_only/metadata.yaml",
+      "bytes": 1029
+    }
+  ]
+}

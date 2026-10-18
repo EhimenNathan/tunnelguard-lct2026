@@ -1,0 +1,16 @@
+{
+  "runtime_commit": "2e2cee7",
+  "verified_cloud_run": 39108165758,
+  "dense_cloud_run": 39107380132,
+  "generalization_run": 39089859458,
+  "platform": "linux/amd64",
+  "gui_image": "ghcr.io/ehimennathan/tunnel_guard_gui@sha256:d17f0bbbd4dd9a4596ba2ee032f27f842ffd1321840ee2492856f96207aa9767",
+  "base_image": "ghcr.io/ehimennathan/tunnel_guard@sha256:b5f103889bd19547bbb08be3c7c1c2e96ccaf4b4da11838700d43839c217e5ea",
+  "local_regression": {
+    "passed": 38,
+    "skipped": 5,
+    "skip": "Linux/ROS integration and native C++ unavailable on Windows host"
+  },
+  "docker_required_on_local_pc": true,
+  "arm64": "Explicit amd64 emulation only; performance not validated"
+}

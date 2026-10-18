@@ -1,0 +1,64 @@
+{
+  "camera": "fixed forward-facing cab",
+  "source": "all original organizer new_synth_data scans, native detector",
+  "playback_rate": 1.0,
+  "fps": 20,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "scenes": [
+    {
+      "name": "Платформа",
+      "frames": 386,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 38.49998700618744,
+      "source_end_s": 38.49998700618744,
+      "last_scan_hold_s": 0.0999990701675415,
+      "video_start_s": 0.0,
+      "video_end_s": 38.6
+    },
+    {
+      "name": "Стрелка",
+      "frames": 736,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 73.49990689754486,
+      "source_end_s": 73.49990689754486,
+      "last_scan_hold_s": 0.10000097751617432,
+      "video_start_s": 38.6,
+      "video_end_s": 112.2
+    },
+    {
+      "name": "Тоннель",
+      "frames": 545,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 54.40010595321655,
+      "source_end_s": 54.40010595321655,
+      "last_scan_hold_s": 0.10000002384185791,
+      "video_start_s": 112.2,
+      "video_end_s": 166.7
+    }
+  ],
+  "source_scan_step_s": [
+    0.0999990701675415,
+    0.10000097751617432,
+    0.10000002384185791
+  ],
+  "detector_commit": "2e2cee7",
+  "generator_commit": "61320837e5e244d0b8ac1ee0d0b536e0c976dd46",
+  "generator_source_sha256": "5212d15e12f61a78a023ce0657a36ba6a08827925ba4a272e9432da6775788ba",
+  "generator_hash_format": "UTF-8 LF",
+  "video_source_clip_sha256": {
+    "platform": "f2e82e0a07775db1266ec7e015addc690ffc0c6513e1a3965669b56704326dd5",
+    "switch": "ae5d01431c67f40dbdf03a0c181fa6098dd02119ce3a79d8a7c15d6b8578362d",
+    "tunnels": "eb7086d2285ca1eaab6ed35348ac60d382fb2238ef6468276157e2419ac337d8"
+  },
+  "duration_s": 166.7,
+  "output_bytes": 61093917,
+  "output_sha256": "d254f7d702281e1993e1293b187507bd5b16a729b6ef0edf1cd980597a61750e",
+  "web_preview_clip_sha256": {
+    "platform": "1a41ca5555750f31200b7a156adc9b3fdbe7d4c86ab97577ea90eaf2a89bcf2f",
+    "switch": "ddca1eaa43ec89367e00db553fe1ccfe4a146675e684210837960ec42aeaad93",
+    "tunnels": "9b667afe27a3af82d676cc4fb62acc5fab217049c76093f4a3399390896f02bc"
+  }
+}

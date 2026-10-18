@@ -1,0 +1,29 @@
+{
+  "expected": 736,
+  "received": 603,
+  "output_hz": 10.000466617226698,
+  "native_geometry": true,
+  "first_output_stamp": 946685971.633372,
+  "last_output_stamp": 946686044.833301,
+  "max_delivery_backlog_ms": 0.0,
+  "playback_delivery_lag_ms_p95": 845474887415.5087,
+  "playback_lag_reference": "Resume request and aligned header/recording stamps of exported CI bag",
+  "processing_ms_p50": 29.13859748840332,
+  "processing_ms_p95": 34.378085708618165,
+  "processing_ms_p99": 56.63196609497085,
+  "arrival_gap_ms_p99": 127.72592225998436,
+  "processing_over_100ms": 1,
+  "callback_ms_p95": 44.15865592956543,
+  "shutdown_clean": true,
+  "stop_messages": 103,
+  "checks": {
+    "no_crash": true,
+    "shutdown_clean": true,
+    "messages": false,
+    "rate": true,
+    "stop": true,
+    "rviz": true,
+    "ordered": true
+  },
+  "passed": false
+}
