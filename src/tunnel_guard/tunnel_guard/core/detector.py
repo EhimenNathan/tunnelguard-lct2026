@@ -603,7 +603,7 @@ class ObstacleDetector:
                                           lateral=f['lateral'], height=f['height'], n=f['n'],
                                           confidence=f['confidence'], closing_speed=vv,
                                           ttc=f['distance'] / vv if vv > 0.3 else float('inf'), age=f['frames'],
-                                          idx=f['idx'], ego_veto=False, far=True))
+                                          idx=f['idx'], ego_veto=False, far=True, geometry_uncertain=f.get('geometry_uncertain',False)))
         self.recent.append((self.calib.segment, self.calib.x, np.array([c['s_min'] for c in cands_all], float),
                             np.array([c['l_mean'] for c in cands_all], float)))
         if not settled:

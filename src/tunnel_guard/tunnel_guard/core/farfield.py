@@ -38,7 +38,8 @@ class FarFieldConfig:
     stop_window: int = 15           # STOP uses recent evidence; longer CAUTION memory must not prolong a stale alarm
     stop_frames: int = 9            # frames with hits for STOP
     floor_support: float = 1.1      # lowest return of the object must be below this height [m]
-    sigma_l_max: float = 0.6        # geometry must be at least this certain laterally at the object
+    sigma_l_max: float = 0.6        # lateral uncertainty limit for STOP
+    sigma_l_warn_max: float = 1.2   # persistent objects may warn within this bound; never STOP on uncertain geometry
 
 
 class FarField:
@@ -163,7 +164,7 @@ class FarField:
             if sc3[c] >= 0.3 * (sc3[c] + npts[c]):
                 continue                                  # mostly scatter returns around it: a dust / aerosol cloud
             sl, sv = g.sigma_at(np.array([smean]))
-            if sl[0] > cfg.sigma_l_max:
+            if sl[0] > max(cfg.sigma_l_max, cfg.sigma_l_warn_max):
                 continue
             if cfg.span_max > 0 and span[c] > cfg.span_max:
                 continue
@@ -177,8 +178,8 @@ class FarField:
             keep_ids[c] = oid
             idx = sel[np.abs(cells_now - c) <= 1] if len(cells_now) else np.zeros(0, np.int64)
             height_certain = hmax[c] >= cfg.h_lo + cfg.height_sigma_k * sv[0]
-            out.append(dict(id=oid, zone=IN_GAUGE if stop_hits[c] >= cfg.stop_frames and abs(stop_lmean[c]) <= cfg.centre_half_width and stop_hmin[c] <= cfg.floor_support and height_certain else NEAR_GAUGE, distance=float(smean),
+            out.append(dict(id=oid, zone=IN_GAUGE if sl[0] <= cfg.sigma_l_max and stop_hits[c] >= cfg.stop_frames and abs(stop_lmean[c]) <= cfg.centre_half_width and stop_hmin[c] <= cfg.floor_support and height_certain else NEAR_GAUGE, distance=float(smean),
                             lateral=float(lmean), height=float(hmax[c]), h_min=float(hmin[c]), n=int(npts[c]),
-                            confidence=float(fh[c] / cfg.window), frames=int(fh[c]), idx=idx, far=True))
+                            confidence=float(fh[c] / cfg.window), frames=int(fh[c]), idx=idx, far=True, geometry_uncertain=bool(sl[0] > cfg.sigma_l_max)))
         self.ids = keep_ids
         return sorted(out, key=lambda o: o['distance'])

@@ -94,6 +94,7 @@ def main():
     hz = (len(times) - 1) / (times[-1] - times[0]) if len(times) > 1 else 0.0
     log_text = (out / 'launch.log').read_text()
     checks = dict(no_crash='Traceback' not in runtime_log and 'process has died' not in runtime_log,
+                  shutdown_clean='Traceback' not in log_text and 'process has died' not in log_text,
                   messages=len(arrivals) == args.expected,
                   rate=bool(hz >= 9.0), stop=2 in levels, rviz=screenshot,
                   ordered=bool(len(stamps) > 1 and np.all(np.diff(stamps) > 0)))

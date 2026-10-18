@@ -166,6 +166,7 @@ tunnel_guard:
       stop_frames: 9
       floor_support: 1.1
       sigma_l_max: 0.6
+      sigma_l_warn_max: 1.2
     lowfield:
       enabled: true
       s_min: 30.0
@@ -186,6 +187,7 @@ tunnel_guard:
       stop_frames: 12
       floor_support: 0.55
       sigma_l_max: 0.6
+      sigma_l_warn_max: 1.2
     adapt:
       enabled: false
       quantile: 0.995

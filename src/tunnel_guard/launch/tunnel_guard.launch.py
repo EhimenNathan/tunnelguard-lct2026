@@ -8,6 +8,7 @@ With bag:=..., the PointCloud2 topic is read from the bag's metadata.yaml and pl
 reports that it is subscribed and ready (numba kernels loaded), so no frame is lost.
 """
 import os
+import sys
 
 import tempfile
 
@@ -68,6 +69,7 @@ def launch_setup(context):
         detector,
         Node(
             package='rviz2', executable='rviz2', name='rviz2', output='log',
+            prefix=[sys.executable, ' -m tunnel_guard.rviz_session'],
             arguments=['-d', os.path.join(share, 'rviz', 'tunnel_guard.rviz')],
             condition=IfCondition(LaunchConfiguration('rviz')),
         ),

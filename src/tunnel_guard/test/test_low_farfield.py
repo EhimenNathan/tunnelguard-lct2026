@@ -61,3 +61,18 @@ def test_stop_position_uses_recent_lateral_evidence():
     p[:,1]=-.98
     for _ in range(15):out=far.update(p,g,30,300)
     assert out and out[0]['zone']==1
+
+
+def test_uncertain_lateral_geometry_warns_without_stop():
+    from tunnel_guard.core.farfield import FarFieldConfig
+    x=np.arange(501.)
+    p=np.array([[300.,0.,-.8]],np.float32)
+    for sigma,expected in [(.3,2),(.8,1),(1.4,None)]:
+        g=TrackGeometry(x,np.zeros_like(x),np.full_like(x,-1.8),ok=True,
+                        sigma_l=np.full_like(x,sigma),sigma_v=np.full_like(x,.025))
+        far=FarField(FarFieldConfig())
+        for _ in range(25):out=far.update(p,g,30,400)
+        if expected is None:assert not out
+        else:
+            assert out and out[0]['zone']==expected
+            assert out[0]['geometry_uncertain']==(expected==1)
