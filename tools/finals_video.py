@@ -2,6 +2,7 @@
 python tools/finals_video.py WEB_DIR OUTPUT.mp4
 """
 import json
+from functools import lru_cache
 import sys
 from pathlib import Path
 import numpy as np
@@ -12,6 +13,7 @@ W,H,FPS=1920,1080,20
 PROFILE=None
 BG='#070d15';PANEL='#0c1723';INK='#e9f1f4';MUTED='#8b9da9';CYAN='#6cdeeb';RED='#ff7379';GOLD='#f1c37d'
 fonts=Path('C:/Windows/Fonts')
+@lru_cache(maxsize=64)
 def font(size,bold=False):
     local=fonts/('segoeuib.ttf' if bold else 'segoeui.ttf')
     return ImageFont.truetype(str(local if local.exists() else Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')),size)

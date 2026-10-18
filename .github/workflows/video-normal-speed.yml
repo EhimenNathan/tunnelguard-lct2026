@@ -1,0 +1,56 @@
+name: video-normal-speed
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: 'Temporary unpublished input release ID'
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: video-normal-speed
+  cancel-in-progress: true
+jobs:
+  render-original-scans:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare cloud disk and pinned native image
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          echo "IMG=$IMG" >> "$GITHUB_ENV"
+          docker pull "$IMG"
+          pip install --quiet requests numpy zstandard pyyaml matplotlib pillow imageio imageio-ffmpeg
+      - name: Fetch private input and verify SHA256
+        env:
+          TG_DATA_TOKEN: ${{ github.token }}
+          DATA_RELEASE: ${{ inputs.release_id }}
+        run: |
+          python tools/cloud_dense_data.py download "$DATA_RELEASE" private_data/new_synth_data.zst
+          python tools/cloud_dense_data.py extract private_data/new_synth_data.zst bags
+      - name: Export all 1667 native detector scans
+        run: |
+          mkdir -p full_results results
+          docker run --rm --network none -e TG_SOURCE_SHA=2e2cee7 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/full_results:/results" "$IMG" python3 /tools/finals_organizer_bundle.py /data /results --clip-stride 1
+          python tools/finals_prepare_video.py full_results video_project
+      - name: Render normal speed, original 10Hz scans
+        run: |
+          python tools/finals_cab_video.py video_project/web results/tunnelguard_final.mp4 --rate 1
+          cp video_project/web/data/cab_video.json results/
+          cp video_project/web/assets/video_poster.png results/
+          cp full_results/summary.json results/detector_summary.json
+          cp private_data/source.json results/source.json
+          python - <<'PY'
+          import json
+          m=json.load(open('results/cab_video.json'))
+          assert m['playback_rate']==1 and sum(s['frames'] for s in m['scenes'])==1667
+          assert abs(m['duration_s']-166.7)<.11
+          assert all(.09<s<.11 for s in m['source_scan_step_s'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: normal-speed-video
+          path: results/

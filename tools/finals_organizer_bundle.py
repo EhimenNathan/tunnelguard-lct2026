@@ -1,5 +1,5 @@
 """Installed ROS detector: full raw organizer bags plus truthful sampled 3D output."""
-import hashlib,json,os,sys,time
+import argparse,hashlib,json,os,sys,time
 from pathlib import Path
 import numpy as np
 import yaml
@@ -12,7 +12,7 @@ from tunnel_guard import params as P
 import tunnel_guard.core.detector as detector_module
 
 def save(p,obj):Path(p).write_text(json.dumps(obj,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-def main(root,out):
+def main(root,out,clip_stride=25):
  root=Path(root);out=Path(out);out.mkdir(parents=True,exist_ok=True);warmup();rng=np.random.default_rng(17)
  model=Path(get_package_share_directory('tunnel_guard'))/'config/obstacle_scorer.json';rows=[];clips=[];pieces=[];schemas=[]
  for name,expected in [('synthetic_platform_cloud_only',386),('synthetic_switch_cloud_only',736),('synthetic_tunnels_cloud_only',545)]:
@@ -25,7 +25,7 @@ def main(root,out):
    inten=a.get('intensity');inten=inten[valid] if inten is not None else None;ring=a.get('ring',a.get('channel'));ring=ring[valid] if ring is not None else None
    tic=time.perf_counter();res=det.process(p,stamp-t0,intensity=inten,ring=ring);ms=1000*(time.perf_counter()-tic);g=res.geometry
    row=dict(k=len(rows),piece=name+'/'+name+'_0.db3',local=k,t=stamp-t0,points=len(p),ms=ms,level=int(res.level),geometry=bool(g.ok),measured=float(g.valid_range),env=float(res.envelope_range),clear=float(res.clear_distance),dust=[dict(d=float(z['distance']),n=int(z['n'])) for z in res.dust],obs=[dict(d=float(o['distance']),l=float(o['lateral']),zone=int(o['zone']),n=int(o['n']),uncertain=bool(o.get('geometry_uncertain'))) for o in res.obstacles]);rows.append(row)
-   if k%25==0:
+   if k%clip_stride==0:
     q=res.forward_points;eligible=np.flatnonzero((q[:,0]>2)&(q[:,0]<410)&(abs(q[:,1])<15)&(q[:,2]>-5)&(q[:,2]<10));special=np.unique(np.concatenate([np.asarray(o['idx'],int) for o in res.obstacles])) if res.obstacles else np.zeros(0,int)
     if len(special)>2000:special=rng.choice(special,2000,False)
     far=eligible[q[eligible,0]>80];near=eligible[q[eligible,0]<=80];sel=np.unique(np.r_[special,rng.choice(far,min(1400,len(far)),False),rng.choice(near,min(1800,len(near)),False)])
@@ -36,4 +36,7 @@ def main(root,out):
  steady=[r for r in rows if r['local']>=30];core=Path(detector_module.__file__).parent
  summary=dict(archive='new_synth_data.zst',complete=True,frames=len(rows),pieces=3,commit=os.environ.get('TG_SOURCE_SHA'),native=HAVE_NATIVE,config=P.flatten(det.cfg),source_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in core.glob('*.py')},model_sha256=hashlib.sha256(model.read_bytes()).hexdigest(),by_piece=pieces,duration_s=sum(p['duration_s'] for p in pieces),stop_frames=sum(r['level']==2 for r in rows),caution_frames=sum(r['level']==1 for r in rows),dust_flagged_frames=sum(bool(r['dust']) for r in rows),geometry_ok=sum(r['geometry'] for r in steady),steady_frames=len(steady),obstacle_range_max=max((o['d'] for r in rows for o in r['obs']),default=None),p95_ms=float(np.percentile([r['ms'] for r in steady],95)),ground_truth='Нет независимых меток классов/пыли: выходы не равны TP/FP, FP/FN неизвестны')
  save(out/'summary.json',summary);save(out/'rows.json',rows);save(out/'clip.json',clips);save(out/'schema.json',schemas)
-if __name__=='__main__':main(*sys.argv[1:3])
+if __name__=='__main__':
+ ap=argparse.ArgumentParser();ap.add_argument('root');ap.add_argument('out');ap.add_argument('--clip-stride',type=int,default=25);args=ap.parse_args()
+ if args.clip_stride<1:ap.error('clip-stride must be positive')
+ main(args.root,args.out,args.clip_stride)
