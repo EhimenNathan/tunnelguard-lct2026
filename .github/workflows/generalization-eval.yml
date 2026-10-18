@@ -1,0 +1,35 @@
+name: generalization-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: generalization-eval
+  cancel-in-progress: true
+jobs:
+  unseen-seeds-and-backgrounds:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen baseline and candidate
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker build -t tg_candidate .
+          docker pull ghcr.io/ehimennathan/tunnel_guard@sha256:3e9d072e89ebc9c49003198c8c9720b25ea8292dd8eef13b9a9ba526c9108a16
+      - name: Stream the same full organizer recording
+        run: |
+          pip install --quiet numpy zstandard
+          python tools/falcon_export_bag.py bags/falcon_test 0 4442
+      - name: Frozen f2af938 — 255 unseen conditions
+        run: |
+          mkdir -p results/baseline results/candidate
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" ghcr.io/ehimennathan/tunnel_guard@sha256:3e9d072e89ebc9c49003198c8c9720b25ea8292dd8eef13b9a9ba526c9108a16 python3 /tools/finals_holdout_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/baseline --label f2af938
+      - name: Candidate — identical unseen conditions
+        run: |
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_holdout_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --label "${{ github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generalization-results
+          path: results/
