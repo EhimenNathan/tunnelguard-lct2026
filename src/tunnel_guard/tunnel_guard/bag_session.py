@@ -30,7 +30,10 @@ def main():
     while child.poll() is None and not requested:
         time.sleep(.05)
     if requested and child.poll() is None:
-        os.killpg(child.pid, signal.SIGINT)
+        try:
+            os.killpg(child.pid, signal.SIGINT)
+        except ProcessLookupError:
+            pass
         try:
             child.wait(timeout=6)
         except subprocess.TimeoutExpired:

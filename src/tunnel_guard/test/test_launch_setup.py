@@ -2,7 +2,9 @@
 import importlib.util
 from pathlib import Path
 import pytest
-pytest.importorskip('launch')
+launch_module = pytest.importorskip('launch')
+if not hasattr(launch_module, 'LaunchContext'):
+    pytest.skip('ROS launch runtime is not installed', allow_module_level=True)
 from launch import LaunchContext
 
 @pytest.mark.parametrize('copy_bag',['false','true'])
