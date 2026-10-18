@@ -621,6 +621,9 @@ class ObstacleDetector:
         nearest = min((o['distance'] for o in in_g), default=float('nan'))
         ttc = min((o['ttc'] for o in in_g), default=float('inf'))
         clear = min(float(np.nanmin([horizon, nearest])) if in_g else float(horizon), self._range_cap(p))
+        # An uncertain object is not an emergency STOP, but the route past it
+        # cannot be reported as observed empty either.
+        clear = min(clear, min((o['distance'] for o in obstacles if o.get('geometry_uncertain')), default=clear))
         # Commit the deduplication snapshot only after a successful evaluation;
         # callers may reuse and mutate their input buffer for the next scan.
         if cfg.skip_duplicates:

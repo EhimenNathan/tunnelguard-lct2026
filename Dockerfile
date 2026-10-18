@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-sensor-msgs-py \
         ros-humble-std-srvs \
         ros-humble-tf2-ros \
-        wmctrl \
+        wmctrl xdotool \
         zstd \
     && rm -rf /var/lib/apt/lists/*
 

@@ -33,9 +33,19 @@ start() {
 }
 
 stop() {
-    pkill -f "tunnel_guard.launch.py" 2>/dev/null || true
-    pkill -f "detector_node" 2>/dev/null || true
-    pkill -f "rviz2" 2>/dev/null || true
+    # Let launch and the RViz GUI wrapper finish before stopping X11.
+    # Killing RViz immediately after launch races Qt/OGRE destruction.
+    pkill -INT -f "tunnel_guard.launch.py" 2>/dev/null || true
+    for i in $(seq 1 120); do
+        pgrep -f "tunnel_guard.launch.py" >/dev/null 2>&1 || break
+        sleep 0.1
+    done
+    if pgrep -f "tunnel_guard.launch.py" >/dev/null 2>&1; then
+        echo "graceful stop timed out; escalating"
+        pkill -TERM -f "tunnel_guard.launch.py" 2>/dev/null || true
+        pkill -TERM -f "tunnel_guard.rviz_session" 2>/dev/null || true
+        pkill -TERM -f "detector_node" 2>/dev/null || true
+    fi
     echo "stopped"
 }
 

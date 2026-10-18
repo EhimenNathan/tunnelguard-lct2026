@@ -25,3 +25,21 @@ def test_repeated_stamp_sparse_and_intensity_edits_are_not_discarded():
     updated=det.process(p,0.,intensity=intensity)
     assert updated is not changed
     assert det.process(p,0.,intensity=intensity) is updated
+
+
+def test_uncertain_warning_limits_verified_clear_distance(monkeypatch):
+    from tunnel_guard.core.geometry import TrackGeometry
+    cfg=DetectorConfig(forward_axis='x',mount_calibration=False,scorer_model='none',
+                       settle_frames=0,scatter_check=False,cand_min_points=1000)
+    det=ObstacleDetector(cfg);x=np.arange(501.)
+    g=TrackGeometry(x,np.zeros_like(x),np.full_like(x,-1.8),ok=True,
+                    rail_range=45.,valid_range=400.,trusted_range=400.,
+                    sigma_l=np.full_like(x,.8),sigma_v=np.full_like(x,.025))
+    monkeypatch.setattr(det.geo,'estimate',lambda p,travel=0.:g)
+    wall=np.column_stack([np.linspace(395,400,30),np.full(30,5.),np.full(30,3.)])
+    target=np.column_stack([np.linspace(300,300.1,8),np.zeros(8),np.full(8,-.8)])
+    p=np.vstack([wall,target]).astype(np.float32)
+    for k in range(25):res=det.process(p,k*.1)
+    assert res.level==1 and np.isnan(res.nearest_distance)
+    warnings=[o for o in res.obstacles if o.get('geometry_uncertain')]
+    assert warnings and 299.<res.clear_distance<=min(o['distance'] for o in warnings)

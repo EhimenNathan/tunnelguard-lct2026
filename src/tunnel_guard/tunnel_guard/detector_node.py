@@ -441,7 +441,7 @@ class TunnelGuardNode(Node):
             t.scale.z = 0.8 + 0.012 * o['distance']
             t.color.r = t.color.g = t.color.b = t.color.a = 1.0
             ttc = '' if not math.isfinite(o['ttc']) else f"  TTC {o['ttc']:.1f}s"
-            t.text = f"{o['distance']:.1f} m{ttc}"
+            t.text = f"{o['distance']:.1f} m{ttc}" + (" | ГЕОМЕТРИЯ НЕУВЕРЕННА" if o.get("geometry_uncertain") else "")
             ma.markers.append(t)
         st = mk('status', 0, Marker.TEXT_VIEW_FACING)
         st.pose.position = Point(x=8.0, y=0.0, z=4.0)

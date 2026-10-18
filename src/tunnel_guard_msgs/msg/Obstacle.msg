@@ -1,4 +1,4 @@
-# One confirmed foreign object inside (or touching) the train's dynamic envelope.
+# Persistent or confirmed candidate near/in the dynamic envelope; inspect zone.
 uint8 ZONE_NEAR_GAUGE = 1     # within the safety margin around the envelope
 uint8 ZONE_IN_GAUGE   = 2     # intersects the train envelope
 

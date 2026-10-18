@@ -9,6 +9,7 @@ reports that it is subscribed and ready (numba kernels loaded), so no frame is l
 """
 import os
 import sys
+import shutil
 
 import tempfile
 
@@ -65,12 +66,15 @@ def launch_setup(context):
         package='tunnel_guard', executable='detector_node', name='tunnel_guard', output='screen',
         parameters=[LaunchConfiguration('params'), overrides],
     )
+    # Camera/view changes belong to this session, not the installed reference.
+    rviz_config = os.path.join(tempfile.mkdtemp(prefix='tunnel_guard_view_'), 'tunnel_guard.rviz')
+    shutil.copyfile(os.path.join(share, 'rviz', 'tunnel_guard.rviz'), rviz_config)
     actions = [
         detector,
         Node(
             package='rviz2', executable='rviz2', name='rviz2', output='log',
             prefix=[sys.executable, ' -m tunnel_guard.rviz_session'],
-            arguments=['-d', os.path.join(share, 'rviz', 'tunnel_guard.rviz')],
+            arguments=['-d', rviz_config],
             condition=IfCondition(LaunchConfiguration('rviz')),
         ),
     ]
