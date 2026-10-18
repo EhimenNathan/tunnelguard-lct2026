@@ -78,7 +78,7 @@ def launch_setup(context):
         ),
     ]
     if bag:
-        play = ExecuteProcess(cmd=play_cmd, output='screen')
+        play = ExecuteProcess(cmd=[sys.executable, '-m', 'tunnel_guard.bag_session'] + play_cmd, output='screen')
         started = []
 
         def on_output(event):
