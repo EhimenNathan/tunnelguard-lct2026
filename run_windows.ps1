@@ -1,14 +1,25 @@
-# Start TunnelGuard with RViz from Windows PowerShell (Docker Desktop, WSL2 engine).
-#   .\run_windows.ps1 C:\path\to\bags
-# The GUI is shown through WSLg (Windows 11 or Windows 10 with WSL 2 + WSLg): the container is started from the default
-# WSL distribution, which owns the WSLg display.  Without WSL, start an X server (VcXsrv: "Disable access control") and
-# use:  .\run_windows.ps1 C:\path\to\bags -X
-param([string]$Bags = (Get-Location).Path, [switch]$X)
-$Bags = (Resolve-Path $Bags).Path
-if ($X) {
-    docker run --rm -it -e DISPLAY=host.docker.internal:0.0 -e LIBGL_ALWAYS_INDIRECT=0 -v "${Bags}:/data" tunnel_guard tg
-    exit $LASTEXITCODE
+# Browser desktop with RViz using the pinned release.
+param([Parameter(Mandatory=$true)][string]$Bags)
+$ErrorActionPreference = 'Stop'
+$resolvedBags = (Resolve-Path -LiteralPath $Bags).Path
+if (-not (Test-Path -LiteralPath $resolvedBags -PathType Container)) {
+    throw 'Bags must point to an existing directory of extracted ROS 2 recordings.'
 }
-$drive = $Bags.Substring(0, 1).ToLower()
-$wslPath = "/mnt/$drive" + ($Bags.Substring(2) -replace '\\', '/')
-wsl.exe -e bash -lc "docker run --rm -it -e DISPLAY=:0 -e WAYLAND_DISPLAY -e XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir -v /tmp/.X11-unix:/tmp/.X11-unix -v /mnt/wslg:/mnt/wslg -v '$wslPath':/data tunnel_guard tg"
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    throw 'Start Docker Desktop with Linux containers, or use the documented Codespaces option.'
+}
+Push-Location -LiteralPath $PSScriptRoot
+try {
+    $env:TG_BAGS_DIR = $resolvedBags
+    $dockerOs = docker info --format '{{.OSType}}'
+    if ($LASTEXITCODE -ne 0 -or $dockerOs -ne 'linux') { throw 'Docker Engine with Linux containers is required.' }
+    docker compose -f compose.repro.yaml config --quiet
+    if ($LASTEXITCODE -ne 0) { throw 'Compose configuration failed.' }
+    docker compose -f compose.repro.yaml pull
+    if ($LASTEXITCODE -ne 0) { throw 'Image download failed. Check network and disk space.' }
+    docker compose -f compose.repro.yaml up -d
+    if ($LASTEXITCODE -ne 0) { throw 'Container startup failed. Run docker compose -f compose.repro.yaml logs.' }
+    Write-Host 'RViz desktop: http://localhost:6080/vnc.html (password: tunnelguard, unless TG_VNC_PASSWORD is set).'
+    Write-Host 'Console: docker compose -f compose.repro.yaml exec tunnelguard bash'
+}
+finally { Pop-Location }
