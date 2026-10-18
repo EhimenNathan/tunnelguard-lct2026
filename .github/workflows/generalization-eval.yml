@@ -28,6 +28,8 @@ jobs:
       - name: Candidate — identical unseen conditions
         run: |
           docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" tg_candidate python3 /tools/finals_holdout_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --label "${{ github.sha }}"
+      - name: Locked quality criteria
+        run: python3 tools/finals_holdout_gate.py results/baseline results/candidate results/holdout_gates.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -57,7 +57,7 @@ def main():
     for case in plan:
         kind=case['object'];d=case['distance'];ob=dict(OBJECTS['person'] if kind=='off_track_person' else OBJECTS[kind],x=float(d))
         if kind=='off_track_person':ob['y']=3.5
-        rng=np.random.default_rng(case['seed']);det=make();hit=stop=near_warning=dust=visible=0;first=None;returns=[];geometry_ok=0
+        rng=np.random.default_rng(case['seed']);det=make();hit=stop=near_warning=near_stop=dust=visible=0;first=None;returns=[];geometry_ok=0
         for i,k in enumerate(range(case['start'],case['start']+WARM+ON)):
             t,p,it=saved[k];q,ii,cnt=inject(p,it,[ob] if i>=WARM else [],rng);res=det.process(q,t,intensity=ii)
             if i<WARM:continue
@@ -66,10 +66,10 @@ def main():
             # Centroids are in original sensor axes; the injection's known
             # pitch defines truth independently of the detector's fitted path.
             matched=[o for o in nearby if abs(float(sensor_to_level(np.asarray(o['centroid'])[None])[0,1])-ob.get('y',.35))<.8]
-            hit+=bool(matched);stop+=any(o['zone']==2 for o in matched);near_warning+=bool(nearby)
+            hit+=bool(matched);stop+=any(o['zone']==2 for o in matched);near_warning+=bool(nearby);near_stop+=any(o['zone']==2 for o in nearby)
             dust+=any(abs(z['distance']-d)<5 for z in res.dust)
             if matched and first is None:first=i-WARM
-        row=dict(case,n=ON,hit=hit,stop=stop,near_warning=near_warning,dust=dust,first_frame=first,returns_mean=float(np.mean(returns)),frames_with_returns=visible,geometry_ok=geometry_ok)
+        row=dict(case,n=ON,hit=hit,stop=stop,near_warning=near_warning,near_stop=near_stop,dust=dust,first_frame=first,returns_mean=float(np.mean(returns)),frames_with_returns=visible,geometry_ok=geometry_ok)
         result['trials'].append(row);(out/'holdout.json').write_text(json.dumps(result,indent=2));print('HOLDOUT',json.dumps(row),flush=True)
     summary=dict(label=a.label,trials=len(plan),frames_scored=sum(r['n'] for r in result['trials']),positive_hit=sum(r['hit'] for r in result['trials'] if r['object'] not in ['dust','off_track_person']),
         dust_stop=sum(r['stop'] for r in result['trials'] if r['object']=='dust'),off_track_stop=sum(r['stop'] for r in result['trials'] if r['object']=='off_track_person'),
