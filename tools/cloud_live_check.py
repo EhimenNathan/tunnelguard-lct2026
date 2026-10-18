@@ -17,6 +17,7 @@ from tunnel_guard_msgs.msg import ObstacleStatus
 from std_msgs.msg import Float32
 from rosbag2_interfaces.srv import Resume
 import yaml
+from tunnel_guard.evaluate_bag import read_bag
 
 
 def main():
@@ -43,6 +44,11 @@ def main():
     started = time.monotonic()
     info = yaml.safe_load((Path(args.bag)/'metadata.yaml').read_text())['rosbag2_bagfile_information']
     topic = next(t['topic_metadata']['name'] for t in info['topics_with_message_count'] if t['topic_metadata']['type']=='sensor_msgs/msg/PointCloud2')
+    reader = read_bag(args.bag, topic)
+    _, first_input = next(reader)
+    first_header_stamp = first_input.header.stamp.sec + first_input.header.stamp.nanosec * 1e-9
+    reader.close()
+    del first_input
     resume = node.create_client(Resume, '/rosbag2_player/resume')
     ready_since = None
     resumed = False
@@ -102,8 +108,11 @@ def main():
                   first_output_stamp=stamps[0] if stamps else None,
                   last_output_stamp=stamps[-1] if stamps else None,
                   max_delivery_backlog_ms=float(max(0.0, np.max((np.array(arrivals)-arrivals[0])-(np.array(stamps)-stamps[0])))*1000) if arrivals else None,
-                  playback_delivery_lag_ms_p95=float(max(0.0,np.percentile(np.array(arrivals)-resume_at-(np.array(stamps)-int(info['starting_time']['nanoseconds_since_epoch'])/1e9),95))*1000) if arrivals and resume_at is not None else None,
-                  playback_lag_reference='Resume request and aligned header/recording stamps of exported CI bag',
+                  playback_delivery_lag_ms_p95=float(max(0.0,np.percentile(np.array(arrivals)-resume_at-(np.array(stamps)-first_header_stamp),95))*1000) if arrivals and resume_at is not None else None,
+                  playback_lag_reference='Resume request versus header elapsed time from first input cloud; recording and sensor clocks may differ',
+                  header_gaps_over_150ms=int(np.sum(np.diff(stamps)>.15)),
+                  largest_header_gap_ms=float(np.max(np.diff(stamps))*1000) if len(stamps)>1 else None,
+                  first_input_header_stamp=first_header_stamp,
                   processing_ms_p50=float(np.median(processing)) if processing else None,
                   processing_ms_p95=float(np.percentile(processing, 95)) if processing else None,
                   processing_ms_p99=float(np.percentile(processing, 99)) if processing else None,

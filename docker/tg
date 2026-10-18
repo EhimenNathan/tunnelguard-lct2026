@@ -87,7 +87,7 @@ play() {
     echo "playing $bag  (topic $topic, rate $rate)"
     echo "keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop"
     local status=0
-    ros2 bag play "$bag" --rate "$rate" --delay 2.0 --qos-profile-overrides-path "$qos" "$@" || status=$?
+    ros2 bag play "$bag" --rate "$rate" --delay 2.0 --read-ahead-queue-size 10 --qos-profile-overrides-path "$qos" "$@" || status=$?
     # Ctrl+C is an expected console action; other failures must remain visible to scripts and CI.
     [ "$status" -eq 0 ] || [ "$status" -eq 130 ] || return "$status"
 }

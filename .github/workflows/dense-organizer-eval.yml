@@ -41,7 +41,7 @@ jobs:
           cp bags/bags.json results/bags.json
           cp bags/extraction.json results/extraction.json
           lscpu > results/cpu.txt
-          docker run -d --name tg_dense -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense_gui
+          docker run -d --shm-size=512m --name tg_dense -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense_gui
           for i in $(seq 1 30); do
             if docker exec tg_dense python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:6080/vnc.html',timeout=2)"; then break; fi
             sleep 1

@@ -68,7 +68,7 @@ jobs:
       - name: Живой запуск ROS 2 + RViz (виртуальный дисплей), снимок экрана и частота выдачи
         run: |
           docker build --build-arg TG_BASE=tunnel_guard -f Dockerfile.gui -t tunnel_guard_gui .
-          docker run -d --name tg_gui -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" tunnel_guard_gui
+          docker run -d --shm-size=512m --name tg_gui -e TG_GUI_AUTOSTART=0 -v "$PWD/bags:/data" -v "$PWD/results:/results" -v "$PWD/tools:/tools:ro" tunnel_guard_gui
           for i in $(seq 1 30); do
             if docker exec tg_gui python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:6080/vnc.html',timeout=2)"; then break; fi
             sleep 1

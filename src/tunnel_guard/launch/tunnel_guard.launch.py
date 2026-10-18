@@ -51,7 +51,10 @@ def launch_setup(context):
         topic = bag_cloud_topic(bag) or 'auto'
     overrides = {'input_topic': topic}
     # Publisher discovery must happen before the first cloud, not just before starting the player process.
-    play_cmd = ['ros2', 'bag', 'play', bag, '--rate', LaunchConfiguration('rate'), '--delay', '2.0']
+    # The CLI default preloads 1000 messages: several GB for dense raw clouds.
+    # Bound lookahead to one second at 10 Hz instead of paging the whole bag.
+    play_cmd = ['ros2', 'bag', 'play', bag, '--rate', LaunchConfiguration('rate'), '--delay', '2.0',
+                '--read-ahead-queue-size', '10']
     if LaunchConfiguration('start_paused').perform(context).lower() in ('1', 'true', 'yes'):
         play_cmd.append('--start-paused')
     if bag and topic != 'auto':
