@@ -48,6 +48,7 @@ jobs:
           assert m['playback_rate']==1 and sum(s['frames'] for s in m['scenes'])==1667
           assert abs(m['duration_s']-166.7)<.11
           assert all(.09<s<.11 for s in m['source_scan_step_s'])
+          assert m['output_bytes']<80*1024**2, 'Keep the public MP4 below the Git file limit'
           PY
       - uses: actions/upload-artifact@v4
         if: always()
