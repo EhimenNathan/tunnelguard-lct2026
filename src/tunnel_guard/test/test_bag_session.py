@@ -14,7 +14,7 @@ def test_only_requested_interrupt_is_expected_cancellation():
         assert exit_status(0, requested) == 0
         assert exit_status(1, requested) == 1
         assert exit_status(-signal.SIGSEGV, requested) != 0
-        assert exit_status(-signal.SIGKILL, requested) != 0
+        assert exit_status(-9, requested) != 0  # Linux SIGKILL; absent from Windows signal module
 
 
 @pytest.mark.skipif(os.name != 'posix', reason='Linux ROS process signalling')
