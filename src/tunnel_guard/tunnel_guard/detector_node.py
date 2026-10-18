@@ -336,8 +336,11 @@ class TunnelGuardNode(Node):
         obstacle boxes with distance / TTC labels and a status line - all in the display frame."""
         ma = MarkerArray()
         h = Header(stamp=header.stamp, frame_id=FRAME)
-        clear = Marker(); clear.header = h; clear.action = Marker.DELETEALL
-        ma.markers.append(clear)
+        # Stable marker IDs update existing RViz objects. DELETEALL every scan
+        # needlessly destroys geometry/text resources and can visibly flicker.
+        if not hasattr(self, '_marker_keys'):
+            clear = Marker(); clear.header = h; clear.action = Marker.DELETEALL
+            ma.markers.append(clear)
         g = res.geometry
         col = LEVEL_RGB[res.level]
 
@@ -455,6 +458,11 @@ class TunnelGuardNode(Node):
         st.text = (f'{LEVEL_NAMES[res.level]}{nd} | clear {res.clear_distance:.0f} m | envelope {res.envelope_range:.0f} m'
                    f' | {1e3 * res.timings["total"]:.0f} ms | {hz:.1f} Hz')
         ma.markers.append(st)
+        current = {(m.ns, m.id) for m in ma.markers if m.action == Marker.ADD}
+        for ns, mid in getattr(self, '_marker_keys', set()) - current:
+            stale = Marker(); stale.header = h; stale.ns = ns; stale.id = mid; stale.action = Marker.DELETE
+            ma.markers.append(stale)
+        self._marker_keys = current
         return ma
 
 
