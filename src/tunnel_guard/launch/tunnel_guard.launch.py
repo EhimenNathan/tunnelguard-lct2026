@@ -43,7 +43,6 @@ def launch_setup(context):
     if bag and LaunchConfiguration('copy_bag').perform(context).lower() in ('1', 'true', 'yes'):
         # Docker Desktop on Windows/macOS: rosbag2 reads SQLite through the host-folder mount far slower than real time
         # (most frames never reach the detector); a copy inside the container plays at full rate.
-        import shutil
         local = os.path.join(tempfile.mkdtemp(prefix='tunnel_guard_bag_'), os.path.basename(os.path.normpath(bag)))
         shutil.copytree(bag, local)
         bag = local
