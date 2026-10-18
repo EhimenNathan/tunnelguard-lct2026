@@ -38,3 +38,13 @@ def test_supervisor_cancels_real_child_and_preserves_crash(tmp_path):
     result = subprocess.run([sys.executable, '-m', 'tunnel_guard.bag_session',
                              sys.executable, '-c', 'raise SystemExit(7)'], timeout=10)
     assert result.returncode == 7
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='Linux detached launch signals')
+def test_detached_launch_restores_inherited_sigint():
+    result = subprocess.run(
+        [sys.executable, '-m', 'tunnel_guard.launch_session', sys.executable, '-c',
+         'import os,signal;os.kill(os.getpid(),signal.SIGINT);raise SystemExit(0)'],
+        preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN),
+        capture_output=True, timeout=10)
+    assert result.returncode == -signal.SIGINT

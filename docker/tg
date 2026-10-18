@@ -24,7 +24,7 @@ start() {
     if running; then echo "detector already running (log: $LOG)"; return; fi
     if [ "$rviz" = auto ]; then have_display && rviz=true || rviz=false; fi
     echo "starting TunnelGuard detector (rviz=$rviz), log: $LOG"
-    nohup ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=$rviz > "$LOG" 2>&1 &
+    nohup python3 -m tunnel_guard.launch_session ros2 launch tunnel_guard tunnel_guard.launch.py rviz:=$rviz > "$LOG" 2>&1 &
     for i in $(seq 1 60); do
         grep -q '\[tunnel_guard\]: TunnelGuard started (' "$LOG" 2>/dev/null && { echo "детектор готов"; return; }
         sleep 0.5
