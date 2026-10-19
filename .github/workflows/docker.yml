@@ -75,6 +75,11 @@ jobs:
           done
           docker exec tg_gui python3 -c "import urllib.request; assert b'noVNC' in urllib.request.urlopen('http://localhost:6080/vnc.html').read()"
           docker exec tg_gui bash -c 'source /opt/ros/humble/setup.bash; source /ws/install/setup.bash; python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results --expected '"$EXPECTED"
+          # Repeat the entire short replay: the final DDS sample must survive
+          # writer shutdown on every run, not just one lucky schedule.
+          for attempt in 2 3; do
+            docker exec tg_gui bash -c 'source /opt/ros/humble/setup.bash; source /ws/install/setup.bash; python3 /tools/cloud_live_check.py --bag /data/falcon_test --out /results/replay_'"$attempt"' --expected '"$EXPECTED"
+          done
           docker stop tg_gui
 
       - name: Пауза, покадровый шаг, скорость и переключение бэгов без перезапуска

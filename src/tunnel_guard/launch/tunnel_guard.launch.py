@@ -62,7 +62,9 @@ def launch_setup(context):
         qos_file = os.path.join(tempfile.gettempdir(), 'tunnel_guard_bag_qos.yaml')
         with open(qos_file, 'w') as f:
             yaml.safe_dump({topic: {'reliability': 'reliable', 'history': 'keep_last', 'depth': 10}}, f)
-        play_cmd += ['--qos-profile-overrides-path', qos_file]
+        # A reliable writer can still exit before the last large cloud is ACKed.
+        # Humble's bounded drain keeps the final scan alive during DDS delivery.
+        play_cmd += ['--qos-profile-overrides-path', qos_file, '--wait-for-all-acked', '5000']
         overrides['input_reliability'] = 'reliable'
     detector = Node(
         package='tunnel_guard', executable='detector_node', name='tunnel_guard', output='screen',
