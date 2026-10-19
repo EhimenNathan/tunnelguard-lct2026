@@ -28,6 +28,19 @@ def download(release_id,target):
  assert offset==manifest['archive_bytes'] and whole.hexdigest()==manifest['archive_sha256']
  (target.parent/'source.json').write_text(json.dumps(manifest,indent=2))
 
+def public_download(public_key,target,remote_path):
+ session=requests.Session();params={'public_key':public_key,'path':remote_path}
+ info=session.get('https://cloud-api.yandex.net/v1/disk/public/resources',params=params,timeout=60);info.raise_for_status();info=info.json()
+ assert info['type']=='file' and info.get('sha256')
+ link=session.get('https://cloud-api.yandex.net/v1/disk/public/resources/download',params=params,timeout=60);link.raise_for_status()
+ target=Path(target);target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();size=0
+ with session.get(link.json()['href'],stream=True,timeout=(45,180)) as response,target.open('wb') as f:
+  response.raise_for_status()
+  for chunk in response.iter_content(4*1024**2):f.write(chunk);h.update(chunk);size+=len(chunk)
+ assert size==info['size'] and h.hexdigest()==info['sha256'], 'Public source integrity failed'
+ (target.parent/(target.stem+'_source.json')).write_text(json.dumps(dict(source_name=info['name'],archive_bytes=size,archive_sha256=h.hexdigest(),public_key=public_key,remote_path=remote_path),indent=2))
+ print('Verified public source',info['name'],size,h.hexdigest(),flush=True)
+
 def extract(archive,root):
  root=Path(root).resolve();root.mkdir(parents=True,exist_ok=True);members=[]
  with open(archive,'rb') as raw,zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(raw) as z,tarfile.open(fileobj=z,mode='r|') as tf:
@@ -50,5 +63,6 @@ def extract(archive,root):
  (root/'bags.json').write_text(json.dumps(bags,indent=2));print(json.dumps(bags),flush=True)
 
 if __name__=='__main__':
- ap=argparse.ArgumentParser();ap.add_argument('mode',choices=['download','extract']);ap.add_argument('source');ap.add_argument('target');a=ap.parse_args()
- (download if a.mode=='download' else extract)(a.source,a.target)
+ ap=argparse.ArgumentParser();ap.add_argument('mode',choices=['download','extract','public-download']);ap.add_argument('source');ap.add_argument('target');ap.add_argument('--path',default='/new_synth_data.zst');a=ap.parse_args()
+ if a.mode=='public-download':public_download(a.source,a.target,a.path)
+ else:(download if a.mode=='download' else extract)(a.source,a.target)

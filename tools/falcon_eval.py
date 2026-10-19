@@ -16,6 +16,9 @@ from tunnel_guard.core.detector import DetectorConfig, ObstacleDetector
 from tunnel_guard import params as P
 
 CFG_DIR = os.path.join(os.path.dirname(HERE), 'src', 'tunnel_guard', 'config')
+if not os.path.isdir(CFG_DIR):
+    from ament_index_python.packages import get_package_share_directory
+    CFG_DIR = os.path.join(get_package_share_directory('tunnel_guard'), 'config')
 
 
 def make_detector(overrides):

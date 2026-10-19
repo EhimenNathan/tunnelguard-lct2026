@@ -4,7 +4,8 @@ on:
     inputs:
       release_id:
         description: 'Unpublished temporary data release ID'
-        required: true
+        required: false
+        default: ''
 permissions:
   contents: write
 concurrency:
@@ -27,13 +28,18 @@ jobs:
           TG_DATA_TOKEN: ${{ github.token }}
           DATA_RELEASE: ${{ inputs.release_id }}
         run: |
-          pip install --quiet requests numpy zstandard pyyaml
-          python tools/cloud_dense_data.py download "$DATA_RELEASE" private_data/new_synth_data.zst
+          pip install --quiet requests numpy zstandard pyyaml pillow matplotlib imageio imageio-ffmpeg
+          if [ -n "$DATA_RELEASE" ]; then
+            python tools/cloud_dense_data.py download "$DATA_RELEASE" private_data/new_synth_data.zst
+          else
+            python tools/cloud_dense_data.py public-download https://disk.yandex.ru/d/SfBeRHbs8bNJAQ private_data/new_synth_data.zst
+            cp private_data/new_synth_data_source.json private_data/source.json
+          fi
           python tools/cloud_dense_data.py extract private_data/new_synth_data.zst bags
       - name: Full installed detector and sampled visualization output
         run: |
           mkdir -p results/offline
-          docker run --rm --network none -e TG_SOURCE_SHA="$GITHUB_SHA" -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_organizer_bundle.py /data /results/offline
+          docker run --rm --network none -e TG_SOURCE_SHA="$GITHUB_SHA" -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_organizer_bundle.py /data /results/offline --clip-stride 1
       - name: Full ROS and RViz replay, every message from all three bags
         run: |
           mkdir -p results
@@ -66,6 +72,19 @@ jobs:
               assert r['output_hz']>=9.8, '10Hz budget not met'
           assert len(reports)==3 and sum(r['received'] for r in reports)==1667
           PY
+      - name: Verify complete qualification source and export native excerpt
+        run: |
+          python tools/cloud_dense_data.py public-download https://disk.yandex.ru/d/SfBeRHbs8bNJAQ private_data/qualification/cloud_with_fake_obj.zst --path /cloud_with_fake_obj.zst
+          mkdir -p results/qualification
+          cp private_data/qualification/cloud_with_fake_obj_source.json results/qualification/source.json
+          docker run --rm --network none -v "$PWD/private_data/qualification:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_archive_eval.py /data/cloud_with_fake_obj.zst /results/qualification --clip-stride 1 --clip-start 30 --clip-stop 230 --clip-limit 200
+          python3 -c "import json; x=json.load(open('results/qualification/summary.json')); assert x['complete'] and x['native'] and x['frames']==1510"
+      - name: Normal speed organizer video without scatter target circles
+        run: |
+          python tools/finals_prepare_video.py results/offline video_project
+          python tools/finals_cab_video.py video_project/web results/tunnelguard_organizer.mp4 --rate 1
+          cp video_project/web/data/cab_video.json results/
+          cp video_project/web/assets/video_poster.png results/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

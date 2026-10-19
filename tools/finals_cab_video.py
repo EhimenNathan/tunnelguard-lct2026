@@ -23,10 +23,11 @@ def colors(p):
     h=np.clip((p[:,2]+2.2)/5,0,1)
     return [tuple(round(c*255) for c in colorsys.hls_to_rgb(.62-.48*v,.55,.82)) for v in h]
 
-def render(f,active,profile,rate=1.,step=.1):
-    im=canvas('ТРИ ЗАПИСИ ОРГАНИЗАТОРОВ / ВИД ИЗ КАБИНЫ','Путь впереди. Препятствия в габарите.')
+def render(f,active,profile,rate=1.,step=.1,names=None,chapter=None,title=None,source_label=None):
+    names=names or NAMES
+    im=canvas(chapter or 'СИНТЕТИЧЕСКИЕ ЗАПИСИ ОРГАНИЗАТОРОВ',title or 'Путь впереди. Препятствия в габарите.')
     d=ImageDraw.Draw(im)
-    for i,name in enumerate(NAMES):
+    for i,name in enumerate(names):
         x=70+i*470;selected=i==active
         d.rounded_rectangle((x,225,x+450,286),radius=12,fill='#174a47' if selected else '#162c43',outline=GREEN if selected else '#34536c',width=2)
         text(d,(x+20,238),f'0{i+1}  {name}',24,GREEN if selected else MUTED,selected)
@@ -81,28 +82,25 @@ def render(f,active,profile,rate=1.,step=.1):
             d.line((x,y,tx,ty+22),fill=color,width=2)
             label=f"{obj['d']:.1f} м";d.rounded_rectangle(bounds,radius=7,fill='#0c1d2d',outline=color)
             text(d,(tx,ty),label,23,color,True)
-    for zone in f.get('dust',[]):
-        distance=zone.get('d',zone.get('distance'))
-        if distance is None or not len(line):continue
-        q=line[np.argmin(abs(line[:,0]-distance))].copy();q[2]+=1.2
-        xx,v=project([q],eye,look,rect)
-        if v[0]:
-            x,y=xx[0];d.ellipse((x-9,y-9,x+9,y+9),outline=GOLD,width=3)
+    # Scatter is an informational statistic, not a localized object.
+    # Do not draw circular targets at the fitted track centre.
     d.rounded_rectangle((90,330,510,372),radius=7,fill='#0c1d2d')
-    text(d,(105,338),'КАМЕРА ПО ХОДУ ПОЕЗДА / HESAI',17,MUTED)
+    text(d,(105,338),source_label or 'ИСХОДНЫЕ ОБЛАКА / HESAI',17,MUTED)
     d.rounded_rectangle((90,856,590,898),radius=7,fill='#0c1d2d')
-    text(d,(105,864),f"{NAMES[active]} · t = {f['t']:.1f} с · кадр {f['local']}",20,INK)
+    text(d,(105,864),f"{names[active]} · t = {f['t']:.1f} с · кадр {f['local']}",20,INK)
     sx=1490
     text(d,(sx,320),'РЕШЕНИЕ СИСТЕМЫ',16,MUTED)
     text(d,(sx,355),['СВОБОДНО','ВНИМАНИЕ','СТОП'][f['level']],34,[GREEN,GOLD,RED][f['level']],True)
     nearest=min((o['d'] for o in objects),default=None)
-    vals=[('Препятствие',f'{nearest:.1f} м' if nearest is not None else 'нет детекции'),('Измеренный путь',f"{f['measured']:.0f} м"),('Габарит + прогноз',f"{f['env']:.0f} м"),('Зона аэрозоля', 'есть · не СТОП' if f.get('dust') else 'нет флага')]
+    vals=[('Препятствие',f'{nearest:.1f} м' if nearest is not None else 'нет детекции'),('Измеренный путь',f"{f['measured']:.0f} м"),('Габарит + прогноз',f"{f['env']:.0f} м"),('Рассеяние · информация', f"{len(f.get('dust',[]))} зон · не СТОП" if f.get('dust') else 'нет флага')]
     for i,(label,value) in enumerate(vals):
         y=425+i*105;text(d,(sx,y),label,19,MUTED);text(d,(sx,y+30),value,28,INK,True)
-    for i,(color,label) in enumerate([(GREEN,'Габарит по измерениям'),(VIOLET,'Экстраполяция'),(RED,'Препятствие: СТОП'),(GOLD,'Внимание / зона пыли')]):
+    for i,(color,label) in enumerate([(GREEN,'Габарит по измерениям'),(VIOLET,'Экстраполяция'),(RED,'Препятствие: СТОП'),(GOLD,'Рамка: предупреждение')]):
         y=856+i*25;d.ellipse((sx,y+6,sx+9,y+15),fill=color);text(d,(sx+20,y),label,16,MUTED)
     text(d,(70,952),'Цвет точек — высота. Рамки — сохранённый вывод детектора; классы объектов не размечены.',21,MUTED)
-    text(d,(70,987),f'Синтетические записи организаторов · {rate:g}× (реальное время при 1×) · исходные облака {1/step:.0f} Гц.',19,MUTED)
+    text(d,(70,987),f'{rate:g}× · исходные облака {1/step:.0f} Гц · рассеяние — информационный флаг, не размеченный класс пыли.',19,MUTED)
+    d.rectangle((65,1026,1855,1072),fill='#070d15')
+    text(d,(70,1035),'ДАННЫЕ И ПРОИСХОЖДЕНИЕ УКАЗАНЫ ДЛЯ КАЖДОЙ ГЛАВЫ / ВОСПРОИЗВОДИМЫЙ ВЫВОД',14,MUTED)
     return im
 
 def main(web,out,rate=1.):
