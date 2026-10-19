@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-numpy \
-        python3-zstandard \
+        python3-pip \
         python3-dev \
         python3-pybind11 \
         g++ \
@@ -28,6 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         wmctrl xdotool \
         zstd \
     && rm -rf /var/lib/apt/lists/*
+
+COPY docker/requirements-archive.txt /tmp/requirements-archive.txt
+RUN python3 -m pip install --no-cache-dir --only-binary=:all: --require-hashes -r /tmp/requirements-archive.txt \
+    && python3 -c "import zstandard; print(zstandard.__version__)" \
+    && rm /tmp/requirements-archive.txt
 
 # numba ускоряет ядра геометрии ~в 2 раза (нужно для 10 Гц на одном ядре); пакет Ubuntu совместим с системным numpy.
 # Если он не ставится, пробуется pip, а если и это не удалось — используется проверенный (более медленный) путь на numpy.

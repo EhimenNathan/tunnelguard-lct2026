@@ -1,0 +1,4 @@
+# CPython 3.10 Linux wheels, official PyPI release: https://pypi.org/project/zstandard/0.23.0/
+zstandard==0.23.0 \
+    --hash=sha256:77da4c6bfa20dd5ea25cbf12c76f181a8e8cd7ea231c673828d0386b1740b8dc \
+    --hash=sha256:157e89ceb4054029a289fb504c98c6a9fe8010f1680de0201b3eb5dc20aa6d9e
