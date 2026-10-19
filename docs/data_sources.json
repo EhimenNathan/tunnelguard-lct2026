@@ -1,0 +1,9 @@
+{
+  "public_folder": "https://disk.yandex.ru/d/SfBeRHbs8bNJAQ",
+  "verified_metadata_date": "2026-10-19",
+  "files": [
+    {"name":"falcon_test.zst","bytes":6758209772,"sha256":"90dea27d8636bcb2e5cdddf9bc15add3eae0e05196c2b3de959482da7e505611","role":"real Falcon recording, static train and person"},
+    {"name":"cloud_with_fake_obj.zst","bytes":1746145824,"sha256":"d41c2fb28475194a98efeca5d2ee3fd175c0aef350ffb92fff4c26d497e696e9","role":"qualification recording with artificial objects"},
+    {"name":"new_synth_data.zst","bytes":2532818915,"sha256":"e09336cb939e6b5a6fdb35ccacce59f3808d875a4084142a02cbd1cf88a26bc7","role":"three new organizer synthetic recordings"}
+  ]
+}

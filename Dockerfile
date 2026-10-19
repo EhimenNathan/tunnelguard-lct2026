@@ -11,6 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-numpy \
+        python3-zstandard \
         python3-dev \
         python3-pybind11 \
         g++ \
@@ -44,7 +45,7 @@ RUN source /opt/ros/humble/setup.bash \
 
 # один раз компилируем ядра numba в дисковый кэш, чтобы узел был готов через ~1 с после старта
 RUN source /ws/install/setup.bash \
-    && python3 -c "from tunnel_guard.core.geometry import warmup; print('numba kernels cached:', warmup())"
+    && python3 -c "import zstandard; from tunnel_guard.core.geometry import warmup; print('numba kernels cached:', warmup())"
 
 COPY docker/entrypoint.sh /entrypoint.sh
 COPY docker/tg /usr/local/bin/tg

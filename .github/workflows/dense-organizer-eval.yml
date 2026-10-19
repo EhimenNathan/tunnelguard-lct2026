@@ -22,6 +22,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           docker build -t tg_dense .
           docker build --build-arg TG_BASE=tg_dense -f Dockerfile.gui -t tg_dense_gui .
+          docker run --rm --network none -v "$PWD/tools:/tools:ro" tg_dense python3 -c "import runpy,zstandard; runpy.run_path('/tools/finals_archive_eval.py',run_name='import_smoke'); from tunnel_guard.core.geometry import HAVE_NATIVE; assert HAVE_NATIVE; print('Native archive export imports verified')"
           df -h /
       - name: Fetch unpublished data and verify every SHA256
         env:

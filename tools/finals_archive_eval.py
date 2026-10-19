@@ -20,8 +20,12 @@ from tunnel_guard.core.geometry import HAVE_NATIVE
 def main(src,output,clip_stride=25,clip_start=0,clip_stop=2500,clip_limit=100):
  out=Path(output);out.mkdir(parents=True,exist_ok=True)
  det=make_detector([]);rows=[];clips=[];meta=[];rng=np.random.default_rng(17);started=time.time()
- git=subprocess.run(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True,capture_output=True)
- commit=os.environ.get('TG_SOURCE_SHA') or (git.stdout.strip() if git.returncode==0 else 'installed source; see source_sha256')
+ commit=os.environ.get('TG_SOURCE_SHA')
+ if not commit:
+  try:
+   git=subprocess.run(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True,capture_output=True)
+   commit=git.stdout.strip() if git.returncode==0 else 'installed source; see source_sha256'
+  except OSError:commit='installed source; see source_sha256'
  source_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(detector_module.__file__).parent.glob('*.py')}
  config=P.flatten(det.cfg)
  error=None

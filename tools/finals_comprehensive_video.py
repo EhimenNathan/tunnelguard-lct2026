@@ -40,6 +40,9 @@ def main(quality,dense,web,out):
     summary=json.loads((quality/'candidate/summary.json').read_text())
     ladder=json.loads((quality/'candidate/ladder.json').read_text())
     qualification=json.loads((dense/'qualification/summary.json').read_text())
+    organizer_summary=json.loads((dense/'offline/summary.json').read_text())
+    assert summary['source_sha256']==qualification['source_sha256']==organizer_summary['source_sha256']
+    assert summary['model_sha256']==qualification['model_sha256']==organizer_summary['model_sha256']
     assert summary['native'] and qualification['native'] and qualification['complete']
     assert qualification['frames']==1510 and len(ladder)==68
     manifest={'playback_rate':1,'fps':FPS,'resolution':[W,H],'chapters':[],'scored_injection_conditions':68,
@@ -77,6 +80,8 @@ def main(quality,dense,web,out):
                 f=dict(f,local=f['k']);im=render(f,ci,profile,names=['Дальний человек','Средняя дистанция','Ближняя зона'],
                   chapter='01 / FALCON_TEST.ZST / РЕАЛЬНАЯ ЗАПИСЬ',title='Реальный человек. Сохранённый вывод модели.',source_label='FALCON / ПОЕЗД НЕПОДВИЖЕН')
                 zoom(im,f);d=ImageDraw.Draw(im)
+                if 'dust' not in f:
+                    d.rectangle((1485,766,1850,824),fill='#070d15');text(d,(1490,770),'не записано в клип',24,MUTED)
                 text(d,(105,924),f'Runtime {runtime} · автотраектория — proxy, не независимая разметка.',19,MUTED)
                 first=summary['first_detection']
                 if first['k']<=f['k']<first['k']+30:
