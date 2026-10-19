@@ -1,0 +1,952 @@
+{
+  "path": "C:\\Users\\ehime\\Desktop\\Moscow Competition\\cloud_with_fake_obj.zst",
+  "original_sha256": "14d030666336c193725c72670da4dc19af8bb2030cf8977371174a20c19f1093",
+  "repaired_sha256": "d41c2fb28475194a98efeca5d2ee3fd175c0aef350ffb92fff4c26d497e696e9",
+  "archive_bytes": 1746145824,
+  "patch_bytes": 196083712,
+  "changes": [
+    {
+      "offset": 1499463680,
+      "size": 1048576,
+      "number": 0
+    },
+    {
+      "offset": 1500512256,
+      "size": 1048576,
+      "number": 1
+    },
+    {
+      "offset": 1501560832,
+      "size": 1048576,
+      "number": 2
+    },
+    {
+      "offset": 1502609408,
+      "size": 1048576,
+      "number": 3
+    },
+    {
+      "offset": 1503657984,
+      "size": 1048576,
+      "number": 4
+    },
+    {
+      "offset": 1504706560,
+      "size": 1048576,
+      "number": 5
+    },
+    {
+      "offset": 1505755136,
+      "size": 1048576,
+      "number": 6
+    },
+    {
+      "offset": 1506803712,
+      "size": 1048576,
+      "number": 7
+    },
+    {
+      "offset": 1507852288,
+      "size": 1048576,
+      "number": 8
+    },
+    {
+      "offset": 1508900864,
+      "size": 1048576,
+      "number": 9
+    },
+    {
+      "offset": 1509949440,
+      "size": 1048576,
+      "number": 10
+    },
+    {
+      "offset": 1510998016,
+      "size": 1048576,
+      "number": 11
+    },
+    {
+      "offset": 1512046592,
+      "size": 1048576,
+      "number": 12
+    },
+    {
+      "offset": 1513095168,
+      "size": 1048576,
+      "number": 13
+    },
+    {
+      "offset": 1514143744,
+      "size": 1048576,
+      "number": 14
+    },
+    {
+      "offset": 1515192320,
+      "size": 1048576,
+      "number": 15
+    },
+    {
+      "offset": 1516240896,
+      "size": 1048576,
+      "number": 16
+    },
+    {
+      "offset": 1517289472,
+      "size": 1048576,
+      "number": 17
+    },
+    {
+      "offset": 1518338048,
+      "size": 1048576,
+      "number": 18
+    },
+    {
+      "offset": 1519386624,
+      "size": 1048576,
+      "number": 19
+    },
+    {
+      "offset": 1520435200,
+      "size": 1048576,
+      "number": 20
+    },
+    {
+      "offset": 1521483776,
+      "size": 1048576,
+      "number": 21
+    },
+    {
+      "offset": 1522532352,
+      "size": 1048576,
+      "number": 22
+    },
+    {
+      "offset": 1523580928,
+      "size": 1048576,
+      "number": 23
+    },
+    {
+      "offset": 1524629504,
+      "size": 1048576,
+      "number": 24
+    },
+    {
+      "offset": 1525678080,
+      "size": 1048576,
+      "number": 25
+    },
+    {
+      "offset": 1526726656,
+      "size": 1048576,
+      "number": 26
+    },
+    {
+      "offset": 1527775232,
+      "size": 1048576,
+      "number": 27
+    },
+    {
+      "offset": 1528823808,
+      "size": 1048576,
+      "number": 28
+    },
+    {
+      "offset": 1529872384,
+      "size": 1048576,
+      "number": 29
+    },
+    {
+      "offset": 1530920960,
+      "size": 1048576,
+      "number": 30
+    },
+    {
+      "offset": 1531969536,
+      "size": 1048576,
+      "number": 31
+    },
+    {
+      "offset": 1533018112,
+      "size": 1048576,
+      "number": 32
+    },
+    {
+      "offset": 1534066688,
+      "size": 1048576,
+      "number": 33
+    },
+    {
+      "offset": 1535115264,
+      "size": 1048576,
+      "number": 34
+    },
+    {
+      "offset": 1536163840,
+      "size": 1048576,
+      "number": 35
+    },
+    {
+      "offset": 1537212416,
+      "size": 1048576,
+      "number": 36
+    },
+    {
+      "offset": 1538260992,
+      "size": 1048576,
+      "number": 37
+    },
+    {
+      "offset": 1539309568,
+      "size": 1048576,
+      "number": 38
+    },
+    {
+      "offset": 1540358144,
+      "size": 1048576,
+      "number": 39
+    },
+    {
+      "offset": 1541406720,
+      "size": 1048576,
+      "number": 40
+    },
+    {
+      "offset": 1542455296,
+      "size": 1048576,
+      "number": 41
+    },
+    {
+      "offset": 1543503872,
+      "size": 1048576,
+      "number": 42
+    },
+    {
+      "offset": 1544552448,
+      "size": 1048576,
+      "number": 43
+    },
+    {
+      "offset": 1545601024,
+      "size": 1048576,
+      "number": 44
+    },
+    {
+      "offset": 1546649600,
+      "size": 1048576,
+      "number": 45
+    },
+    {
+      "offset": 1547698176,
+      "size": 1048576,
+      "number": 46
+    },
+    {
+      "offset": 1548746752,
+      "size": 1048576,
+      "number": 47
+    },
+    {
+      "offset": 1549795328,
+      "size": 1048576,
+      "number": 48
+    },
+    {
+      "offset": 1550843904,
+      "size": 1048576,
+      "number": 49
+    },
+    {
+      "offset": 1551892480,
+      "size": 1048576,
+      "number": 50
+    },
+    {
+      "offset": 1552941056,
+      "size": 1048576,
+      "number": 51
+    },
+    {
+      "offset": 1553989632,
+      "size": 1048576,
+      "number": 52
+    },
+    {
+      "offset": 1555038208,
+      "size": 1048576,
+      "number": 53
+    },
+    {
+      "offset": 1556086784,
+      "size": 1048576,
+      "number": 54
+    },
+    {
+      "offset": 1557135360,
+      "size": 1048576,
+      "number": 55
+    },
+    {
+      "offset": 1558183936,
+      "size": 1048576,
+      "number": 56
+    },
+    {
+      "offset": 1559232512,
+      "size": 1048576,
+      "number": 57
+    },
+    {
+      "offset": 1560281088,
+      "size": 1048576,
+      "number": 58
+    },
+    {
+      "offset": 1561329664,
+      "size": 1048576,
+      "number": 59
+    },
+    {
+      "offset": 1562378240,
+      "size": 1048576,
+      "number": 60
+    },
+    {
+      "offset": 1563426816,
+      "size": 1048576,
+      "number": 61
+    },
+    {
+      "offset": 1564475392,
+      "size": 1048576,
+      "number": 62
+    },
+    {
+      "offset": 1565523968,
+      "size": 1048576,
+      "number": 63
+    },
+    {
+      "offset": 1566572544,
+      "size": 1048576,
+      "number": 64
+    },
+    {
+      "offset": 1567621120,
+      "size": 1048576,
+      "number": 65
+    },
+    {
+      "offset": 1568669696,
+      "size": 1048576,
+      "number": 66
+    },
+    {
+      "offset": 1569718272,
+      "size": 1048576,
+      "number": 67
+    },
+    {
+      "offset": 1570766848,
+      "size": 1048576,
+      "number": 68
+    },
+    {
+      "offset": 1571815424,
+      "size": 1048576,
+      "number": 69
+    },
+    {
+      "offset": 1572864000,
+      "size": 1048576,
+      "number": 70
+    },
+    {
+      "offset": 1573912576,
+      "size": 1048576,
+      "number": 71
+    },
+    {
+      "offset": 1574961152,
+      "size": 1048576,
+      "number": 72
+    },
+    {
+      "offset": 1576009728,
+      "size": 1048576,
+      "number": 73
+    },
+    {
+      "offset": 1577058304,
+      "size": 1048576,
+      "number": 74
+    },
+    {
+      "offset": 1578106880,
+      "size": 1048576,
+      "number": 75
+    },
+    {
+      "offset": 1579155456,
+      "size": 1048576,
+      "number": 76
+    },
+    {
+      "offset": 1580204032,
+      "size": 1048576,
+      "number": 77
+    },
+    {
+      "offset": 1581252608,
+      "size": 1048576,
+      "number": 78
+    },
+    {
+      "offset": 1582301184,
+      "size": 1048576,
+      "number": 79
+    },
+    {
+      "offset": 1583349760,
+      "size": 1048576,
+      "number": 80
+    },
+    {
+      "offset": 1584398336,
+      "size": 1048576,
+      "number": 81
+    },
+    {
+      "offset": 1585446912,
+      "size": 1048576,
+      "number": 82
+    },
+    {
+      "offset": 1586495488,
+      "size": 1048576,
+      "number": 83
+    },
+    {
+      "offset": 1587544064,
+      "size": 1048576,
+      "number": 84
+    },
+    {
+      "offset": 1588592640,
+      "size": 1048576,
+      "number": 85
+    },
+    {
+      "offset": 1589641216,
+      "size": 1048576,
+      "number": 86
+    },
+    {
+      "offset": 1590689792,
+      "size": 1048576,
+      "number": 87
+    },
+    {
+      "offset": 1591738368,
+      "size": 1048576,
+      "number": 88
+    },
+    {
+      "offset": 1592786944,
+      "size": 1048576,
+      "number": 89
+    },
+    {
+      "offset": 1593835520,
+      "size": 1048576,
+      "number": 90
+    },
+    {
+      "offset": 1594884096,
+      "size": 1048576,
+      "number": 91
+    },
+    {
+      "offset": 1595932672,
+      "size": 1048576,
+      "number": 92
+    },
+    {
+      "offset": 1596981248,
+      "size": 1048576,
+      "number": 93
+    },
+    {
+      "offset": 1598029824,
+      "size": 1048576,
+      "number": 94
+    },
+    {
+      "offset": 1599078400,
+      "size": 1048576,
+      "number": 95
+    },
+    {
+      "offset": 1600126976,
+      "size": 1048576,
+      "number": 96
+    },
+    {
+      "offset": 1601175552,
+      "size": 1048576,
+      "number": 97
+    },
+    {
+      "offset": 1602224128,
+      "size": 1048576,
+      "number": 98
+    },
+    {
+      "offset": 1603272704,
+      "size": 1048576,
+      "number": 99
+    },
+    {
+      "offset": 1604321280,
+      "size": 1048576,
+      "number": 100
+    },
+    {
+      "offset": 1605369856,
+      "size": 1048576,
+      "number": 101
+    },
+    {
+      "offset": 1606418432,
+      "size": 1048576,
+      "number": 102
+    },
+    {
+      "offset": 1607467008,
+      "size": 1048576,
+      "number": 103
+    },
+    {
+      "offset": 1608515584,
+      "size": 1048576,
+      "number": 104
+    },
+    {
+      "offset": 1609564160,
+      "size": 1048576,
+      "number": 105
+    },
+    {
+      "offset": 1610612736,
+      "size": 1048576,
+      "number": 106
+    },
+    {
+      "offset": 1611661312,
+      "size": 1048576,
+      "number": 107
+    },
+    {
+      "offset": 1612709888,
+      "size": 1048576,
+      "number": 108
+    },
+    {
+      "offset": 1613758464,
+      "size": 1048576,
+      "number": 109
+    },
+    {
+      "offset": 1614807040,
+      "size": 1048576,
+      "number": 110
+    },
+    {
+      "offset": 1615855616,
+      "size": 1048576,
+      "number": 111
+    },
+    {
+      "offset": 1616904192,
+      "size": 1048576,
+      "number": 112
+    },
+    {
+      "offset": 1617952768,
+      "size": 1048576,
+      "number": 113
+    },
+    {
+      "offset": 1619001344,
+      "size": 1048576,
+      "number": 114
+    },
+    {
+      "offset": 1620049920,
+      "size": 1048576,
+      "number": 115
+    },
+    {
+      "offset": 1621098496,
+      "size": 1048576,
+      "number": 116
+    },
+    {
+      "offset": 1622147072,
+      "size": 1048576,
+      "number": 117
+    },
+    {
+      "offset": 1623195648,
+      "size": 1048576,
+      "number": 118
+    },
+    {
+      "offset": 1624244224,
+      "size": 1048576,
+      "number": 119
+    },
+    {
+      "offset": 1625292800,
+      "size": 1048576,
+      "number": 120
+    },
+    {
+      "offset": 1626341376,
+      "size": 1048576,
+      "number": 121
+    },
+    {
+      "offset": 1627389952,
+      "size": 1048576,
+      "number": 122
+    },
+    {
+      "offset": 1628438528,
+      "size": 1048576,
+      "number": 123
+    },
+    {
+      "offset": 1629487104,
+      "size": 1048576,
+      "number": 124
+    },
+    {
+      "offset": 1630535680,
+      "size": 1048576,
+      "number": 125
+    },
+    {
+      "offset": 1631584256,
+      "size": 1048576,
+      "number": 126
+    },
+    {
+      "offset": 1632632832,
+      "size": 1048576,
+      "number": 127
+    },
+    {
+      "offset": 1633681408,
+      "size": 1048576,
+      "number": 128
+    },
+    {
+      "offset": 1634729984,
+      "size": 1048576,
+      "number": 129
+    },
+    {
+      "offset": 1635778560,
+      "size": 1048576,
+      "number": 130
+    },
+    {
+      "offset": 1636827136,
+      "size": 1048576,
+      "number": 131
+    },
+    {
+      "offset": 1637875712,
+      "size": 1048576,
+      "number": 132
+    },
+    {
+      "offset": 1638924288,
+      "size": 1048576,
+      "number": 133
+    },
+    {
+      "offset": 1639972864,
+      "size": 1048576,
+      "number": 134
+    },
+    {
+      "offset": 1641021440,
+      "size": 1048576,
+      "number": 135
+    },
+    {
+      "offset": 1642070016,
+      "size": 1048576,
+      "number": 136
+    },
+    {
+      "offset": 1643118592,
+      "size": 1048576,
+      "number": 137
+    },
+    {
+      "offset": 1644167168,
+      "size": 1048576,
+      "number": 138
+    },
+    {
+      "offset": 1645215744,
+      "size": 1048576,
+      "number": 139
+    },
+    {
+      "offset": 1646264320,
+      "size": 1048576,
+      "number": 140
+    },
+    {
+      "offset": 1647312896,
+      "size": 1048576,
+      "number": 141
+    },
+    {
+      "offset": 1648361472,
+      "size": 1048576,
+      "number": 142
+    },
+    {
+      "offset": 1649410048,
+      "size": 1048576,
+      "number": 143
+    },
+    {
+      "offset": 1650458624,
+      "size": 1048576,
+      "number": 144
+    },
+    {
+      "offset": 1651507200,
+      "size": 1048576,
+      "number": 145
+    },
+    {
+      "offset": 1652555776,
+      "size": 1048576,
+      "number": 146
+    },
+    {
+      "offset": 1653604352,
+      "size": 1048576,
+      "number": 147
+    },
+    {
+      "offset": 1654652928,
+      "size": 1048576,
+      "number": 148
+    },
+    {
+      "offset": 1655701504,
+      "size": 1048576,
+      "number": 149
+    },
+    {
+      "offset": 1656750080,
+      "size": 1048576,
+      "number": 150
+    },
+    {
+      "offset": 1657798656,
+      "size": 1048576,
+      "number": 151
+    },
+    {
+      "offset": 1658847232,
+      "size": 1048576,
+      "number": 152
+    },
+    {
+      "offset": 1659895808,
+      "size": 1048576,
+      "number": 153
+    },
+    {
+      "offset": 1660944384,
+      "size": 1048576,
+      "number": 154
+    },
+    {
+      "offset": 1661992960,
+      "size": 1048576,
+      "number": 155
+    },
+    {
+      "offset": 1663041536,
+      "size": 1048576,
+      "number": 156
+    },
+    {
+      "offset": 1664090112,
+      "size": 1048576,
+      "number": 157
+    },
+    {
+      "offset": 1665138688,
+      "size": 1048576,
+      "number": 158
+    },
+    {
+      "offset": 1666187264,
+      "size": 1048576,
+      "number": 159
+    },
+    {
+      "offset": 1667235840,
+      "size": 1048576,
+      "number": 160
+    },
+    {
+      "offset": 1668284416,
+      "size": 1048576,
+      "number": 161
+    },
+    {
+      "offset": 1669332992,
+      "size": 1048576,
+      "number": 162
+    },
+    {
+      "offset": 1670381568,
+      "size": 1048576,
+      "number": 163
+    },
+    {
+      "offset": 1671430144,
+      "size": 1048576,
+      "number": 164
+    },
+    {
+      "offset": 1672478720,
+      "size": 1048576,
+      "number": 165
+    },
+    {
+      "offset": 1673527296,
+      "size": 1048576,
+      "number": 166
+    },
+    {
+      "offset": 1674575872,
+      "size": 1048576,
+      "number": 167
+    },
+    {
+      "offset": 1675624448,
+      "size": 1048576,
+      "number": 168
+    },
+    {
+      "offset": 1676673024,
+      "size": 1048576,
+      "number": 169
+    },
+    {
+      "offset": 1677721600,
+      "size": 1048576,
+      "number": 170
+    },
+    {
+      "offset": 1678770176,
+      "size": 1048576,
+      "number": 171
+    },
+    {
+      "offset": 1679818752,
+      "size": 1048576,
+      "number": 172
+    },
+    {
+      "offset": 1680867328,
+      "size": 1048576,
+      "number": 173
+    },
+    {
+      "offset": 1681915904,
+      "size": 1048576,
+      "number": 174
+    },
+    {
+      "offset": 1682964480,
+      "size": 1048576,
+      "number": 175
+    },
+    {
+      "offset": 1684013056,
+      "size": 1048576,
+      "number": 176
+    },
+    {
+      "offset": 1685061632,
+      "size": 1048576,
+      "number": 177
+    },
+    {
+      "offset": 1686110208,
+      "size": 1048576,
+      "number": 178
+    },
+    {
+      "offset": 1687158784,
+      "size": 1048576,
+      "number": 179
+    },
+    {
+      "offset": 1688207360,
+      "size": 1048576,
+      "number": 180
+    },
+    {
+      "offset": 1689255936,
+      "size": 1048576,
+      "number": 181
+    },
+    {
+      "offset": 1690304512,
+      "size": 1048576,
+      "number": 182
+    },
+    {
+      "offset": 1691353088,
+      "size": 1048576,
+      "number": 183
+    },
+    {
+      "offset": 1692401664,
+      "size": 1048576,
+      "number": 184
+    },
+    {
+      "offset": 1693450240,
+      "size": 1048576,
+      "number": 185
+    },
+    {
+      "offset": 1694498816,
+      "size": 1048576,
+      "number": 186
+    }
+  ],
+  "source": {
+    "public_key": "https://disk.yandex.ru/d/SfBeRHbs8bNJAQ",
+    "path": "/cloud_with_fake_obj.zst"
+  },
+  "reversible_backup_directory": "C:\\Users\\ehime\\Documents\\Codex\\2026-10-17\\i\\work\\qualification_repair",
+  "verified": true,
+  "zstd_stream_valid": true,
+  "expanded_stream_bytes": 7421655040
+}

@@ -1,0 +1,32 @@
+{
+  "expected": 386,
+  "received": 386,
+  "output_hz": 9.991764989101503,
+  "native_geometry": true,
+  "first_output_stamp": 946685906.433457,
+  "last_output_stamp": 946685944.933444,
+  "max_delivery_backlog_ms": 0.0,
+  "playback_delivery_lag_ms_p95": 64.30744576746861,
+  "playback_lag_reference": "Resume request versus header elapsed time from first input cloud; recording and sensor clocks may differ",
+  "header_gaps_over_150ms": 0,
+  "largest_header_gap_ms": 100.02195835113525,
+  "first_input_header_stamp": 946685906.433457,
+  "processing_ms_p50": 36.80385398864746,
+  "processing_ms_p95": 48.470112800598145,
+  "processing_ms_p99": 54.03917617797846,
+  "arrival_gap_ms_p99": 131.60220649999016,
+  "processing_over_100ms": 1,
+  "callback_ms_p95": 62.96908569335936,
+  "shutdown_clean": true,
+  "stop_messages": 161,
+  "checks": {
+    "no_crash": true,
+    "shutdown_clean": true,
+    "messages": true,
+    "rate": true,
+    "stop": true,
+    "rviz": true,
+    "ordered": true
+  },
+  "passed": true
+}

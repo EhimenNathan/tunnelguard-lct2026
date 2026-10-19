@@ -1,0 +1,291 @@
+{
+  "playback_rate": 1,
+  "fps": 20,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "chapters": [
+    {
+      "name": "Введение",
+      "video_start_s": 0.0,
+      "duration_s": 6.0,
+      "source": "explanatory title"
+    },
+    {
+      "name": "Falcon · Дальний человек",
+      "video_start_s": 6.0,
+      "duration_s": 30.1,
+      "source": {
+        "file": "falcon_test.zst",
+        "type": "real",
+        "first_scan": 0,
+        "last_scan": 300,
+        "scans": 301
+      }
+    },
+    {
+      "name": "Falcon · Средняя дистанция",
+      "video_start_s": 36.1,
+      "duration_s": 20.1,
+      "source": {
+        "file": "falcon_test.zst",
+        "type": "real",
+        "first_scan": 2200,
+        "last_scan": 2400,
+        "scans": 201
+      }
+    },
+    {
+      "name": "Falcon · Ближняя зона",
+      "video_start_s": 56.2,
+      "duration_s": 20.1,
+      "source": {
+        "file": "falcon_test.zst",
+        "type": "real",
+        "first_scan": 3800,
+        "last_scan": 4000,
+        "scans": 201
+      }
+    },
+    {
+      "name": "Кадр 2255: до и после",
+      "video_start_s": 76.30000000000001,
+      "duration_s": 8.0,
+      "source": "same original Falcon scan 2255, two detector outputs, same visualization point subset"
+    },
+    {
+      "name": "Что означает дальность",
+      "video_start_s": 84.30000000000001,
+      "duration_s": 5.0,
+      "source": "automatic trajectory proxy"
+    },
+    {
+      "name": "Квалификация",
+      "video_start_s": 89.30000000000001,
+      "duration_s": 24.0,
+      "source": {
+        "file": "cloud_with_fake_obj.zst",
+        "type": "qualification with artificial objects",
+        "scans_shown": 200,
+        "scans_evaluated": 1510
+      }
+    },
+    {
+      "name": "Новые записи: происхождение",
+      "video_start_s": 113.30000000000001,
+      "duration_s": 5.0,
+      "source": "organizer synthetic source explanation"
+    },
+    {
+      "name": "Организаторы: платформа, стрелка, тоннель",
+      "video_start_s": 118.30000000000001,
+      "duration_s": 166.7,
+      "subchapters": [
+        {
+          "name": "Платформа",
+          "video_start_s": 118.30000000000001,
+          "duration_s": 38.6,
+          "scans": 386
+        },
+        {
+          "name": "Стрелка",
+          "video_start_s": 156.9,
+          "duration_s": 73.6,
+          "scans": 736
+        },
+        {
+          "name": "Тоннель",
+          "video_start_s": 230.5,
+          "duration_s": 54.499999999999986,
+          "scans": 545
+        }
+      ],
+      "source": "new_synth_data.zst, organizer synthetic, all 1667 scans"
+    },
+    {
+      "name": "Инъекции: цель",
+      "video_start_s": 285.0,
+      "duration_s": 7.0,
+      "source": "synthetic diagnostic protocol, not real recording"
+    },
+    {
+      "name": "Инъекции · Человек",
+      "video_start_s": 292.0,
+      "duration_s": 34.0,
+      "source": {
+        "type": "our synthetic injection in real Falcon background",
+        "object": "person",
+        "distances": [
+          60,
+          90,
+          100,
+          120,
+          150,
+          175,
+          180,
+          190,
+          200,
+          215,
+          220,
+          230,
+          250,
+          260,
+          270,
+          280,
+          300
+        ],
+        "frames_shown_per_condition": 20,
+        "frames_scored_per_condition": 50
+      }
+    },
+    {
+      "name": "Инъекции · Ящик 0,5 м",
+      "video_start_s": 326.0,
+      "duration_s": 34.0,
+      "source": {
+        "type": "our synthetic injection in real Falcon background",
+        "object": "box_0.5",
+        "distances": [
+          60,
+          90,
+          100,
+          120,
+          150,
+          175,
+          180,
+          190,
+          200,
+          215,
+          220,
+          230,
+          250,
+          260,
+          270,
+          280,
+          300
+        ],
+        "frames_shown_per_condition": 20,
+        "frames_scored_per_condition": 50
+      }
+    },
+    {
+      "name": "Инъекции · Ящик 0,3 м",
+      "video_start_s": 360.0,
+      "duration_s": 34.0,
+      "source": {
+        "type": "our synthetic injection in real Falcon background",
+        "object": "box_0.3",
+        "distances": [
+          60,
+          90,
+          100,
+          120,
+          150,
+          175,
+          180,
+          190,
+          200,
+          215,
+          220,
+          230,
+          250,
+          260,
+          270,
+          280,
+          300
+        ],
+        "frames_shown_per_condition": 20,
+        "frames_scored_per_condition": 50
+      }
+    },
+    {
+      "name": "Инъекции · Пылевой аэрозоль",
+      "video_start_s": 394.0,
+      "duration_s": 34.0,
+      "source": {
+        "type": "our synthetic injection in real Falcon background",
+        "object": "dust",
+        "distances": [
+          60,
+          90,
+          100,
+          120,
+          150,
+          175,
+          180,
+          190,
+          200,
+          215,
+          220,
+          230,
+          250,
+          260,
+          270,
+          280,
+          300
+        ],
+        "frames_shown_per_condition": 20,
+        "frames_scored_per_condition": 50
+      }
+    },
+    {
+      "name": "Дополнительный регрессионный набор",
+      "video_start_s": 428.0,
+      "duration_s": 6.0,
+      "source": "255 previously frozen regression conditions; different backgrounds from diagnostic ladder"
+    },
+    {
+      "name": "Ограничения и воспроизведение",
+      "video_start_s": 434.0,
+      "duration_s": 6.0,
+      "source": "limitations and reproduction"
+    }
+  ],
+  "scored_injection_conditions": 68,
+  "injection_matching": "diagnostic ladder: longitudinal distance within 4m; 255 regression conditions also check lateral location",
+  "injection_excerpt": "last 20 of 50 scored frames, predefined uniformly for every case; 30 warmup frames precede scoring",
+  "limitations": "Automatic Falcon trajectory; no independent real obstacle/dust labels; shared-background synthetic diagnostics, not proof of unseen-route generalization",
+  "detector_source_sha256": {
+    "fast.py": "f6f3a55994a33a21511c144e781a6e88b332003ace571a3262d83f7ad1360fb3",
+    "gauge.py": "d50b75bec0297df76ddeb83052c97839cb55ad8f310ac39f30ec83abcdda166b",
+    "geometry.py": "560ef7f4cc6b4e4f638dc1bba5563f5a3b78d1f99a203892816cc52c02a6f00d",
+    "pandar.py": "143635441819ef2383f76b87aa2f2b315b8ef9d34e59c2f08c0b3df7dd87b126",
+    "scorer.py": "836841b1eed81eee5d55a9a235ed6a5d390149539e2d6313f2c4a5dc0f00359b",
+    "synth.py": "64b97f4ed1a46c063f6df869620e8778fce1d6055fdd91ab6ab4ba410704fece",
+    "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "detector.py": "0b5e47386e7865d4fa91dd8b711c97aff74eb0e8f5c4682cd1587e2afbadc5ff",
+    "adapt.py": "55c0b104ac1c6920a839ff4f8ad914cd2524ddb9944271dfa4fbd035b062f755",
+    "farfield.py": "604c6fadf471c643d6bfb3400297487e29a4e44eed4046e39edf9ef3974d7836",
+    "features.py": "9cc844a8d006d4c9c66f8b47f4d750bd1f63d20f705f43f0a1824e27981addab",
+    "cloud.py": "0f43f1efa859c1a9f52c18a3ae1d47382b30d989b1e1ae220a07150bf4d3a06c",
+    "tracker.py": "1e1c258f7cf15a5aa455d2d427bf316ad2b0237a85ce20e29f4b092bdfe860f2",
+    "cluster.py": "380a9ac03f986d3dd57576236014de82f3945be318ab3359e868b31c3dd616d2"
+  },
+  "source_label": "404f3c87677c57489b210bc0e316a957116796cb",
+  "duration_s": 440.0,
+  "output_bytes": 84967556,
+  "output_sha256": "a4cc840243d3c5579d220eb143f8e5e8f9e7eee7e6c75e79f9d028d73718ee9a",
+  "samples": [
+    "falcon_first_detection.png",
+    "spatial_before_after.png",
+    "qualification_scene.png",
+    "injection_person_60.png",
+    "injection_person_150.png",
+    "injection_person_300.png",
+    "injection_box_0.5_60.png",
+    "injection_box_0.5_150.png",
+    "injection_box_0.5_300.png",
+    "injection_box_0.3_60.png",
+    "injection_box_0.3_150.png",
+    "injection_box_0.3_300.png",
+    "injection_dust_60.png",
+    "injection_dust_150.png",
+    "injection_dust_300.png"
+  ],
+  "generator_sources": {
+    "finals_comprehensive_video.py": "7c5cb7b431f92c5230aac7b7620560995581a45964e8cae2338350f8933dfbd6",
+    "finals_cab_video.py": "5a62239c8a12910f94a1777aee443b3898d35d13d0c594be76477aad9e944f59",
+    "finals_video.py": "2f0437be4a0c920687b39b895c416892d6ce83eb30006a50ccd03c326483a6df"
+  }
+}

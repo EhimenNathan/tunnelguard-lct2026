@@ -10,7 +10,7 @@ HERE=Path(__file__).resolve().parent;R=HERE.parent
 sys.path[:0]=[str(R/'src/tunnel_guard'),str(R/'src/tunnel_guard/test')]
 from tunnel_sim import make_tunnel,centreline
 from tunnel_guard.core.detector import ObstacleDetector,DetectorConfig
-from tunnel_guard.core.geometry import warmup
+from tunnel_guard.core.geometry import warmup,HAVE_NATIVE
 
 def scan(world,labels,pose,radius,rng):
     theta=0. if radius is None else np.arctan(pose/radius)
@@ -26,7 +26,7 @@ def scan(world,labels,pose,radius,rng):
 def main(baseline,out):
     baseline=Path(baseline);spec=importlib.util.spec_from_file_location('baseline_tunnel_guard',baseline/'tunnel_guard/__init__.py',submodule_search_locations=[str(baseline/'tunnel_guard')]);pkg=importlib.util.module_from_spec(spec);sys.modules[spec.name]=pkg;spec.loader.exec_module(pkg)
     old=importlib.import_module('baseline_tunnel_guard.core.detector');importlib.import_module('baseline_tunnel_guard.core.geometry').warmup();warmup()
-    result=dict(method='Analytic static tunnel in world coordinates; train 5m/s, 80 scans at 10Hz, first30 warm; .12degree nearest-return bins; not an empirical sensor model or independent real train validation',cases=[])
+    result=dict(native=HAVE_NATIVE,baseline_source_sha256={p.name:hashlib.sha256(p.read_bytes().replace(b'\r\n',b'\n')).hexdigest() for p in (baseline/'tunnel_guard/core').glob('*.py')},candidate_source_sha256={p.name:hashlib.sha256(p.read_bytes().replace(b'\r\n',b'\n')).hexdigest() for p in (R/'src/tunnel_guard/tunnel_guard/core').glob('*.py')},method='Analytic static tunnel in world coordinates; train 5m/s, 80 scans at 10Hz, first30 warm; .12degree nearest-return bins; not an empirical sensor model or independent real train validation',cases=[])
     for radius in [None,800.,-800.,500.,-500.]:
         for positive in [False,True]:
             world=make_tunnel(radius=radius,lidar_height=1.8,s_max=300.,seed=718,obstacles=[(120.,0.,.6,.6,1.75)] if positive else [])

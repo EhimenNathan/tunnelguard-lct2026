@@ -1,0 +1,14 @@
+[
+  {
+    "path": "synthetic_platform_cloud_only",
+    "frames": 386
+  },
+  {
+    "path": "synthetic_switch_cloud_only",
+    "frames": 736
+  },
+  {
+    "path": "synthetic_tunnels_cloud_only",
+    "frames": 545
+  }
+]

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import imageio.v2 as imageio
 import imageio_ffmpeg
-from PIL import ImageDraw
+from PIL import Image,ImageDraw
 from finals_video import canvas,text,project,W,H,FPS
 from finals_cab_video import render,colors,GREEN,GOLD,RED,INK,MUTED
 
@@ -46,6 +46,7 @@ def main(quality,dense,web,out):
     assert summary['native'] and qualification['native'] and qualification['complete']
     assert qualification['frames']==1510 and len(ladder)==68
     manifest={'playback_rate':1,'fps':FPS,'resolution':[W,H],'chapters':[],'scored_injection_conditions':68,
+      'injection_matching':'diagnostic ladder: longitudinal distance within 4m; 255 regression conditions also check lateral location',
       'injection_excerpt':'last 20 of 50 scored frames, predefined uniformly for every case; 30 warmup frames precede scoring',
       'limitations':'Automatic Falcon trajectory; no independent real obstacle/dust labels; shared-background synthetic diagnostics, not proof of unseen-route generalization',
       'detector_source_sha256':summary['source_sha256'],'source_label':summary['source_label']}
@@ -54,7 +55,7 @@ def main(quality,dense,web,out):
         scratch=Path(scratch);parts=[];current=[];writer=None;count=0
         def start(name):
             nonlocal writer,count,current
-            p=scratch/(name+'.mp4');parts.append(p);current=[name,timeline];count=0
+            p=scratch/(f'part_{len(parts):02d}.mp4');parts.append(p);current=[name,timeline];count=0
             writer=imageio.get_writer(str(p),fps=FPS,codec='libx264',pixelformat='yuv420p',macro_block_size=2,
               ffmpeg_params=['-crf','19','-maxrate','1700k','-bufsize','3400k','-preset','fast','-threads','2','-movflags','+faststart'])
         def put(im,n):
@@ -82,7 +83,8 @@ def main(quality,dense,web,out):
                 zoom(im,f);d=ImageDraw.Draw(im)
                 if 'dust' not in f:
                     d.rectangle((1485,766,1850,824),fill='#070d15');text(d,(1490,770),'не записано в клип',24,MUTED)
-                text(d,(105,924),f'Runtime {runtime} · автотраектория — proxy, не независимая разметка.',19,MUTED)
+                note='В этом участке восстановлены 13 кадров СТОП в парной проверке.' if ci==1 else f'Runtime {runtime} · автотраектория — proxy, не независимая разметка.'
+                text(d,(105,924),note,19,MUTED)
                 first=summary['first_detection']
                 if first['k']<=f['k']<first['k']+30:
                     text(d,(105,775),f"ПЕРВОЕ СОВПАДЕНИЕ: {first['truth_x']:.2f} м · t={first['t']:.1f} с",28,GREEN,True)
@@ -90,6 +92,19 @@ def main(quality,dense,web,out):
                         im.save(out.parent/'falcon_first_detection.png');samples.append('falcon_first_detection.png')
                 put(im,2)
             close(dict(file='falcon_test.zst',type='real',first_scan=frames[0]['k'],last_scan=frames[-1]['k'],scans=len(frames)))
+        old_frames=json.loads((quality/'baseline/falcon_clip_1.json').read_text());new_frames=json.loads((quality/'candidate/falcon_clip_1.json').read_text())
+        old=next(f for f in old_frames if f['k']==2255);new=next(f for f in new_frames if f['k']==2255)
+        assert not old['stop_hit'] and new['stop_hit']
+        shared=np.unique(np.vstack([np.asarray(old['p']).reshape(-1,3),np.asarray(new['p']).reshape(-1,3)]),axis=0).ravel().tolist()
+        comparison=canvas('ПАРНОЕ СРАВНЕНИЕ / ТОТ ЖЕ ВХОДНОЙ КАДР','Кадр 2255: восстановление СТОП.');draw=ImageDraw.Draw(comparison)
+        for x,f,label,color in [(70,old,'ДО / 2e2cee7',GOLD),(970,new,'ПОСЛЕ / 404f3c8',GREEN)]:
+            shot=render(dict(f,p=shared,local=f['k']),1,profile,names=['Falcon','Средняя дистанция','Ближняя зона'],chapter='РЕАЛЬНЫЙ FALCON / ОДИН КАДР',title='Сохранённый вывод',source_label='FALCON / ТОТ ЖЕ ВХОД')
+            sd=ImageDraw.Draw(shot);sd.rectangle((1485,766,1850,824),fill='#070d15');text(sd,(1490,770),'не записано в клип',24,MUTED)
+            comparison.paste(shot.resize((880,495),Image.Resampling.LANCZOS),(x,350));text(draw,(x,290),label,30,color,True)
+        text(draw,(85,880),'Общая прореженная выборка исходных точек. Решения вычислены на полном входе.',25,MUTED)
+        text(draw,(85,925),'Порог неопределённости СТОП не ослаблен. 14/14 условий приёмки пройдены.',25,MUTED)
+        comparison.save(out.parent/'spatial_before_after.png');samples.append('spatial_before_after.png')
+        start('Кадр 2255: до и после');put(comparison,8*FPS);close('same original Falcon scan 2255, two detector outputs, same visualization point subset')
         first=summary['first_detection'];first_stop=summary['first_stop']
         start('Что означает дальность');put(card('01 / РЕАЛЬНЫЙ FALCON / РЕЗУЛЬТАТ','Дальность — наблюдение, а не гарантия.',[
           f"Первое сопоставление: {first['truth_x']:.2f} м, t={first['t']:.1f} с.",
@@ -113,25 +128,25 @@ def main(quality,dense,web,out):
           'Рассеяние — информационный флаг; круги-мишени для него убраны.',
           'Без меток классов/пыли число выходов не равно числу верных объектов.']),5*FPS);close('organizer synthetic source explanation')
         organizer=dense/'tunnelguard_organizer.mp4';assert organizer.exists()
-        parts.append(organizer.resolve());manifest['chapters'].append(dict(name='Организаторы: платформа, стрелка, тоннель',video_start_s=timeline,duration_s=166.7,source='new_synth_data.zst, organizer synthetic, all 1667 scans'));timeline+=166.7
+        parts.append(organizer.resolve());organizer_meta=json.loads((dense/'cab_video.json').read_text());subchapters=[dict(name=v['name'],video_start_s=timeline+v['video_start_s'],duration_s=v['video_end_s']-v['video_start_s'],scans=v['frames']) for v in organizer_meta['scenes']];manifest['chapters'].append(dict(name='Организаторы: платформа, стрелка, тоннель',video_start_s=timeline,duration_s=166.7,subchapters=subchapters,source='new_synth_data.zst, organizer synthetic, all 1667 scans'));timeline+=166.7
         start('Инъекции: цель');put(card('04 / НАШИ СИНТЕТИЧЕСКИЕ ИНЪЕКЦИИ','Меняем цель и дальность. Сохраняем реальный фон.',[
           '17 дистанций: 60, 90, 100, 120, 150, 175, 180, 190, 200,',
           '215, 220, 230, 250, 260, 270, 280, 300 м.',
           'Человек, ящики 0,5 и 0,3 м, модель пылевого аэрозоля.',
           'Цель: диагностировать дальность, задержку, пропуски и нежелательный СТОП.',
           '30 кадров прогрева + 50 с инъекцией; показываем последние 20 при 1×.',
-          'Один seed на дистанцию. Это диагностика, не независимая реальная точность.']),7*FPS);close('synthetic diagnostic protocol, not real recording')
+          'Один seed; совпадение дальности ±4 м. Это диагностика, не реальная точность.']),7*FPS);close('synthetic diagnostic protocol, not real recording')
         for kind,kind_name in KINDS.items():
             start('Инъекции · '+kind_name)
             for row in [r for r in ladder if r['object']==kind]:
                 d=row['distance'];clip=json.loads((quality/f'candidate/injection_clips/{kind}_{d}.json').read_text());assert len(clip)==20
                 for f in clip:
-                    im=render(f,1,profile,names=['Реальный фон','Наша инъекция','Метрики испытания'],chapter='04 / СИНТЕТИЧЕСКАЯ ИНЪЕКЦИЯ / НЕ РЕАЛЬНЫЙ ОБЪЕКТ',title=f'{kind_name} · {d} м · диагностический тест',source_label='РЕАЛЬНЫЙ FALCON + ИНЪЕКЦИЯ')
+                    im=render(f,1,profile,names=['Реальный фон','Наша инъекция','Метрики испытания'],chapter='04 / СИНТЕТИЧЕСКАЯ ИНЪЕКЦИЯ / НЕ РЕАЛЬНЫЙ ОБЪЕКТ',title=f'{kind_name} · {d} м',source_label='РЕАЛЬНЫЙ FALCON + ИНЪЕКЦИЯ')
                     draw=ImageDraw.Draw(im);draw.rectangle((1475,307,1850,850),fill='#070d15')
                     values=[('Дальность инъекции',f'{d} м'),('Ложное препятствие' if kind=='dust' else 'Детекция / 50 кадров',f"{row['detected']*100:.0f} %"),('Ложный СТОП' if kind=='dust' else 'СТОП / 50 кадров',f"{row['stop']*100:.0f} %"),('Возвраты цели / кадр',f"{row['returns_per_frame']:.1f}")]
                     for j,(label,value) in enumerate(values):
                         y=320+j*128;text(draw,(1490,y),label,19,MUTED);text(draw,(1490,y+32),value,34,INK,True)
-                    draw.rectangle((90,923,1450,1017),fill='#070d15')
+                    draw.rectangle((65,919,1460,1018),fill='#070d15')
                     delay='не было' if row['first_frame'] is None else f"{row['first_frame']*.1:.1f} с"
                     text(draw,(105,933),f'Последние 20 из 50 кадров. Первое совпадение: {delay}. Метрики включают подтверждение.',19,MUTED)
                     text(draw,(105,974),'Решения фона и инъекции различаются; в реальном фоне может присутствовать другой человек.',18,MUTED)

@@ -1,0 +1,41 @@
+{
+  "baseline": {
+    "missing_stop_frames": 24,
+    "gap_events": 3,
+    "max_gap_frames": 17,
+    "intervals": [
+      {
+        "first": 2251,
+        "last": 2256,
+        "frames": 6
+      },
+      {
+        "first": 2310,
+        "last": 2326,
+        "frames": 17
+      },
+      {
+        "first": 2330,
+        "last": 2330,
+        "frames": 1
+      }
+    ]
+  },
+  "candidate": {
+    "missing_stop_frames": 11,
+    "gap_events": 2,
+    "max_gap_frames": 10,
+    "intervals": [
+      {
+        "first": 2311,
+        "last": 2320,
+        "frames": 10
+      },
+      {
+        "first": 2330,
+        "last": 2330,
+        "frames": 1
+      }
+    ]
+  }
+}

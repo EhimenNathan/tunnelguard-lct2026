@@ -12,11 +12,11 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Frozen current runtime and candidate, native tests
+      - name: Frozen 2e2cee7 baseline and candidate, native tests
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           docker build -t tg_candidate .
-          IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          IMG=ghcr.io/ehimennathan/tunnel_guard@sha256:b5f103889bd19547bbb08be3c7c1c2e96ccaf4b4da11838700d43839c217e5ea
           echo "IMG=$IMG" >> "$GITHUB_ENV"
           docker pull "$IMG"
           docker run --rm tg_candidate bash -c 'cd /tmp; python3 -m pytest -q /ws/src/tunnel_guard/test'
@@ -24,7 +24,7 @@ jobs:
         run: |
           pip install --quiet numpy zstandard
           python tools/falcon_export_bag.py bags/falcon_test 0 4442
-      - name: Current pinned runtime, all 4443 scans
+      - name: Frozen 2e2cee7 runtime, all 4443 scans
         run: |
           mkdir -p results/baseline results/candidate results/holdout
           docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$IMG" python3 /tools/finals_improvement_eval.py /data/falcon_test /docs/finals/reference_automatic.json /results/baseline --source-label pinned-2e2cee7

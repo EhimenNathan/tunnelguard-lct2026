@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "checks": {
+    "full_falcon": true,
+    "native": true,
+    "same_model": true,
+    "detection_not_later": true,
+    "no_band_loses_hits": true,
+    "no_band_loses_stop": true,
+    "no_extra_unmatched_stop": true,
+    "no_extra_beside_stop": true,
+    "same_255_protocol": true,
+    "no_positive_trial_loses_hits": true,
+    "no_positive_trial_loses_stop": true,
+    "no_extra_dust_stop": true,
+    "no_extra_offtrack_warning": true,
+    "no_extra_offtrack_stop": true
+  },
+  "positive_before": 5096,
+  "positive_after": 5096,
+  "matched_stop_before": 3142,
+  "matched_stop_after": 3155,
+  "unmatched_stop_before": 10,
+  "unmatched_stop_after": 10,
+  "limitation": "Previously examined regression set; automatic real trajectory; no independent class FP/FN"
+}

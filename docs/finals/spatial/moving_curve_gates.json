@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "empty_curves_no_obstacles": true,
+    "no_positive_hit_loss": true,
+    "no_positive_stop_loss": true
+  },
+  "passed": true,
+  "native": false,
+  "scope": "Analytic static tunnel in world coordinates; train 5m/s, 80 scans at 10Hz, first30 warm; .12degree nearest-return bins; not an empirical sensor model or independent real train validation"
+}

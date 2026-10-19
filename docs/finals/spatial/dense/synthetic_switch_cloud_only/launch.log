@@ -1,0 +1,45 @@
+[INFO] [launch]: All log files can be found below /root/.ros/log/2026-10-19-04-49-41-290735-ad9ba93312ce-238
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [detector_node-1]: process started with pid [239]
+[INFO] [python3-2]: process started with pid [241]
+[python3-2] QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+[python3-2] [INFO] [1792385381.552320269] [rviz2]: Stereo is NOT SUPPORTED
+[python3-2] [INFO] [1792385381.552581109] [rviz2]: OpenGl version: 4.5 (GLSL 4.5)
+[python3-2] [INFO] [1792385381.608228086] [rviz2]: Stereo is NOT SUPPORTED
+[detector_node-1] [INFO] [1792385382.133703617] [tunnel_guard]: scorer: /ws/install/tunnel_guard/share/tunnel_guard/config/obstacle_scorer.json; numba kernels: True
+[detector_node-1] [INFO] [1792385382.148546537] [tunnel_guard]: subscribed to /lidar_points
+[detector_node-1] [INFO] [1792385382.150361162] [tunnel_guard]: TunnelGuard started (input_topic=/lidar_points, reliability=reliable, custom msgs=True, vision_msgs=True)
+[INFO] [python3-3]: process started with pid [271]
+[python3-3] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792385385.789418131] [rosbag2_storage]: Opened database '/data/synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3' for READ_ONLY.
+[python3-3] [INFO] [1792385385.789484475] [rosbag2_player]: Set rate to 1
+[python3-3] [INFO] [1792385385.789530051] [rosbag2_player]: Overriding QoS profile for topic /lidar_points
+[python3-3] [INFO] [1792385385.795633096] [rosbag2_player]: Adding keyboard callbacks.
+[python3-3] [INFO] [1792385385.795668182] [rosbag2_player]: Press SPACE for Pause/Resume
+[python3-3] [INFO] [1792385385.795682338] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[python3-3] [INFO] [1792385385.795694451] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[python3-3] [INFO] [1792385385.795701013] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[python3-3] [INFO] [1792385385.795799138] [rosbag2_player]: Sleep 2000000000 ns
+[python3-3] [INFO] [1792385387.796356248] [rosbag2_storage]: Opened database '/data/synthetic_switch_cloud_only/synthetic_switch_cloud_only_0.db3' for READ_ONLY.
+[python3-3] [INFO] [1792385388.387918809] [rosbag2_player]: Resuming play.
+[detector_node-1] [INFO] [1792385392.158775853] [tunnel_guard]: frames=38 mean processing 41.7 ms
+[detector_node-1] [INFO] [1792385397.150603594] [tunnel_guard]: frames=88 mean processing 40.7 ms
+[detector_node-1] [INFO] [1792385402.155808647] [tunnel_guard]: frames=138 mean processing 39.7 ms
+[detector_node-1] [INFO] [1792385407.151405635] [tunnel_guard]: frames=188 mean processing 39.3 ms
+[detector_node-1] [INFO] [1792385412.150600778] [tunnel_guard]: frames=238 mean processing 39.1 ms
+[detector_node-1] [INFO] [1792385417.150667081] [tunnel_guard]: frames=288 mean processing 38.9 ms
+[detector_node-1] [INFO] [1792385422.151083280] [tunnel_guard]: frames=338 mean processing 38.3 ms
+[detector_node-1] [INFO] [1792385427.158905205] [tunnel_guard]: frames=388 mean processing 37.9 ms
+[detector_node-1] [INFO] [1792385432.150613102] [tunnel_guard]: frames=438 mean processing 37.4 ms
+[detector_node-1] [INFO] [1792385437.150632740] [tunnel_guard]: frames=488 mean processing 37.1 ms
+[detector_node-1] [INFO] [1792385442.150727982] [tunnel_guard]: frames=538 mean processing 37.0 ms
+[detector_node-1] [INFO] [1792385447.162600890] [tunnel_guard]: frames=588 mean processing 37.0 ms
+[detector_node-1] [INFO] [1792385452.150590717] [tunnel_guard]: frames=638 mean processing 36.8 ms
+[detector_node-1] [INFO] [1792385457.156514600] [tunnel_guard]: frames=688 mean processing 36.7 ms
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [python3-3]: sending signal 'SIGINT' to process[python3-3]
+[INFO] [python3-2]: sending signal 'SIGINT' to process[python3-2]
+[INFO] [detector_node-1]: sending signal 'SIGINT' to process[detector_node-1]
+[python3-3] Bag playback cancelled by requested SIGINT
+[INFO] [python3-3]: process has finished cleanly [pid 271]
+[INFO] [detector_node-1]: process has finished cleanly [pid 239]
+[INFO] [python3-2]: process has finished cleanly [pid 241]

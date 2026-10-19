@@ -1,0 +1,59 @@
+{
+  "camera": "fixed forward-facing cab",
+  "source": "all original organizer new_synth_data scans, native detector",
+  "playback_rate": 1.0,
+  "fps": 20,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "scenes": [
+    {
+      "name": "Платформа",
+      "frames": 386,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 38.49998700618744,
+      "source_end_s": 38.49998700618744,
+      "last_scan_hold_s": 0.0999990701675415,
+      "video_start_s": 0.0,
+      "video_end_s": 38.6
+    },
+    {
+      "name": "Стрелка",
+      "frames": 736,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 73.49990689754486,
+      "source_end_s": 73.49990689754486,
+      "last_scan_hold_s": 0.10000097751617432,
+      "video_start_s": 38.6,
+      "video_end_s": 112.2
+    },
+    {
+      "name": "Тоннель",
+      "frames": 545,
+      "source_start_s": 0.0,
+      "last_saved_frame_s": 54.40010595321655,
+      "source_end_s": 54.40010595321655,
+      "last_scan_hold_s": 0.10000002384185791,
+      "video_start_s": 112.2,
+      "video_end_s": 166.7
+    }
+  ],
+  "source_scan_step_s": [
+    0.0999990701675415,
+    0.10000097751617432,
+    0.10000002384185791
+  ],
+  "detector_commit": "717e2dec542604660be747d13e64f22b844466bb",
+  "generator_commit": "717e2dec542604660be747d13e64f22b844466bb",
+  "generator_source_sha256": "5a62239c8a12910f94a1777aee443b3898d35d13d0c594be76477aad9e944f59",
+  "generator_hash_format": "UTF-8 LF",
+  "video_source_clip_sha256": {
+    "platform": "76446978175f68ef2ac14c102c4f7f651085cc9ffa06f651ef0b26481849bc28",
+    "switch": "dfc5138554e144a381240810e3cccbc50de7ce312649e706607a663511a541a9",
+    "tunnels": "510796435391d085a272b2195f1d381e36c9cd4266ac6c720883a89f2dc44c42"
+  },
+  "duration_s": 166.7,
+  "output_bytes": 61116486,
+  "output_sha256": "88630eb1715198057016df495cb917a7d68af83f5dd9cf4d0177cdf060f4beee"
+}

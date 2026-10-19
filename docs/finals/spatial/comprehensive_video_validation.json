@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "full_decode": true,
+  "faststart": true,
+  "atoms": [
+    "ftyp",
+    "moov",
+    "free",
+    "mdat"
+  ],
+  "sha256": "a4cc840243d3c5579d220eb143f8e5e8f9e7eee7e6c75e79f9d028d73718ee9a",
+  "duration_s": 440,
+  "playback_rate": 1,
+  "video_fps": 20
+}

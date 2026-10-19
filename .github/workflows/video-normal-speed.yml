@@ -21,6 +21,7 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
           echo "IMG=$IMG" >> "$GITHUB_ENV"
+          echo "RUNTIME=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['runtime_commit'])")" >> "$GITHUB_ENV"
           docker pull "$IMG"
           pip install --quiet requests numpy zstandard pyyaml matplotlib pillow imageio imageio-ffmpeg
       - name: Fetch private input and verify SHA256
@@ -33,7 +34,7 @@ jobs:
       - name: Export all 1667 native detector scans
         run: |
           mkdir -p full_results results
-          docker run --rm --network none -e TG_SOURCE_SHA=2e2cee7 -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/full_results:/results" "$IMG" python3 /tools/finals_organizer_bundle.py /data /results --clip-stride 1
+          docker run --rm --network none -e TG_SOURCE_SHA="$RUNTIME" -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/full_results:/results" "$IMG" python3 /tools/finals_organizer_bundle.py /data /results --clip-stride 1
           python tools/finals_prepare_video.py full_results video_project
       - name: Render normal speed, original 10Hz scans
         run: |

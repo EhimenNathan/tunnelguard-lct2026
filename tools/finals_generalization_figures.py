@@ -15,11 +15,12 @@ plt.rcParams.update({'font.family':'DejaVu Sans','font.size':12,'text.color':INK
 
 
 def main():
-    rows = json.loads((D/'candidate/holdout.json').read_text())['trials']
+    latest=ROOT/'docs/finals/spatial/quality/holdout/holdout.json'
+    rows = json.loads((latest if latest.exists() else D/'candidate/holdout.json').read_text())['trials']
     old = json.loads((D/'baseline/holdout.json').read_text())['trials']
     fig, axes = plt.subplots(1,3,figsize=(18,7),facecolor=BG)
     fig.subplots_adjust(left=.055,right=.98,top=.76,bottom=.23,wspace=.25)
-    fig.text(.055,.94,'Новые seed и фоновые окна: где видим цель, а где теряем',fontsize=23,weight='bold')
+    fig.text(.055,.94,'Зафиксированный протокол: дальность и пропуски',fontsize=23,weight='bold')
     fig.text(.055,.86,'255 условий · 17 дистанций · 3 seed · 30 кадров прогрева + 50 с инъекцией',color=MUTED,fontsize=14)
     for ax,kind,title in zip(axes,['person','box_0.5','box_0.3'],['Человек','Ящик 0,5 м','Ящик 0,3 м']):
         ds=sorted({r['distance'] for r in rows})
@@ -27,18 +28,19 @@ def main():
             return np.array([[100*r[metric]/r['n'] for r in rr if r['object']==kind and r['distance']==d] for d in ds])
         h,s,b=values(rows,'hit'),values(rows,'stop'),values(old,'hit')
         ax.fill_between(ds,h.min(1),h.max(1),color='#21e6a7',alpha=.18)
-        ax.plot(ds,h.mean(1),color='#21e6a7',marker='o',ms=4,lw=2,label='Есть детекция: новая')
+        ax.plot(ds,h.mean(1),color='#21e6a7',marker='o',ms=4,lw=2,label='Есть детекция: текущая')
         ax.plot(ds,b.mean(1),color='#ad91ff',ls='--',lw=2,label='Есть детекция: f2af938')
-        ax.plot(ds,s.mean(1),color='#ff8d80',lw=2,label='СТОП: новая')
+        ax.plot(ds,s.mean(1),color='#ff8d80',lw=2,label='СТОП: текущая')
         ax.set_title(title,loc='left',weight='bold',pad=14);ax.set_ylim(-3,103)
         ax.set_xticks([60,100,150,200,250,300]);ax.set_xlabel('Дистанция, м');ax.set_ylabel('Доля кадров, %')
         ax.set_facecolor(BG);ax.spines[['top','right']].set_visible(False);ax.grid(alpha=.15)
     axes[0].legend(frameon=False,labelcolor=INK,fontsize=10,loc='lower left')
     fig.text(.055,.075,'Полоса — минимум/максимум трёх испытаний, не доверительный интервал. Среднее: n=150 кадров на дистанцию.\nПыль: 0/2550 ложных СТОП в ±4 м от инъекции. Человек вне пути: 0/2550 предупреждений и СТОП.\nОбщие реальные фоны; это не реальная precision/recall.',color=MUTED,fontsize=11,linespacing=1.5)
-    for path in [D/'holdout_distance.png',ROOT/'web/assets/holdout_distance.png']:
+    for path in [(ROOT/'docs/finals/spatial/holdout_distance.png' if latest.exists() else D/'holdout_distance.png'),ROOT/'web/assets/holdout_distance.png']:
         fig.savefig(path,dpi=200,facecolor=BG)
     plt.close(fig)
-    source=ROOT/'docs/finals/dense_cloud/accepted'
+    source=ROOT/'docs/finals/spatial/dense'
+    if not source.exists():source=ROOT/'docs/finals/dense_cloud/accepted'
     if source.exists():
         names=['synthetic_platform_cloud_only','synthetic_switch_cloud_only','synthetic_tunnels_cloud_only']
         reports=[json.loads((source/n/'live_check.json').read_text()) for n in names]
@@ -46,7 +48,11 @@ def main():
         fig,ax=plt.subplots(figsize=(14,7),facecolor=BG)
         fig.subplots_adjust(left=.08,right=.96,top=.74,bottom=.23)
         fig.text(.08,.94,'Три полных записи. 1667 из 1667 сообщений.',fontsize=24,weight='bold')
-        fig.text(.08,.85,'ROS 2 + RViz / noVNC · 4 vCPU AMD EPYC 9V74 · Linux amd64 · без потерь и с чистым закрытием',color=MUTED,fontsize=12)
+        import re
+        cpu=(source/'cpu.txt').read_text()
+        model=re.search(r'^Model name:\s*(.+)$',cpu,re.M)
+        label=model.group(1).strip() if model else 'CPU: см. исходный отчёт'
+        fig.text(.08,.85,'ROS 2 + RViz / noVNC · '+label+' · Linux amd64 · без потерь и с чистым закрытием',color=MUTED,fontsize=12)
         x=np.arange(3)
         for offset,key,color,label in [(-.17,'processing_ms_p95','#21e6a7','p95 обработки до публикации'),(.17,'callback_ms_p95','#ad91ff','p95 полного callback')]:
             vals=[r[key] for r in reports];ax.bar(x+offset,vals,.30,color=color,label=label)
@@ -56,7 +62,8 @@ def main():
         ax.set_xticks(x,[f'{n}\n{r["received"]}/{r["expected"]} · {r["output_hz"]:.3f} Гц' for n,r in zip(['Платформа','Стрелка','Тоннель'],reports)])
         ax.set_facecolor(BG);ax.spines[['top','right']].set_visible(False);ax.grid(axis='y',alpha=.15)
         ax.legend(frameon=False,labelcolor=INK,loc='lower left',bbox_to_anchor=(0,1.02),ncol=3,fontsize=10)
-        fig.text(.08,.08,'Полные записи 38,5 / 73,5 / 54,4 с. p99 интервала выдачи: 127,6 / 131,4 / 128,2 мс.\nСредняя частота и p95 не являются WCET: равномерность каждого периода и hard real time не доказаны.',fontsize=11,color=MUTED,linespacing=1.6)
+        gaps=' / '.join(f"{v['arrival_gap_ms_p99']:.1f}" for v in reports)
+        fig.text(.08,.08,f'Полные записи 38,5 / 73,5 / 54,4 с. p99 интервала выдачи: {gaps} мс.\nСредняя частота и p95 не являются WCET: равномерность каждого периода и hard real time не доказаны.',fontsize=11,color=MUTED,linespacing=1.6)
         for path in [source/'full_ros_performance.png',ROOT/'web/assets/full_ros_performance.png']:
             fig.savefig(path,dpi=200,facecolor=BG)
         plt.close(fig)
