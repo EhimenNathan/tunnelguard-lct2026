@@ -1,0 +1,32 @@
+name: marker-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  organizer-reference:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cloud space and frozen detector
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          pip install --quiet requests numpy zstandard pyyaml
+          IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
+          echo "IMG=$IMG" >> "$GITHUB_ENV"
+          docker pull "$IMG"
+      - name: Verified public marker archive, cloud only
+        run: |
+          python tools/cloud_dense_data.py public-download https://disk.yandex.ru/d/SfBeRHbs8bNJAQ private_data/new_synth_data_with_markers.zst --path /new_synth_data_with_markers.zst
+          python tools/finals_marker_bundle.py extract private_data/new_synth_data_with_markers.zst bags
+      - name: Native frozen model and marker export
+        run: |
+          mkdir -p results
+          cp private_data/new_synth_data_with_markers_source.json results/source.json
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" "$IMG" python3 /tools/finals_marker_bundle.py evaluate /data /results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: organizer-marker-reference
+          path: results/
