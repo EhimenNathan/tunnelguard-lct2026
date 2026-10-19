@@ -1,5 +1,12 @@
-presentation/
-docs/*.mp4
-tools/cache/
+# Сборке нужны только исходники ROS и файлы контейнера.
+# Данные, сайт, видео, отчёты и история Git в build context не отправляются.
+*
+!Dockerfile
+!Dockerfile.gui
+!src/
+!src/**
+!docker/
+!docker/**
 **/__pycache__/
 **/.pytest_cache/
+**/*.pyc
