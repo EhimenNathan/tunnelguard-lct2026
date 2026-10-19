@@ -2,7 +2,7 @@
 Сохраняет решения и небольшие 3D-фрагменты; без независимого эталона FP/FN не вычисляет.
 python tools/finals_archive_eval.py ARCHIVE OUTPUT_DIR
 """
-import sys,json,time,tarfile,hashlib,subprocess,argparse
+import sys,json,time,tarfile,hashlib,subprocess,argparse,os
 from pathlib import Path
 import numpy as np
 import zstandard
@@ -20,7 +20,8 @@ from tunnel_guard.core.geometry import HAVE_NATIVE
 def main(src,output,clip_stride=25,clip_start=0,clip_stop=2500,clip_limit=100):
  out=Path(output);out.mkdir(parents=True,exist_ok=True)
  det=make_detector([]);rows=[];clips=[];meta=[];rng=np.random.default_rng(17);started=time.time()
- commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True).strip()
+ git=subprocess.run(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True,capture_output=True)
+ commit=os.environ.get('TG_SOURCE_SHA') or (git.stdout.strip() if git.returncode==0 else 'installed source; see source_sha256')
  source_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(detector_module.__file__).parent.glob('*.py')}
  config=P.flatten(det.cfg)
  error=None
@@ -66,7 +67,7 @@ def main(src,output,clip_stride=25,clip_start=0,clip_stop=2500,clip_limit=100):
   error=f'{type(exc).__name__}: {exc}';print('ARCHIVE ERROR:',error,flush=True)
  save(out/'rows.json',rows);save(out/'clip.json',clips);save(out/'metadata.json',meta)
  steady=[r for r in rows if r['local']>=30];lat=[r['ms'] for r in steady]
- summary=dict(native=HAVE_NATIVE,complete=error is None,archive_error=error,archive=Path(src).name,archive_bytes=Path(src).stat().st_size,commit=commit,source_sha256=source_sha256,config=config,frames=len(rows),
+ summary=dict(native=HAVE_NATIVE,model_sha256=hashlib.sha256(Path(det.cfg.scorer_model).read_bytes()).hexdigest(),complete=error is None,archive_error=error,archive=Path(src).name,archive_bytes=Path(src).stat().st_size,commit=commit,source_sha256=source_sha256,config=config,frames=len(rows),
    duration_s=sum(max(r['t'] for r in rows if r['piece']==piece) for piece in {r['piece'] for r in rows}),pieces=len({r['piece'] for r in rows}),stop_frames=sum(r['level']==2 for r in rows),
    caution_frames=sum(r['level']==1 for r in rows),geometry_ok=sum(r['geometry'] for r in steady),steady_frames=len(steady),
    dust_flagged_frames=sum(bool(r['dust']) for r in rows),

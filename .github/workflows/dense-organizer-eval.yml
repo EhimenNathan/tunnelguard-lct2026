@@ -77,7 +77,7 @@ jobs:
           python tools/cloud_dense_data.py public-download https://disk.yandex.ru/d/SfBeRHbs8bNJAQ private_data/qualification/cloud_with_fake_obj.zst --path /cloud_with_fake_obj.zst
           mkdir -p results/qualification
           cp private_data/qualification/cloud_with_fake_obj_source.json results/qualification/source.json
-          docker run --rm --network none -v "$PWD/private_data/qualification:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_archive_eval.py /data/cloud_with_fake_obj.zst /results/qualification --clip-stride 1 --clip-start 30 --clip-stop 230 --clip-limit 200
+          docker run --rm --network none -e TG_SOURCE_SHA="$GITHUB_SHA" -v "$PWD/private_data/qualification:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" tg_dense python3 /tools/finals_archive_eval.py /data/cloud_with_fake_obj.zst /results/qualification --clip-stride 1 --clip-start 30 --clip-stop 230 --clip-limit 200
           python3 -c "import json; x=json.load(open('results/qualification/summary.json')); assert x['complete'] and x['native'] and x['frames']==1510"
       - name: Normal speed organizer video without scatter target circles
         run: |
