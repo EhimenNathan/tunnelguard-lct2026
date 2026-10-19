@@ -39,6 +39,7 @@ class FarFieldConfig:
     stop_frames: int = 9            # frames with hits for STOP
     floor_support: float = 1.1      # lowest return of the object must be below this height [m]
     sigma_l_max: float = 0.6        # lateral uncertainty limit for STOP
+    prefer_certain_stop: bool = True  # a nearby uncertain warning must not suppress recent STOP evidence
     sigma_l_warn_max: float = 1.2   # persistent objects may warn within this bound; never STOP on uncertain geometry
 
 
@@ -152,7 +153,15 @@ class FarField:
         # must not become two compact objects at its truncated endpoints.
         span = nb(nb(nb(self.smax, 'max'), 'max'), 'max').max(0) - nb(nb(nb(self.smin, 'min'), 'min'), 'min').min(0) if cfg.span_max > 0 else None
         out, used = [], np.zeros(self.nc, bool)
-        order = cand[np.lexsort((-npts[cand], -fh[cand]))]
+        priority = np.zeros(len(cand), np.int8)
+        if cfg.prefer_certain_stop:
+            means = ssum[cand] / np.maximum(npts[cand], 1)
+            sl_all, sv_all = g.sigma_at(means)
+            priority = ((sl_all <= cfg.sigma_l_max) & (stop_hits[cand] >= cfg.stop_frames)
+                        & (np.abs(stop_lmean[cand]) <= cfg.centre_half_width)
+                        & (stop_hmin[cand] <= cfg.floor_support)
+                        & (hmax[cand] >= cfg.h_lo + cfg.height_sigma_k * sv_all)).astype(np.int8)
+        order = cand[np.lexsort((-npts[cand], -fh[cand], -priority))]
         keep_ids = np.zeros(self.nc, np.int64)
         for c in order:
             if used[max(c - 1, 0):c + 2].any():

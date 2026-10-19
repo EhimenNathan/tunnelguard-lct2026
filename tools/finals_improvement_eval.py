@@ -14,11 +14,12 @@ from tunnel_guard.core.geometry import warmup,HAVE_NATIVE
 from tunnel_guard.evaluate_bag import read_bag
 from tunnel_guard import params as P
 import tunnel_guard.core.detector as detector_module
+from finals_visual_frame import visual_frame
 from falcon_inject import inject
 from finals_protocol import segment_for,DISTANCES,OBJECTS,WARM,ON,fill_gaps
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('bag');ap.add_argument('truth');ap.add_argument('out');ap.add_argument('--ladder',action='store_true');ap.add_argument('--source-label',default='installed image');a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('bag');ap.add_argument('truth');ap.add_argument('out');ap.add_argument('--ladder',action='store_true');ap.add_argument('--clip-stride',type=int,default=5);ap.add_argument('--source-label',default='installed image');a=ap.parse_args()
     out=Path(a.out);out.mkdir(parents=True,exist_ok=True)
     warmup();model=Path(get_package_share_directory('tunnel_guard'))/'config/obstacle_scorer.json'
     def make():return ObstacleDetector(DetectorConfig(scorer_model=str(model)))
@@ -47,7 +48,7 @@ def main():
         g=res.geometry
         geometry.append(dict(k=k,ok=bool(g.ok),y=g.centre(X).tolist() if g.ok else None,z=g.rail_z(X).tolist() if g.ok else None))
         for ci,(lo,hi) in enumerate([(0,300),(2200,2400),(3800,4000)]):
-            if not lo<=k<=hi or k%5:continue
+            if not lo<=k<=hi or k%a.clip_stride:continue
             p=res.forward_points;eligible=np.flatnonzero((p[:,0]>2)&(p[:,0]<410)&(abs(p[:,1])<12)&(p[:,2]>-4)&(p[:,2]<9))
             far=eligible[p[eligible,0]>100];near=eligible[p[eligible,0]<=100]
             special=np.concatenate([np.asarray(o['idx'],int) for o in objects]) if objects else np.zeros(0,int)
@@ -74,19 +75,22 @@ def main():
     (out/'rows.json').write_text(json.dumps(rows),encoding='utf-8')
     print('SUMMARY',json.dumps({k:v for k,v in summary.items() if k not in ['config','source_sha256']}),flush=True)
     if not a.ladder:return
-    ladder=[]
+    ladder=[];visual_rng=np.random.default_rng(7319);(out/'injection_clips').mkdir(exist_ok=True)
     for name,ob in OBJECTS.items():
         for d in DISTANCES:
-            start=starts[d];rng=np.random.default_rng(d);det=make();hits=[];stops=[];dust=[];returns=[];first=None
+            start=starts[d];rng=np.random.default_rng(d);det=make();clip=[];hits=[];stops=[];dust=[];returns=[];first=None
             for i,k in enumerate(range(start,start+WARM+ON)):
                 t,p,it=saved[k];p,it,cnt=inject(p,it,[dict(ob,x=float(d))] if i>=WARM else [],rng)
                 res=det.process(p,t,intensity=it)
                 if i<WARM:continue
+                if i>=WARM+ON-20:
+                    clip.append(visual_frame(res,dict(k=k,local=i-WARM,t=(i-WARM)*.1,truth_x=None,synthetic=True,object=name,injection_distance=d,seed=d),visual_rng))
                 near=[o for o in res.obstacles if abs(o['distance']-d)<4]
                 hits.append(bool(near));stops.append(any(o['zone']==2 for o in near));returns.append(cnt[0] if cnt else 0)
                 dust.append(any(abs(z['distance']-d)<5 for z in (res.dust or [])))
                 if near and first is None:first=i-WARM
             row=dict(object=name,distance=d,segment=start,detected=float(np.mean(hits)),stop=float(np.mean(stops)),dust_zone_rate=float(np.mean(dust)),first_frame=first,returns_per_frame=float(np.mean(returns)))
+            (out/'injection_clips'/f'{name}_{d}.json').write_text(json.dumps(clip,separators=(',',':')),encoding='utf-8')
             ladder.append(row);print('ladder',json.dumps(row),flush=True)
             (out/'ladder.json').write_text(json.dumps(ladder,indent=2),encoding='utf-8')
 

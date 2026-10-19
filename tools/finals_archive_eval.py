@@ -2,7 +2,7 @@
 Сохраняет решения и небольшие 3D-фрагменты; без независимого эталона FP/FN не вычисляет.
 python tools/finals_archive_eval.py ARCHIVE OUTPUT_DIR
 """
-import sys,json,time,tarfile,hashlib,subprocess
+import sys,json,time,tarfile,hashlib,subprocess,argparse
 from pathlib import Path
 import numpy as np
 import zstandard
@@ -15,7 +15,7 @@ from falcon_eval import make_detector
 from finals_bundle import save
 from tunnel_guard import params as P
 
-def main(src,output):
+def main(src,output,clip_stride=25,clip_start=0,clip_stop=2500,clip_limit=100):
  out=Path(output);out.mkdir(parents=True,exist_ok=True)
  det=make_detector([]);rows=[];clips=[];meta=[];rng=np.random.default_rng(17);started=time.time()
  commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=HERE.parent,text=True).strip()
@@ -46,7 +46,7 @@ def main(src,output):
        dust=[dict(d=float(d['distance']),n=int(d['n'])) for d in res.dust],
        obs=[dict(d=float(o['distance']),l=float(o['lateral']),zone=int(o['zone']),n=int(o['n'])) for o in res.obstacles])
      rows.append(row)
-     if local%25==0 and len(clips)<100:
+     if clip_start<=local<clip_stop and local%clip_stride==0 and len(clips)<clip_limit:
       q=res.forward_points;sel=np.flatnonzero((q[:,0]>2)&(q[:,0]<410)&(abs(q[:,1])<15)&(q[:,2]>-5)&(q[:,2]<10))
       special=np.unique(np.concatenate([np.asarray(o['idx'],int) for o in res.obstacles])) if res.obstacles else np.zeros(0,int)
       special=special[(special>=0)&(special<len(q))]
@@ -73,4 +73,7 @@ def main(src,output):
    ground_truth='Нет независимых меток классов/препятствий; число dust flags не доказывает наличие настоящей пыли; FP/FN неизвестны')
  save(out/'summary.json',summary);print(json.dumps(summary,ensure_ascii=False,indent=2),flush=True)
  if error:raise SystemExit(2)
-if __name__=='__main__':main(*sys.argv[1:3])
+if __name__=='__main__':
+ ap=argparse.ArgumentParser();ap.add_argument('archive');ap.add_argument('output');ap.add_argument('--clip-stride',type=int,default=25);ap.add_argument('--clip-start',type=int,default=0);ap.add_argument('--clip-stop',type=int,default=2500);ap.add_argument('--clip-limit',type=int,default=100);a=ap.parse_args()
+ assert a.clip_stride>0
+ main(a.archive,a.output,a.clip_stride,a.clip_start,a.clip_stop,a.clip_limit)

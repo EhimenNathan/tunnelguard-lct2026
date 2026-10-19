@@ -37,6 +37,7 @@ tunnel_guard:
     scorer_near_override_s: 30.0
     scorer_shell_veto: true
     scorer_smooth_k: 0
+    spatial_fusion: true
     two_tier: true
     shell_check: true
     shell_min_height: 2.5
@@ -166,6 +167,7 @@ tunnel_guard:
       stop_frames: 9
       floor_support: 1.1
       sigma_l_max: 0.6
+      prefer_certain_stop: true
       sigma_l_warn_max: 1.2
     lowfield:
       enabled: true
@@ -187,6 +189,7 @@ tunnel_guard:
       stop_frames: 12
       floor_support: 0.55
       sigma_l_max: 0.6
+      prefer_certain_stop: true
       sigma_l_warn_max: 1.2
     adapt:
       enabled: false

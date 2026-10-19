@@ -56,6 +56,7 @@ class DetectorConfig:
     scorer_near_override_s: float = 30.0  # below this distance the rule decision stands (scorer cannot suppress)
     scorer_shell_veto: bool = True      # shell-attached clusters can never be promoted by the scorer
     scorer_smooth_k: int = 0            # temporal score smoothing window; 0 = value stored with the model
+    spatial_fusion: bool = True        # fuse evidence only for the same lateral/vertical object
     two_tier: bool = True               # STOP only within the range measured in this frame (beyond: CAUTION)
     shell_check: bool = True            # tall clusters continuing upward into the tunnel shell are infrastructure
     shell_min_height: float = 2.5       # only clusters reaching this high are tested [m above rail]
@@ -158,6 +159,24 @@ class ObstacleDetector:
         self._last_raw = self._last_intensity = self._last_ring = None
         self._last_stamp = None
         self._reach = 0.0
+
+    @staticmethod
+    def _far_match(f, obstacles):
+        """Associate a temporal return with one spatially compatible object.
+
+        Equal longitudinal range alone cannot identify an object: a wall edge,
+        cable and a person may all occur at the same distance.
+        """
+        matches = []
+        for o in obstacles:
+            ds = abs(f['distance'] - o['distance'])
+            dl = abs(f['lateral'] - o['lateral'])
+            lateral_gate = max(0.35, 0.5 * o['size'][1] + 0.15)
+            lower = o['height'] - o['size'][2]
+            vertical_gap = max(f['h_min'] - o['height'], lower - f['height'])
+            if ds < 6.0 and dl <= lateral_gate and vertical_gap <= 0.25:
+                matches.append((ds / 6.0 + dl / lateral_gate, o))
+        return [min(matches, key=lambda item: item[0])[1]] if matches else []
 
     def reset(self):
         self.recent.clear()
@@ -584,7 +603,7 @@ class ObstacleDetector:
                     if any(abs(f['distance'] - d['distance']) < 5.0 for d in dust) or                             (cfg.scatter_check and len(f['idx']) >= 6 and self._scatter(p[f['idx']])):
                         dust.append(dict(distance=f['distance'], n=int(len(f['idx'])), far=True))
                         continue
-                    dup = [o for o in obstacles if abs(f['distance'] - o['distance']) < 6.0]
+                    dup = self._far_match(f, obstacles) if cfg.spatial_fusion else [o for o in obstacles if abs(f['distance'] - o['distance']) < 6.0]
                     if dup:
                         # the same object seen by the frame pipeline: temporal evidence can only raise its zone
                         if f['zone'] == IN_GAUGE:
