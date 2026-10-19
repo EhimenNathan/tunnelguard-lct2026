@@ -1,0 +1,39 @@
+{
+  "tunnelguard_all_datasets.mp4": {
+    "status": 200,
+    "anonymous": true,
+    "sha256": "a4cc840243d3c5579d220eb143f8e5e8f9e7eee7e6c75e79f9d028d73718ee9a",
+    "bytes": 84967556,
+    "range_seek": true,
+    "duration_s": 440.0
+  },
+  "tunnelguard_final.mp4": {
+    "status": 200,
+    "anonymous": true,
+    "sha256": "88630eb1715198057016df495cb917a7d68af83f5dd9cf4d0177cdf060f4beee",
+    "bytes": 61116486,
+    "range_seek": true,
+    "duration_s": 166.7
+  },
+  "final_site": {
+    "status": 200,
+    "anonymous": true
+  },
+  "qualification.html": {
+    "status": 200,
+    "anonymous": true
+  },
+  "assets/spatial_comparison.png": {
+    "status": 200,
+    "anonymous": true
+  },
+  "assets/falcon_first_detection.png": {
+    "status": 200,
+    "anonymous": true
+  },
+  "data/qualification_clip.json": {
+    "status": 200,
+    "anonymous": true
+  },
+  "checked_utc": "2026-10-19T05:29:42Z"
+}

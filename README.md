@@ -5,7 +5,7 @@
 
 **Обновление 19 октября:** восстановлены 13 кадров СТОП на 200–250 м; провалы подтверждения **24→11**, максимальный провал **1,7→1,0 с**. **46 native-тестов и 14/14 условий качества** пройдены. Полностью обработаны Falcon (4443), квалификация (1510) и новые синтетические записи (1667); три новые записи также полностью проиграны в ROS/RViz без потерь. [Текущая оценка 7/10, ограничения и следующие шаги](docs/SPATIAL_REVIEW_20261019_RU.md) · [парная проверка](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39197603363) · [полные наборы](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39200634492).
 
-**Предыдущая проверенная публикация `2e2cee7`:** [Docker/native/GUI — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39108165758), [три полных бэга — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39107380132), [pull закреплённых образов и Compose — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39108727258). **44 Linux-регрессии**, 38 локальных Windows (5 пропусков требуют Linux/ROS), 12/12 проверок управления. Старое письмо о `60f6152` относится к отклонённому запуску; новый успешный запуск указан здесь.
+**Текущая проверенная поставка `cdb39de`:** [Docker/native/GUI — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39205365593), [полные наборы — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39200634492). **46 Linux-регрессий**, 40 локальных Windows (5 пропусков требуют Linux/ROS), 12/12 проверок управления. Точные неизменяемые digest и хеши исходников/моделей: [reproduction_lock.json](docs/reproduction_lock.json). Старые письма об ошибках относятся к предыдущим отклонённым запускам.
 
 **Лидарная система обнаружения препятствий в габарите поезда.** Гибрид геометрии, физики, ML и временного накопления; ROS 2 Humble, RViz, C++17/Numba, Docker с рабочим столом в браузере. Документация, демонстрация и интерфейс — на русском.
 
@@ -121,7 +121,7 @@
 **[Подробная инструкция с диагностикой](docs/RUN_ON_PC_RU.md)**. Нужны Docker с Linux containers +Compose v2, браузер и распакованные бэги. ROS, RViz и внешний X-сервер на хосте не нужны. Для ПК без места под Docker/WSL используйте [Codespaces](https://codespaces.new/EhimenNathan/tunnelguard-lct2026); вычисления и Docker выполняются в облаке. Условия/лимиты облака зависят от аккаунта.
 
 ```powershell
-git clone https://github.com/EhimenNathan/tunnelguard-lct2026.git
+git clone --depth 1 https://github.com/EhimenNathan/tunnelguard-lct2026.git
 Set-Location tunnelguard-lct2026
 # Свой существующий каталог с распакованными бэгами:
 .\run_windows.ps1 -Bags 'D:\данные\бэги'

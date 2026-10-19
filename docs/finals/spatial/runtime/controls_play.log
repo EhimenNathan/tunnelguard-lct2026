@@ -1,0 +1,33 @@
+playing /data/falcon_test  (topic /iv_points, rate 0.5)
+keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792388538.372084989] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792388538.372134962] [rosbag2_player]: Set rate to 0.5
+[INFO] [1792388538.372166228] [rosbag2_player]: Overriding QoS profile for topic /iv_points
+[INFO] [1792388538.376725052] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1792388538.376752242] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1792388538.376762517] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1792388538.376769327] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1792388538.376774985] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1792388538.376842034] [rosbag2_player]: Sleep 2000000000 ns
+[INFO] [1792388540.377341456] [rosbag2_storage]: Opened database '/data/falcon_test/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792388541.008010489] [rosbag2_player]: Resuming play.
+[INFO] [1792388545.125426634] [rosbag2_player]: Pausing play.
+[INFO] [1792388547.633851376] [rosbag2_player]: Playing next message.
+[INFO] [1792388549.665821446] [rosbag2_player]: Set rate to 0.25
+[INFO] [1792388549.667221696] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [1792388549.765995124] [rosbag2_player]: Exception occurred while waiting for all published messages to be acknowledged for topic /iv_points : publisher's context is invalid, at ./src/rcl/publisher.c:389
+playing /tmp/tg_controls_switch_9f63nkar  (topic /falcon_secondary, rate 1.0)
+keys: SPACE pause/resume | UP/DOWN speed | RIGHT next frame (paused) | Ctrl+C stop
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1792388555.335562778] [rosbag2_storage]: Opened database '/tmp/tg_controls_switch_9f63nkar/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792388555.335606573] [rosbag2_player]: Set rate to 1
+[INFO] [1792388555.335638700] [rosbag2_player]: Overriding QoS profile for topic /falcon_secondary
+[INFO] [1792388555.340279492] [rosbag2_player]: Adding keyboard callbacks.
+[INFO] [1792388555.340307743] [rosbag2_player]: Press SPACE for Pause/Resume
+[INFO] [1792388555.340319921] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[INFO] [1792388555.340329275] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[INFO] [1792388555.340341363] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[INFO] [1792388555.340397716] [rosbag2_player]: Sleep 2000000000 ns
+[INFO] [1792388557.340958087] [rosbag2_storage]: Opened database '/tmp/tg_controls_switch_9f63nkar/falcon_test_0.db3' for READ_ONLY.
+[INFO] [1792388557.955115809] [rosbag2_player]: Resuming play.
+[INFO] [1792388562.978728089] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [1792388563.055358879] [rosbag2_player]: Exception occurred while waiting for all published messages to be acknowledged for topic /falcon_secondary : publisher's context is invalid, at ./src/rcl/publisher.c:389

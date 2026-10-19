@@ -33,6 +33,15 @@ jobs:
           docker run --rm "$BASE" bash -c "cd /tmp && python3 -c
           'from tunnel_guard.core.geometry import HAVE_NATIVE; assert HAVE_NATIVE;
           import pytest; raise SystemExit(pytest.main([\"-q\", \"/ws/src/tunnel_guard/test\"]))'"
+      - name: Исходники образа совпадают с зафиксированной поставкой
+        run: |
+          docker run --rm -v "$PWD/docs/reproduction_lock.json:/expected-lock.json:ro" "$BASE" python3 -c '
+          import json,hashlib,pathlib
+          lock=json.load(open("/expected-lock.json"))
+          for name,expected in lock["runtime_files_sha256"].items():
+              actual=hashlib.sha256((pathlib.Path("/ws")/name).read_bytes().replace(b"\r\n",b"\n")).hexdigest()
+              assert actual==expected,name
+          print("All pinned source, native, config and model files match")'
       - name: Малый бэг из записи Falcon организаторов
         run: |
           pip install --quiet numpy zstandard

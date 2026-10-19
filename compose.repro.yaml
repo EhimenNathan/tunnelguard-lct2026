@@ -1,8 +1,8 @@
-# Frozen GUI image verified by Docker CI run 39108165758.
+# Frozen GUI image verified by Docker CI run 39205365593.
 # Use this file for reproducible judging; compose.gui.yaml tracks latest.
 services:
   tunnelguard:
-    image: ghcr.io/ehimennathan/tunnel_guard_gui@sha256:d17f0bbbd4dd9a4596ba2ee032f27f842ffd1321840ee2492856f96207aa9767
+    image: ghcr.io/ehimennathan/tunnel_guard_gui@sha256:2561e6a4d1ea163669c9cda33c0cafad2161d17bd7c75aaaf98a15621441a25d
     platform: linux/amd64
     ports:
       - "127.0.0.1:6080:6080"

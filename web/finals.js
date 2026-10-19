@@ -2,7 +2,7 @@
 (() => {
 'use strict';
 const $=s=>document.querySelector(s), fmt=(v,n=1)=>v==null?'—':Number(v).toFixed(n), pct=v=>v==null?'—':(100*v).toFixed(1)+' %';
-const get=async p=>{const r=await fetch(p+'?v=20261019-spatial');if(!r.ok)throw Error('Не удалось загрузить '+p);return r.json();};
+const get=async p=>{const r=await fetch(p+'?v=20261019-release');if(!r.ok)throw Error('Не удалось загрузить '+p);return r.json();};
 let gaugeProfile=[],frames=[],index=0,playing=false,acc=0,previous=performance.now(),loadId=0,clipEnd=0;
 const host=$('#viewport'), renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
 renderer.setClearColor(0x10243a);renderer.setPixelRatio(Math.min(devicePixelRatio,2));host.prepend(renderer.domElement);

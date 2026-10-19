@@ -1,0 +1,18 @@
+{
+  "checks": {
+    "starts_paused": true,
+    "resume": true,
+    "initial_rate_half": true,
+    "pause": true,
+    "single_step": true,
+    "change_rate": true,
+    "second_bag_output": true,
+    "same_detector_process": true,
+    "new_topic_selected": true,
+    "stop_command": true,
+    "clean_detector_shutdown": true,
+    "detector_stopped": true
+  },
+  "passed": true,
+  "received": 72
+}

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "local_recording_selections": 8,
+  "video_chapter_jumps": 19,
+  "video_duration_s": 440,
+  "playback_rate": 1,
+  "local_http_range": true,
+  "scope": "Browser UI loaded all recordings and chapter buttons; read video.currentTime after each actual button click. Initial simple HTTP server failed seeking; replaced by tools/serve_web.py with 206 byte-range support. Not a detector accuracy test."
+}

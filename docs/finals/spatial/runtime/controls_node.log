@@ -1,0 +1,16 @@
+[INFO] [launch]: All log files can be found below /root/.ros/log/2026-10-19-05-42-14-140613-63692f268cc4-49
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [detector_node-1]: process started with pid [53]
+[detector_node-1] [INFO] [1792388534.819835469] [tunnel_guard]: scorer: /ws/install/tunnel_guard/share/tunnel_guard/config/obstacle_scorer.json; numba kernels: True
+[detector_node-1] [INFO] [1792388534.832389824] [tunnel_guard]: TunnelGuard started (input_topic=auto, reliability=best_effort, custom msgs=True, vision_msgs=True)
+[detector_node-1] [INFO] [1792388538.050991512] [tunnel_guard]: subscribed to /iv_points
+[detector_node-1] [INFO] [1792388538.051813644] [tunnel_guard]: reset requested
+[detector_node-1] [INFO] [1792388544.842959244] [tunnel_guard]: frames=20 mean processing 23.6 ms
+[detector_node-1] [INFO] [1792388549.832587357] [tunnel_guard]: frames=22 mean processing 23.5 ms
+[detector_node-1] [INFO] [1792388554.832577097] [tunnel_guard]: frames=22 mean processing 23.5 ms
+[detector_node-1] [INFO] [1792388555.014289041] [tunnel_guard]: subscribed to /falcon_secondary
+[detector_node-1] [INFO] [1792388555.014999979] [tunnel_guard]: reset requested
+[detector_node-1] [INFO] [1792388559.832618968] [tunnel_guard]: frames=41 mean processing 19.4 ms
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [detector_node-1]: sending signal 'SIGINT' to process[detector_node-1]
+[INFO] [detector_node-1]: process has finished cleanly [pid 53]

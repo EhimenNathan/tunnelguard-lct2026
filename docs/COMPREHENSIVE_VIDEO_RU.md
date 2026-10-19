@@ -68,8 +68,14 @@ python -m venv .venv
 source .venv/bin/activate
 # Windows PowerShell вместо предыдущей строки:
 # .\.venv\Scripts\Activate.ps1
-python -m pip install numpy pillow imageio imageio-ffmpeg
+python -m pip install -r tools/requirements-video.txt
 python tools/finals_comprehensive_video.py --quality quality --dense dense --web web --out result.mp4
 ```
 
 Нужны интернет для первого получения FFmpeg через imageio и место для временных глав/мастера. Шрифт должен поддерживать русский язык; на Windows используется системный Segoe UI, на Linux — DejaVu Sans. При других версиях FFmpeg бинарный SHA MP4 может отличаться, а исходные сканы и главы должны совпадать. Большие архивы не включены в Git. Дополнительный `new_data.zst` из общей папки этим фильмом и тестами не покрыт.
+
+## Локальный сайт и переходы по главам
+
+Из корня репозитория выполните python tools/serve_web.py --port 8765, затем откройте http://127.0.0.1:8765/web/#film. Сервер привязан только к этому ПК и поддерживает HTTP Range: без этого обычный python -m http.server может показывать длительность MP4, но сбрасывать переходы по главам к нулю. Проверены все 19 переходов и восемь вариантов записи. Для остановки сервера нажмите Ctrl+C. На GitHub Pages локальный сервер не нужен.
+
+В минимальном Linux-образе установите шрифт отдельно: `sudo apt-get update && sudo apt-get install -y fonts-dejavu-core`. Проверенная локальная среда и версии FFmpeg/Python: [video_environment.json](finals/spatial/video_environment.json).

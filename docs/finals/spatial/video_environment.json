@@ -1,0 +1,14 @@
+{
+  "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+  "packages": {
+    "numpy": "2.2.2",
+    "Pillow": "11.1.0",
+    "imageio": "2.37.0",
+    "imageio-ffmpeg": "0.6.0",
+    "matplotlib": "3.10.0"
+  },
+  "ffmpeg": "7.1-essentials_build-www.gyan.dev",
+  "platform": "Windows amd64",
+  "font": "Segoe UI",
+  "scope": "Exact environment used for the corrected 440s local render; pixel bytes can differ across OS/fonts/FFmpeg"
+}

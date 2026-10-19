@@ -1,0 +1,14 @@
+{
+  "bag": "/data/falcon_test",
+  "frames": 301,
+  "stop_frames": 185,
+  "caution_frames": 69,
+  "first_stop": {
+    "frame": 63,
+    "stamp": 1700000006.3001177,
+    "distance": 258.20730669070514
+  },
+  "processing_ms_mean": 19.91528239202658,
+  "processing_ms_p95": 22.1,
+  "wall_seconds": 6.891802312000095
+}

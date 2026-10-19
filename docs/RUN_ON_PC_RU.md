@@ -17,7 +17,7 @@
 Получите исходники (нужны Compose и документация):
 
 ```bash
-git clone https://github.com/EhimenNathan/tunnelguard-lct2026.git
+git clone --depth 1 https://github.com/EhimenNathan/tunnelguard-lct2026.git
 cd tunnelguard-lct2026
 docker version
 docker compose version
@@ -232,3 +232,6 @@ docker run --rm -v "$TG_BAGS_DIR:/data:ro" -v "$PWD/results:/results" tunnelguar
 Интерактивный RViz и контрольное воспроизведение выполняйте через Compose; проверяйте `received == expected`, чистое закрытие, p95/p99 и паузу/скорость/смену бэга. Офлайн-скорость не является частотой полной ROS/RViz-системы. Исходники облачных процедур: `docker.yml`, `reproduction.yml`, `generalization-eval.yml`, `dense-organizer-eval.yml` в `.github/workflows/`.
 
 Проверка согласованности опубликованных материалов без ROS/Docker: `python tools/finals_release_check.py`. Проверяет 68 +255 условий, принятые 1667/1667, хеши MP4/трёх сцен и исходника генератора; не является повторным измерением реального FP/FN.
+
+
+В `tg play` и launch при надёжном проигрывании включено ограниченное ожидание DDS ACK последнего сообщения (`--wait-for-all-acked 5000`). После окончания бэга завершение может занять до 5 с; это защищает последний большой скан, не меняя скорость 1×. Не обрывайте контейнер немедленно после последней картинки. При ручном `ros2 bag play` с reliable QoS используйте тот же аргумент.

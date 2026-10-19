@@ -12,7 +12,7 @@
 
 В каждой главе последний скан показан ещё один номинальный период 0,1 с. Поэтому суммарная длительность видео 166,7 с, а сумма интервалов между первым и последним заголовком — 166,4 с. Две одинаковые MP4-рамки соответствуют одному исходному скану 10 Гц; 20 fps не является утверждением о 20 Гц детектора.
 
-Цвет точек соответствует высоте, измеренный габарит зелёный, экстраполяция фиолетовая. Рамки и расстояния — фактический вывод установленного native-детектора из закреплённого Docker runtime `2e2cee7`. Подписи расстояний разнесены. Информационные зоны рассеяния показаны отдельно от СТОП; реальных меток классов/аэрозоля пока нет. Синтетические препятствия поверх этих трёх записей для ролика не добавляются.
+Цвет точек соответствует высоте, измеренный габарит зелёный, экстраполяция фиолетовая. Рамки и расстояния — фактический вывод установленного native-детектора из native-прогона `717e2de` (то же ядро, что у парной проверки `404f3c8`). Подписи расстояний разнесены. Число информационных зон рассеяния показано отдельно от СТОП; декоративные круги удалены; реальных меток классов/аэрозоля пока нет. Синтетические препятствия поверх этих трёх записей для ролика не добавляются.
 
 [Открыть публичный MP4](https://ehimennathan.github.io/tunnelguard-lct2026/assets/tunnelguard_final.mp4?v=normal20261019) · [Видео на сайте](https://ehimennathan.github.io/tunnelguard-lct2026/#film) · [Происхождение, главы и SHA-256](../web/data/cab_video.json).
 
@@ -28,8 +28,9 @@
 # TG_BAGS_DIR — существующий каталог трёх распакованных бэгов
 mkdir -p video_results
 IMG=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['base_image'])")
-docker run --rm --network none -e TG_SOURCE_SHA=2e2cee7 -v "$TG_BAGS_DIR:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/video_results:/results" "$IMG" python3 /tools/finals_organizer_bundle.py /data /results --clip-stride 1
-python3 -m pip install numpy pillow imageio imageio-ffmpeg
+RUNTIME=$(python3 -c "import json; print(json.load(open('docs/reproduction_lock.json'))['runtime_commit'])")
+docker run --rm --network none -e TG_SOURCE_SHA="$RUNTIME" -v "$TG_BAGS_DIR:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/video_results:/results" "$IMG" python3 /tools/finals_organizer_bundle.py /data /results --clip-stride 1
+python3 -m pip install -r tools/requirements-video.txt
 python3 tools/finals_prepare_video.py video_results video_project
 python3 tools/finals_cab_video.py video_project/web "TunnelGuard_Три_записи_2026.mp4" --rate 1
 ```
@@ -39,9 +40,9 @@ python3 tools/finals_cab_video.py video_project/web "TunnelGuard_Три_запи
 Генератор использует шрифты Segoe UI на Windows и DejaVu Sans на Linux. Пиксели/байтовый SHA повторного кодирования на разных платформах могут различаться; исходные облака, временные метки и вывод детектора не интерполируются. Хеш исходника генератора нормализован к LF. Сводка native-вывода, manifest и хеш исходного архива сохраняются в артефакте workflow `video-normal-speed`; исходный архив в публичный артефакт не включается.
 
 
-## Проверенная публикация 19 октября
+## Предыдущая публикация 19 октября (история)
 
 [Облачная генерация 39176477734 — успешно](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39176477734). Проверены все 1667 сканов, длительность 166,7 с, три главы, полное декодирование FFmpeg, faststart и совпадение трёх локальных копий. Размер MP4 **61 093 917 байт**; SHA-256 `d254f7d702281e1993e1293b187507bd5b16a729b6ef0edf1cd980597a61750e`. [Manifest, три кадра и доказательства](finals/video_normal/). Временная непубличная облачная копия исходного архива удалена; оригинал на ПК сохранён.
 
 
-Последняя генерация трёх сцен: успешный [native-прогон 39200634492](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39200634492), исходники `717e2de`, те же хеши ядра, что у проверки `404f3c8`. SHA-256 MP4: `88630eb1715198057016df495cb917a7d68af83f5dd9cf4d0177cdf060f4beee`. Актуальные метаданные: [cab_video.json](../web/data/cab_video.json); прежние идентификаторы ниже относятся к прошлой публикации.
+Последняя генерация трёх сцен: успешный [native-прогон 39200634492](https://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39200634492), исходники `717e2de`, те же хеши ядра, что у проверки `404f3c8`. SHA-256 MP4: `88630eb1715198057016df495cb917a7d68af83f5dd9cf4d0177cdf060f4beee`. Актуальные метаданные: [cab_video.json](../web/data/cab_video.json); предшествующие идентификаторы относятся к прошлой публикации. Текущий размер: **61 116 486 байт**.
