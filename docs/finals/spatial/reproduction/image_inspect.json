@@ -1,0 +1,114 @@
+[
+    {
+        "Id": "sha256:d128fa0eb2a80fa0e0b564c5ae6cfc10f2c309929a9087de8d622fb02be58e25",
+        "RepoTags": [],
+        "RepoDigests": [
+            "ghcr.io/ehimennathan/tunnel_guard_gui@sha256:2561e6a4d1ea163669c9cda33c0cafad2161d17bd7c75aaaf98a15621441a25d"
+        ],
+        "Parent": "",
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-19T05:40:08.378805737Z",
+        "DockerVersion": "",
+        "Author": "",
+        "Config": {
+            "Hostname": "",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "ExposedPorts": {
+                "6080/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "LC_ALL=C.UTF-8",
+                "ROS_DISTRO=humble",
+                "DEBIAN_FRONTEND=noninteractive",
+                "TG_NATIVE=1",
+                "PYTHONUNBUFFERED=1",
+                "OMP_NUM_THREADS=1",
+                "OPENBLAS_NUM_THREADS=1",
+                "QT_X11_NO_MITSHM=1",
+                "DISPLAY=:99",
+                "LP_NUM_THREADS=1",
+                "LIBGL_ALWAYS_SOFTWARE=1",
+                "TG_VNC_PASSWORD=tunnelguard",
+                "TG_GUI_AUTOSTART=1"
+            ],
+            "Cmd": null,
+            "Healthcheck": {
+                "Test": [
+                    "CMD-SHELL",
+                    "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:6080/vnc.html',timeout=3)\" || exit 1"
+                ],
+                "Interval": 10000000000,
+                "StartPeriod": 30000000000
+            },
+            "ArgsEscaped": true,
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "/ws",
+            "Entrypoint": [
+                "/usr/local/bin/tg-gui"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "org.opencontainers.image.version": "22.04"
+            },
+            "Shell": [
+                "/bin/bash",
+                "-c"
+            ]
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 3797627296,
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/15bd66196e450771d543e160aa654cb36c1b56379c85f8e167ebba5c94a5b9e5/diff:/var/lib/docker/overlay2/0fde6463feedae64c222eacb83c76d666eca85e43a65f0aac083af33532a392c/diff:/var/lib/docker/overlay2/f2099a07b3ca6cc275509e3cd3cde0c33d0e69e8efbcec9bac8a89760895dd90/diff:/var/lib/docker/overlay2/ee70e6d89d7b6fa046114c013d689eb169e6ad08504f40e61c8ecff121fd5d9f/diff:/var/lib/docker/overlay2/6d00684831837200865a80fe1c6830c020ba3bba5363a4c369d33abbb20f82ce/diff:/var/lib/docker/overlay2/b53713c26b9350be04e02cedbe463aab2862183d4e8cdd93c6dd60d98165b505/diff:/var/lib/docker/overlay2/1e97774dc5b8eda9fd9d238cbedd5c1d3af09a5d70ee7bf087eff3bc73e95cdf/diff:/var/lib/docker/overlay2/33e25ec47235ab978fa16fb9970a0479182f9702859fc71cb4da5239703349bb/diff:/var/lib/docker/overlay2/513cc357bb75912f4bce506e0f6f97b3d10733f58cfb957a3dcaae6abdbe7c0f/diff:/var/lib/docker/overlay2/e15d97100b5ceaf28da2784d8c61ed75c977220d1b0a90a792f977c5b86036cd/diff:/var/lib/docker/overlay2/ae677b02ffada47939e5e51a31f13a4a3d6557ffbfb5687c04ed6808e1bc6967/diff:/var/lib/docker/overlay2/f789490c14d324d6d773f49dc3ff39c11f83d82e41041cbaa282c727092e8277/diff:/var/lib/docker/overlay2/ba1612a241ad420541ae929f70d5bf7ab6cc1ccdef68af38bb14f5799e3f70fe/diff:/var/lib/docker/overlay2/69332e3e33bddf1959fed09fe5105460bdd7ef4d65ab12d64c950a15e1a32204/diff:/var/lib/docker/overlay2/c834a5c5051d7a8f51ceeba6fb4347bbfb44ea7212ea0911808fce79b8df0ab9/diff:/var/lib/docker/overlay2/f9e4c535005294e431b1f8be0d2eb28433475dcbb120629624d66ceed101c837/diff:/var/lib/docker/overlay2/7c88049628d6e5d331e45c5a889011940878c74603c48eb6e6fca233552c305a/diff:/var/lib/docker/overlay2/72c31b2bb1e154a44a45ad3ca95d069ef5591025c8742b0358487bad2ad2f88b/diff:/var/lib/docker/overlay2/52b3fca514fa7bc9221873e06e0f0436a153c344c93b857bce6788e931c48956/diff:/var/lib/docker/overlay2/8ec9c0f6ae8da5d1e764952397c331d6e785b64fdc33cfc923772dba7cee943a/diff:/var/lib/docker/overlay2/d3676fdc38a3d6b2230c72d0177c5e8c068713beb6a6f2a15babf7d0b4fb2541/diff:/var/lib/docker/overlay2/624523c16269d5563ee3c8400bf3796ee74148af498c2e5a17b65a00d94cb36e/diff:/var/lib/docker/overlay2/93a8b7a5108613c9245c8b86b479a5a433197fa76d1927bd924f543c0293602e/diff:/var/lib/docker/overlay2/ee48dc4228e4766d93d55257480b3921414890ba18c292009965faace717d1c5/diff",
+                "MergedDir": "/var/lib/docker/overlay2/e25801e75257a359d4ceddbabdedb7b4ed9625429b22f228dea184a7c73c6e05/merged",
+                "UpperDir": "/var/lib/docker/overlay2/e25801e75257a359d4ceddbabdedb7b4ed9625429b22f228dea184a7c73c6e05/diff",
+                "WorkDir": "/var/lib/docker/overlay2/e25801e75257a359d4ceddbabdedb7b4ed9625429b22f228dea184a7c73c6e05/work"
+            },
+            "Name": "overlay2"
+        },
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:ea16cace89338c84eb6bcb91a7efdfcae6838fff359efe951858227436486c34",
+                "sha256:63265b7e78e36a1e9836f4a0e00146268c519e2e8db4ecd6019cde39eb95a55b",
+                "sha256:476ff4cf6de5960b356e61e63a8e35c8d4b8c4ef1baa8e1878b5fbf129cd88a3",
+                "sha256:f9fe83a77a0faae9ce87a8e6a5d25b2d5bd46c7ebcded9152074b5765d6194c9",
+                "sha256:3fb7a7ff7fc99aba579d2e8ad33367ac804a9a991411cd3be7b8608cbd33711c",
+                "sha256:81cdef0d4542e5a4ba09548196e10ee3a5f7805f51eb30c3fb4f5be265d5f3bd",
+                "sha256:451cb5cb4668414777695e42df74e9edc5fe7b95f054c0441a2e674a59f495f4",
+                "sha256:0d3ae5096310864f49a1d8355f0c486b06e1b87b2f905e0842bc9b6541cf9807",
+                "sha256:7e6d5ae8fe4bcc53fd713b60b96e461d1268cbe35b854d72305cc680bb821ff6",
+                "sha256:fd0a6cd54a804f71c0e7c563eddf2e43d95b16aae6bc8de715a5b8f645b6afe2",
+                "sha256:67c931ea3e0b631c1ac8d8e5aa4c51e0eda6225570b59b3138d700ea3130e9c1",
+                "sha256:7a5a0c1f35cf8a563aece14fa7d26bd68031843092a784d86b083ad396e4cba3",
+                "sha256:0ce2682cb7d17bdb11f885201902d9ba580a5a46ad114e58c291b103f657f431",
+                "sha256:9bf36dc07c4b872974a771dbe4da0931e9b24cf7c925660a8ccb8460a6252fb0",
+                "sha256:163ae3d8e4225b5f46ddd534b6a299a3c40152360c55913f679fb4181839a443",
+                "sha256:e5bd51f6bc829aff68506a473e1fda31da93f8bb822adbaf5ae6b2469f011112",
+                "sha256:b05a0b6ee1c822888a0d3e35ff43983eacf2e10a88e3c75ceb8f0d77be51659c",
+                "sha256:f9c3fc8972f133bcdfa5628a104c00b4094bc5d6bc6c6192222aad7fb8574967",
+                "sha256:152eda4cf701db88ea7354a35900b82440f72c19dfa02ff322604d9b93918e7d",
+                "sha256:a11af83f3d0e0ef3ce0ffc0857344dbe1ed3b57b4b7c7db3d17ae65323d57cb5",
+                "sha256:a1bf67a91f853692d2c2b3cbed13dd01d1e2aa650a6364e9acdb3df60aa8f47a",
+                "sha256:ae7d76cf1c2e73f429d6e89f586ddb1ec2858f32c235bd0a9767d64e57622e25",
+                "sha256:386741b5c69bceb02b2f40f13b576ca1c629657e7647319657c8a8bf3d23b56d",
+                "sha256:af5d0f472409c160a972388e3188debc3d720e7627c7eacc7a3d25ab7b010c32",
+                "sha256:8f23ffee5c551e503335fc4d59b9d44a4ae6ee50fb61ac579e5abaf086a21e0d"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "0001-01-01T00:00:00Z"
+        }
+    }
+]

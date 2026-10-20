@@ -8,3 +8,5 @@
 @media(max-width:650px){.recording-picker{padding:15px}.recording-heading{display:block}.recording-heading small{display:block;margin-top:6px}.recording-tabs{gap:7px}.recording-tabs button{display:block;padding:12px 7px;min-height:105px}.recording-tabs b{font-size:12px;margin-top:6px}.recording-tabs small{font-size:9px}.clip-arrow{display:none}.clip-number{font-size:10px}.view-label{left:12px;top:12px;max-width:calc(100% - 24px)}.view-status{left:12px;bottom:12px;max-width:calc(100% - 24px);padding:9px 12px}.view-status .state{font-size:20px}}
 
 .film-chapters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.film-chapters button{border:1px solid #3a5976;background:#10243a;color:#deedf8;border-radius:9px;padding:9px 13px;cursor:pointer}.film-chapters button:hover,.film-chapters button:focus-visible{border-color:#21e6a7;background:#183c4e}.film-links{line-height:1.8}
+
+.reference-toggle{display:flex!important;gap:9px;align-items:center;line-height:1.5;color:#64e9ff!important}.reference-toggle input{width:18px;height:18px;accent-color:#64e9ff}#anatomy details{margin:24px 0}#anatomy p{line-height:1.7}

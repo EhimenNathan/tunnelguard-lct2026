@@ -1,0 +1,2 @@
+tunnelguard-1  | stored passwd in file: /tmp/tg-vnc.pass
+tunnelguard-1  | TunnelGuard GUI: http://localhost:6080/vnc.html (пароль из TG_VNC_PASSWORD)

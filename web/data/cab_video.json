@@ -57,8 +57,9 @@
   "output_bytes": 61116486,
   "output_sha256": "88630eb1715198057016df495cb917a7d68af83f5dd9cf4d0177cdf060f4beee",
   "web_preview_clip_sha256": {
-    "platform": "9eb7d2cd583193bdc285b3cd9b07dcdb76a58b7155145139f85b7915cfd25e7c",
-    "switch": "5733edf2a741de54676611776afb6809624f94aa33ba3b1cb7616cc19279fd2f",
-    "tunnels": "f254f063cf65b201901a655f69ee6ec45e2b79e5f857659289468410d2c71e71"
-  }
+    "platform": "3191f44facf4852a522e052f550a7c76b6ed18d989cb9da56418afefe2854dfc",
+    "switch": "36d206641ed0942aaa061c8dd5f09b55c280a1bd7bf2e56f2d049d03ba1c8287",
+    "tunnels": "9c608fe4e59853105004203115b7fa7044a24038358c208efdcb3469007a5a51"
+  },
+  "preview_reference_layer": "Organizer MarkerArray ADD poses transformed to the same forward axes; optional display only; absent text class labels"
 }

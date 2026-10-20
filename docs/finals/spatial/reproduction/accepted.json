@@ -1,0 +1,8 @@
+{
+  "run": 39341798129,
+  "passed": true,
+  "received": 301,
+  "expected": 301,
+  "controls": true,
+  "output_hz": 9.998654340733895
+}

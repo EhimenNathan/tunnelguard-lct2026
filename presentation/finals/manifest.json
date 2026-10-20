@@ -1,0 +1,25 @@
+{
+  "files": {
+    "СахалИИн_TunnelGuard_ЛЦТ2026_Финал_20261020_Подача.pptx": {
+      "bytes": 13078679,
+      "sha256": "af4dc25340926012bad10681dc394c1b8215275f1200dff9104d2c43a80d6597"
+    },
+    "СахалИИн_TunnelGuard_ЛЦТ2026_Финал_20261020_Подача.pdf": {
+      "bytes": 1566305,
+      "sha256": "827e26268215a197ec94df5f0cd3c503b37617b3f1d741ee683695f2d7f331ae"
+    }
+  },
+  "slides": 18,
+  "mandatory_template_slides_7_to_11_at_positions": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "runtime_core_changed": false,
+  "core_source": "404f3c8",
+  "frozen_runtime_source": "cdb39de",
+  "native_application": "Microsoft PowerPoint: opened, exported PDF and all 18 PNG slides; visually reviewed",
+  "validation": "Package/layout/native chart checks passed. Original cover has intentional full bleed."
+}
