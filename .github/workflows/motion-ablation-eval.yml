@@ -1,0 +1,39 @@
+name: motion-ablation-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: motion-ablation-eval
+  cancel-in-progress: true
+jobs:
+  analytic:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [geometry, curve, reproject]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen native image and motion invariants
+        run: |
+          IMG=ghcr.io/ehimennathan/tunnel_guard@sha256:d5371b4bb2b01426e0d931aff80530258ec14cc86f156aa4d9f275c762f86199
+          docker pull "$IMG"
+          mkdir -p results/analytic
+          docker run --rm --network none -v "$PWD:/repo" -v "$PWD/results:/results" -e TG_MOTION_MODE=${{ matrix.mode }} "$IMG" bash -c '
+            PKG=$(python3 -c "import pathlib,tunnel_guard; print(pathlib.Path(tunnel_guard.__file__).parent)")
+            mkdir -p /baseline
+            cp -a "$PKG" /baseline/tunnel_guard
+            SHARE=$(python3 -c "from ament_index_python.packages import get_package_share_directory; print(get_package_share_directory(\"tunnel_guard\"))")
+            cp -a "$SHARE/config" /baseline/config
+            cp "$PKG/core/"_geometry_native*.so /repo/src/tunnel_guard/tunnel_guard/core/
+            cd /repo
+            python3 -m pytest -q tools/test_motion_curve_candidate.py
+            OPENBLAS_NUM_THREADS=1 python3 -u tools/finals_motion_ablation.py /baseline /results/analytic/curves.json
+          '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: motion-ablation-${{ matrix.mode }}
+          path: results/
