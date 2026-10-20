@@ -6,14 +6,22 @@ import {FileBlob,PresentationFile} from '@oai/artifact-tool';
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..').replaceAll('\\','/');
 const DIR=process.env.TG_DECK_BUILD_DIR || ROOT+'/outputs/presentation_build';
 const p=await PresentationFile.importPptx(await FileBlob.load(ROOT+'/presentation/TunnelGuard_LCT2026.pptx'));
-p.slides.keep([0,1,2,3,4]);
+p.slides.keep(Array.from({length:11},(_,i)=>i));
 p.view.hideGuides();p.view.hideGridlines();p.view.hidePlaceholders();
-const inspect=await p.inspect({kind:'textbox',maxChars:100000});
+const inspect=await p.inspect({select:'$.slides[*].elements[?(@.kind == "textbox")]',include:['id','kind','text']});
 const replacements=[
  ['Мы не распознаём классы объектов','Восстанавливаем путь и габарит по облаку точек. Гибрид физики, ансамблей LightGBM/CatBoost и временного подтверждения обнаруживает посторонние объекты и передаёт СТОП / ВНИМАНИЕ в ROS 2.'],
  ['Лидар сам восстанавливает путь','Разделяем измеренный путь и прогноз с неопределённостью. C++-ядро и временная память сохраняют слабые дальние цели. На полном Falcon восстановлены 13 кадров СТОП без ухудшения зафиксированных отрицательных контролей.'],
  ['ROS 2 Humble + Docker; вход','ROS 2 Humble, Docker и RViz в браузере. Вход: PointCloud2 с адаптацией осей и монтажа. Геометрия пути и габарита, C++-ядро, два ансамбля LightGBM/CatBoost, временное подтверждение. Falcon: первое совпадение человека 256,56 м по автоматической траектории. Полные новые записи: 1667/1667 сообщений, около 10 Гц в облаке.'],
  ['«Второй машинист»','Прототип раннего предупреждения для системы беспилотного поезда. Выдаёт расстояние, габарит, неопределённость и решения СТОП / ВНИМАНИЕ. Запуск: закреплённый Docker-образ, noVNC и RViz. Дальнейшее развитие: проверка по маркерам организаторов, повышение чувствительности к малым целям, сложные кривые и испытания на целевом ПК.'],
+ ['Рельсы, сечение тоннеля, кривизна', 'Рельсы и сечение тоннеля задают ось пути. Сенсорная адаптация оценивает ориентацию и монтаж. Временная память стабилизирует редкие дальние отражения.'],
+ ['У каждой точки пути есть', 'Неопределённость σ(x) ограничивает доверие к пути. Измеренная геометрия отделена от экстраполяции. СТОП требует подтверждённой цели и достоверного положения внутри габарита.'],
+ ['На 200 м', 'На 200 м'],
+ ['Человек на 160 м', 'Исторический пример слева относится к квалификации. В новых движущихся тестах на кривых ±500 м остаются пропуски. Видимость ограничивается стенами тоннеля, а дальняя экстраполяция сохраняет растущую неопределённость.'],
+ ['v1: ⅓', 'Два специалиста: объекты у пола и подвешенные объекты. В каждом ½ LightGBM + ½ CatBoost в пространстве логитов. PI-MLP относится к исторической версии.'],
+ ['38 физических признаков кластера.', '38 физических признаков. Обучение использует кандидатов и лучевые инъекции. Новые организаторские маркеры проверяются отдельно. Пыль выводится информационно.'],
+ ['Обучение на 4 тоннелях', 'Квалификация: leave-one-tunnel-out. Финал: полный Falcon, 68 +255 фиксированных условий и 51 анатомический тест. Реальные классовые FP/FN не заменены синтетическими долями.'],
+ ['Запуск: ', 'Запуск: закреплённый Docker-образ, RViz через noVNC и ros2 bag play. Ядро: C++ и NumPy/Numba. 46 native-тестов и проверка воспроизводимости через Compose.'],
  ['23 ГБ записей', 'Потоковый разбор архивов и облачные проверки обошли ограничение локального диска. Пространственное слияние восстановило 13 кадров СТОП на Falcon. Сложные кривые и малые цели на 300 м остаются границами прототипа; для них добавлены отдельные диагностические тесты.'],
  ['Метро перевозит миллионы','Выбрали задачу обнаружения препятствий в тоннеле: темнота, кривые, стрелки и редкие дальние отражения требуют объяснимой геометрии и проверяемой оценки риска. Цель команды: воспроизводимый прототип с понятными границами применимости.']
 ];
@@ -24,11 +32,45 @@ function slide(title,source=''){const s=p.slides.add();s.background.fill=C.bg;te
 function image(s,path,x=60,y=154,w=1160,h=470){return s.images.add({blob:new Uint8Array(fsSync.readFileSync(path)),contentType:'image/png',alt:path.split('/').at(-1),fit:'contain',position:{left:x,top:y,width:w,height:h}});}
 function table(s,values,x,y,w,h,widths){const t=s.tables.add({rows:values.length,columns:values[0].length,left:x,top:y,width:w,height:h,columnWidths:widths,values});for(let i=0;i<values.length;i++)for(let j=0;j<values[0].length;j++){const c=t.getCell(i,j);c.fill=i===0?'#18354B':C.bg;c.text.style={typeface:FONT,fontSize:i===0?23:22,color:i===0?C.accent:C.ink,bold:i===0};}t.borders.assign({fill:'#2E4A60',width:1});return t;}
 function link(s,label,url,y){const t=text(s,'',60,y,1160,45,28,C.accent);t.text=[[{run:label,style:{typeface:FONT,fontSize:'28px',color:C.accent,underline:'sng'},link:{uri:url,isExternal:true}}]];}
+for(const [id,value] of [
+ ['sh/u9sja98z','Проверка геометрии на кривых\nИсторический пример слева относится к квалификации. В движущихся тестах на кривых ±500 м остаются пропуски. Видимость ограничивают стены тоннеля, дальняя экстраполяция сохраняет растущую неопределённость.'],
+ ['sh/k3uhcb6h','Физические признаки\n38 признаков кластера. Обучение использует кандидатов и лучевые инъекции. Маркеры организаторов проверяются отдельно. Пыль выводится информационно.'],
+ ['sh/y1czalob','Проверка обобщения\nКвалификация: leave-one-tunnel-out. Финал: полный Falcon, 68 +255 фиксированных условий и 51 анатомический тест. Синтетика не заменяет реальные классовые FP/FN.'],
+ ['sh/4zyhofml','Два специалиста\nОбъекты у пола и подвешенные объекты. В каждом ½ LightGBM + ½ CatBoost в пространстве логитов. Временная память дополняет покадровую оценку. PI-MLP относится к исторической версии.']
+]){const t=p.resolve(id);t.text.replace(t.text.toString(),value);}
+// Source slides 7--11 retain the qualification order and master/layout.
+const picInspect=await p.inspect({select:'$.slides[7,10].elements[?(@.kind == "image")]',include:['id','kind']});
+for(const im of picInspect.records??[])p.delete(im.id);
+function qtext(s,v,x,y,w,h,size=17,color='#26232B',bold=false){return text(s,v,x,y,w,h,size,color,bold);}
+function qbox(s,title,body,x,y,w,h){s.shapes.add({geometry:'roundRect',position:{left:x,top:y,width:w,height:h},fill:'#FFFFFF',line:{fill:'#560080',width:2}});qtext(s,title,x+9,y+12,w-18,50,14,'#4E0875',true);qtext(s,body,x+9,y+70,w-18,h-72,12,'#676477');}
+function arrow(s,x,y,w=24){s.shapes.add({geometry:'rightArrow',position:{left:x,top:y,width:w,height:12},fill:'#FF0066',line:{fill:'none',width:0}});}
+// Retain original cards but separate title/body styling after replacing text.
+p.delete(['sh/u9sja98z','sh/k3uhcb6h','sh/y1czalob','sh/4zyhofml']);
+const geoSlide=p.slides.items[8];qtext(geoSlide,'Проверка геометрии на кривых',60,506,760,30,18,'#560080',true);qtext(geoSlide,'Исторический пример слева относится к квалификации. В движущихся тестах на кривых ±500 м остаются пропуски. Видимость ограничивают стены тоннеля, дальняя экстраполяция сохраняет растущую неопределённость.',60,545,760,105,16);
+const mlCards=p.slides.items[10];
+for(const [x,title,body] of [[57,'Физические признаки','38 признаков кластера. Обучение использует кандидатов и лучевые инъекции. Маркеры организаторов проверяются отдельно. Пыль выводится информационно.'],[465,'Проверка обобщения','Квалификация: leave-one-tunnel-out. Финал: полный Falcon, 68 +255 условий и 51 анатомический тест. Синтетика не заменяет реальные классовые FP/FN.'],[873,'Два специалиста','Объекты у пола и подвешенные объекты. В каждом ½ LightGBM +½ CatBoost в логитах. Временная память дополняет покадровую оценку. PI-MLP относится к старой версии.']]){qtext(mlCards,title,x,513,350,30,18,'#560080',true);qtext(mlCards,body,x,547,350,105,14);}
+const arch=p.slides.items[7];
+qtext(arch,'Docker, Ubuntu 22.04, ROS 2 Humble. Геометрия C++, NumPy/Numba',155,163,940,24,16,'#560080');
+qbox(arch,'Облако точек','ROS 2 bag\nили живой лидар\nFalcon / Hesai',152,278,118,150);arrow(arch,271,342);
+qbox(arch,'Подготовка','PointCloud2\nОси и монтаж\nПлотность лучей',297,278,118,150);arrow(arch,416,342);
+qbox(arch,'Геометрия пути','Рельсы и их непрерывность\n\nШаблон сечения\n\nГлобальный DP\n\nГаусс–Ньютон\n\nНеопределённость σ(x)',442,205,215,315);arrow(arch,658,262);
+qbox(arch,'Габарит','Измерения\nЭкстраполяция\nЗоны с учётом σ',687,205,135,140);
+qbox(arch,'Кандидаты','Кластеры\nФизические тесты\nПыль отдельно',687,380,135,140);arrow(arch,823,435);
+qbox(arch,'Два эксперта','У пола / подвес\n½ LightGBM\n½ CatBoost',852,380,135,140);
+qbox(arch,'Трек и память','Треки\nДальняя память\nСвежие возвраты',852,205,135,140);arrow(arch,988,262);
+qbox(arch,'Решение','СВОБОДНО\nВНИМАНИЕ\nСТОП\n\nROS 2 и RViz',1017,205,125,315);
+for(const [x,y,geometry] of [[747,348,'downArrow'],[917,348,'upArrow']])arch.shapes.add({geometry,position:{left:x,top:y,width:12,height:29},fill:'#FF0066',line:{fill:'none',width:0}});
+qtext(arch,'Кандидаты проходят оценку и временное подтверждение. Рассеяние не запускает СТОП.',155,541,990,30,15,'#560080');
+arch.speakerNotes.text='Текущий алгоритм: src/tunnel_guard/tunnel_guard/core/{geometry,detector,farfield,scorer}.py. Нативная редактируемая схема в композиции квалификационного слайда 8. Схема не включает непроверенные экспериментальные изменения.';
+const ml=p.slides.items[10];
+qtext(ml,'Физические признаки и два специалиста',75,145,1120,35,26,'#560080',true);
+qbox(ml,'Кластер и физика','38 признаков: форма, опора, оболочка, угол и плотность возвратов',90,220,230,205);arrow(ml,325,315,36);
+qbox(ml,'Объект у пола','½ LightGBM + ½ CatBoost\n\nСреднее логитов, JSON-модели',370,190,280,140);
+qbox(ml,'Подвешенный объект','½ LightGBM + ½ CatBoost\n\nОтдельный эксперт для подвеса',370,350,280,125);
+arrow(ml,660,315,36);qbox(ml,'Решение и память','Геометрия и свежие возвраты\n\nСлияние по пространству\n\nВременная память и трек\n\nПылевой флаг отдельно',710,190,460,285);
+ml.speakerNotes.text='Текущие модели в config/obstacle_scorer.json и obstacle_scorer_hanging.json. Веса 1/2 +1/2 в пространстве логитов. Старый PI-MLP не входит в текущую поставку. Числа AP квалификации удалены из этой текущей схемы; исторические результаты доступны в репозитории.';
 let s=slide('Реальный Falcon: первое совпадение человека',ROOT+'/docs/finals/spatial/quality/candidate/summary.json\nhttps://github.com/EhimenNathan/tunnelguard-lct2026/actions/runs/39197603363\nАвтоматическая траектория, 4443 кадра. 256,56 м при t=4,5 с. Одна цель; не гарантированная дальность любого объекта.');
 image(s,ROOT+'/web/assets/falcon_first_detection.png',40,140,1200,485);text(s,'256,56 м по автоматической траектории. Это наблюдение одной цели',60,630,1160,34,22,C.muted);
-s=slide('Гибридная архитектура',ROOT+'/src/tunnel_guard/tunnel_guard/core/detector.py\n'+ROOT+'/docs/MODEL_RU.md');
-const architecture=[['Вход и адаптация','PointCloud2, ось вперёд, наклон и крен, угловая плотность сенсора'],['Путь и габарит','Парные рельсы, шаблон тоннеля, непрерывность пути, оценка неопределённости'],['Кандидаты','Физические тесты и два специалиста: ½ LightGBM + ½ CatBoost'],['Решение во времени','Слияние по пространству, дальняя память, трек, ВНИМАНИЕ и СТОП']];
-architecture.forEach((a,i)=>{text(s,String(i+1).padStart(2,'0'),60,163+i*111,80,60,42,C.accent,true);text(s,a[0],163,158+i*111,1010,38,29,C.ink,true);text(s,a[1],163,201+i*111,1010,65,24,C.muted);});
 s=slide('Устойчивость СТОП после пространственного исправления',ROOT+'/docs/finals/spatial/quality/spatial_gates.json\n'+ROOT+'/docs/finals/spatial/stop_gaps.json\n14/14 заранее заданных условий. Два изменения вместе; не изолированная абляция. Реальные FP/FN без независимого полного эталона неизвестны.');
 s.charts.add('bar',{position:{left:70,top:175,width:650,height:390},categories:['СТОП на 200–250 м'],series:[{name:'До',values:[705],fill:'#7791A8'},{name:'После',values:[718],fill:C.accent}],barOptions:{direction:'column',grouping:'clustered'},hasLegend:true,legend:{position:'bottom',textStyle:{typeface:FONT,fontSize:22,fill:C.ink}},chartFill:C.bg,plotAreaFill:C.bg,yAxis:{min:0,max:750,textStyle:{typeface:FONT,fontSize:19,fill:C.muted}},xAxis:{textStyle:{typeface:FONT,fontSize:22,fill:C.ink}},dataLabels:{showValue:false,position:'outEnd',textStyle:{typeface:FONT,fontSize:28,fill:C.ink,bold:true}}});
 text(s,'705',285,175,100,48,30,C.ink,true);text(s,'718',490,169,100,48,30,C.ink,true);
@@ -61,7 +103,7 @@ text(s,'СахалИИн',60,163,1160,90,66,C.ink,true);link(s,'Интеракт
 await fs.mkdir(DIR+'/renders',{recursive:true});
 for(let i=0;i<p.slides.items.length;i++){const b=await p.export({slide:p.slides.items[i],format:'png',scale:1});await fs.writeFile(DIR+`/renders/slide_${String(i+1).padStart(2,'0')}.png`,new Uint8Array(await b.arrayBuffer()));console.log('Render',i+1);}
 await (await PresentationFile.exportPptx(p)).save(DIR+'/candidate.pptx');
-await fs.writeFile(DIR+'/authored.json',JSON.stringify({slides:p.slides.items.length,mandatory:[1,2,3,4,5],nativeTables:[9,10,13],nativeCharts:[8,11],sourceTemplate:ROOT+'/../ЛЦТ2026 Шаблон презентации.pptx'},null,2));
+await fs.writeFile(DIR+'/authored.json',JSON.stringify({slides:p.slides.items.length,mandatory:[1,2,3,4,5],nativeTables:[14,15,18],nativeCharts:[13,16],sourceTemplate:ROOT+'/../ЛЦТ2026 Шаблон презентации.pptx'},null,2));
 console.log('Candidate saved',p.slides.items.length);
 
 

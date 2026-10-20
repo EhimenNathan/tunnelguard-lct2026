@@ -1,15 +1,15 @@
 {
   "files": {
     "СахалИИн_TunnelGuard_ЛЦТ2026_Финал_20261020_Подача.pptx": {
-      "bytes": 13078679,
-      "sha256": "af4dc25340926012bad10681dc394c1b8215275f1200dff9104d2c43a80d6597"
+      "bytes": 13426112,
+      "sha256": "95c18c8d0fdf900361ddff61ee8e13dea98e90d57ad7040392447c9dfcfa7512"
     },
     "СахалИИн_TunnelGuard_ЛЦТ2026_Финал_20261020_Подача.pdf": {
-      "bytes": 1566305,
-      "sha256": "827e26268215a197ec94df5f0cd3c503b37617b3f1d741ee683695f2d7f331ae"
+      "bytes": 1960252,
+      "sha256": "a4608427ad1294127ce7d15d61c628f43a9f225e5c48afd79cd5ea36def60c85"
     }
   },
-  "slides": 18,
+  "slides": 23,
   "mandatory_template_slides_7_to_11_at_positions": [
     1,
     2,
@@ -17,9 +17,13 @@
     4,
     5
   ],
-  "runtime_core_changed": false,
-  "core_source": "404f3c8",
-  "frozen_runtime_source": "cdb39de",
-  "native_application": "Microsoft PowerPoint: opened, exported PDF and all 18 PNG slides; visually reviewed",
-  "validation": "Package/layout/native chart checks passed. Original cover has intentional full bleed."
+  "qualification_workflow_pattern_at_positions": {
+    "7": "Идея",
+    "8": "Архитектура",
+    "9": "Геометрия пути",
+    "10": "Габарит из данных",
+    "11": "Физика + ML"
+  },
+  "revision": "v2: restored qualification positions 7–11; current model workflow is editable",
+  "native_application": "Microsoft PowerPoint, 23 slides opened, PDF exported, all 23 previews reviewed"
 }

@@ -1,0 +1,60 @@
+name: motion-curve-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: motion-curve-eval
+  cancel-in-progress: true
+jobs:
+  analytic:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen native image and motion invariants
+        run: |
+          IMG=ghcr.io/ehimennathan/tunnel_guard@sha256:d5371b4bb2b01426e0d931aff80530258ec14cc86f156aa4d9f275c762f86199
+          docker pull "$IMG"
+          mkdir -p results/analytic
+          docker run --rm --network none -v "$PWD:/repo" -v "$PWD/results:/results" "$IMG" bash -c '
+            PKG=$(python3 -c "import pathlib,tunnel_guard; print(pathlib.Path(tunnel_guard.__file__).parent)")
+            mkdir -p /baseline
+            cp -a "$PKG" /baseline/tunnel_guard
+            SHARE=$(python3 -c "from ament_index_python.packages import get_package_share_directory; print(get_package_share_directory(\"tunnel_guard\"))")
+            cp -a "$SHARE/config" /baseline/config
+            cp "$PKG/core/"_geometry_native*.so /repo/src/tunnel_guard/tunnel_guard/core/
+            cd /repo
+            python3 -m pytest -q tools/test_motion_curve_candidate.py
+            OPENBLAS_NUM_THREADS=1 python3 -u tools/finals_motion_curves.py /baseline /results/analytic/curves.json
+          '
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: motion-analytic
+          path: results/
+  full-falcon:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stream the complete Falcon recording in the cloud
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          pip install --quiet numpy zstandard
+          python tools/falcon_export_bag.py bags/falcon_test 0 4442
+      - name: Candidate against frozen native protocols
+        run: |
+          IMG=ghcr.io/ehimennathan/tunnel_guard@sha256:d5371b4bb2b01426e0d931aff80530258ec14cc86f156aa4d9f275c762f86199
+          docker pull "$IMG"
+          mkdir -p results/candidate results/baseline results/holdout
+          cp docs/finals/spatial/quality/candidate/summary.json results/baseline/summary.json
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$IMG" python3 /tools/finals_motion_native_eval.py quality /data/falcon_test /docs/finals/reference_automatic.json /results/candidate --source-label motion-experiment
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/docs:/docs:ro" -v "$PWD/results:/results" "$IMG" python3 /tools/finals_motion_native_eval.py holdout /data/falcon_test /docs/finals/reference_automatic.json /results/holdout --label motion-experiment
+      - name: Existing quality gates before any promotion
+        run: python3 tools/finals_spatial_gate.py results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: motion-full-falcon
+          path: results/
