@@ -1,0 +1,26 @@
+name: motion-startup-eval
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paired-startup:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: First 60 Falcon scans only
+        run: |
+          pip install --quiet numpy zstandard
+          python tools/falcon_export_bag.py bags/falcon_test 0 59
+      - name: Baseline and candidate under the same frozen native image
+        run: |
+          IMG=ghcr.io/ehimennathan/tunnel_guard@sha256:d5371b4bb2b01426e0d931aff80530258ec14cc86f156aa4d9f275c762f86199
+          docker pull "$IMG"
+          mkdir -p results
+          docker run --rm --network none -v "$PWD/bags:/data:ro" -v "$PWD/tools:/tools:ro" -v "$PWD/results:/results" "$IMG" python3 /tools/finals_motion_smoke.py /data/falcon_test /results/startup.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: motion-startup
+          path: results/
